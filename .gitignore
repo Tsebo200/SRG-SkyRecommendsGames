@@ -1,0 +1,7 @@
+*.github
+*.specify
+*specs
+.env
+*node_modules
+.specify
+.cursor
