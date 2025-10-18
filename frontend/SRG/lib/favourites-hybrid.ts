@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from './supabase';
+import { supabaseService } from './supabase-service';
 import { HybridAuthService } from './hybrid-auth';
 import { UserMappingService } from './user-mapping';
 
@@ -382,6 +383,25 @@ export class HybridFavouritesService {
       console.log(`✅ Removed ${localFavourites.length - deduplicated.length} duplicates`);
     } catch (error) {
       console.error('❌ Failed to remove duplicates:', error);
+    }
+  }
+
+  // Clear user data on logout
+  static async clearUserData(): Promise<void> {
+    try {
+      const userId = await this.getUserId();
+      if (!userId) return;
+
+      // Clear user-specific storage keys
+      const userStorageKey = `${FAVOURITES_STORAGE_KEY}_${userId}`;
+      const userSyncKey = `${SYNC_STATUS_KEY}_${userId}`;
+      
+      // Remove each key individually (multiRemove not available)
+      await AsyncStorage.removeItem(userStorageKey);
+      await AsyncStorage.removeItem(userSyncKey);
+      console.log('🧹 Cleared user data on logout');
+    } catch (error) {
+      console.error('❌ Failed to clear user data:', error);
     }
   }
 }

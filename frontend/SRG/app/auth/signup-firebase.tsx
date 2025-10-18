@@ -14,42 +14,56 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { HybridAuthService } from '../../lib/hybrid-auth';
 
-export default function SignInFirebase() {
+export default function SignUpFirebase() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSignIn = async () => {
-    if (!email || !password) {
+  const handleSignUp = async () => {
+    if (!email || !password || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters');
       return;
     }
 
     setLoading(true);
     try {
-      console.log('🔄 Signing in with Firebase...');
+      console.log('🔄 Signing up with Firebase...');
       
-      const result = await HybridAuthService.signIn(email, password);
+      const result = await HybridAuthService.signUp(email, password);
       
       if (result.success) {
-        console.log('✅ Firebase sign in successful');
-        // Navigation will be handled by _layout-hybrid.tsx
-        router.replace('/(tabs)');
+        console.log('✅ Firebase sign up successful');
+        Alert.alert(
+          'Success', 
+          'Account created successfully! Please check your email to verify your account.',
+          [{ text: 'OK', onPress: () => router.replace('/(tabs)') }]
+        );
       } else {
-        console.log('❌ Firebase sign in failed:', result.error);
-        Alert.alert('Sign In Failed', result.error || 'Please check your credentials');
+        console.log('❌ Firebase sign up failed:', result.error);
+        Alert.alert('Sign Up Failed', result.error || 'Please try again');
       }
     } catch (error) {
-      console.error('❌ Sign in error:', error);
+      console.error('❌ Sign up error:', error);
       Alert.alert('Error', 'An unexpected error occurred');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSignUp = () => {
-    router.push('/auth/signup-firebase');
+  const handleSignIn = () => {
+    router.push('/auth/signin-firebase');
   };
 
   return (
@@ -59,8 +73,8 @@ export default function SignInFirebase() {
         style={styles.keyboardView}
       >
         <View style={styles.content}>
-          <Text style={styles.title}>Welcome Back</Text>
-          <Text style={styles.subtitle}>Sign in to your account</Text>
+          <Text style={styles.title}>Create Account</Text>
+          <Text style={styles.subtitle}>Sign up to get started</Text>
 
           <View style={styles.form}>
             <TextInput
@@ -83,24 +97,33 @@ export default function SignInFirebase() {
               secureTextEntry
             />
 
+            <TextInput
+              style={styles.input}
+              placeholder="Confirm Password"
+              placeholderTextColor="#8E8E93"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry
+            />
+
             <TouchableOpacity
               style={[styles.button, loading && styles.buttonDisabled]}
-              onPress={handleSignIn}
+              onPress={handleSignUp}
               disabled={loading}
             >
               {loading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.buttonText}>Sign In</Text>
+                <Text style={styles.buttonText}>Sign Up</Text>
               )}
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.linkButton}
-              onPress={handleSignUp}
+              onPress={handleSignIn}
             >
               <Text style={styles.linkText}>
-                Don't have an account? Sign Up
+                Already have an account? Sign In
               </Text>
             </TouchableOpacity>
           </View>

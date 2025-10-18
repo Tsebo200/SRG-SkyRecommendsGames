@@ -7,6 +7,7 @@ import {
 } from 'firebase/auth';
 import { auth } from './firebase';
 import { supabase } from './supabase';
+import { supabaseService } from './supabase-service';
 
 export interface AuthUser {
   uid: string;
@@ -25,10 +26,10 @@ export class HybridAuthService {
       await this.syncUserToSupabase(result.user);
       
       console.log('✅ Firebase sign in successful:', result.user.uid);
-      return result;
+      return { success: true, user: result.user };
     } catch (error: any) {
       console.error('❌ Firebase sign in failed:', error.message);
-      throw error;
+      return { success: false, error: error.message };
     }
   }
 
@@ -42,22 +43,56 @@ export class HybridAuthService {
       await this.syncUserToSupabase(result.user);
       
       console.log('✅ Firebase sign up successful:', result.user.uid);
-      return result;
+      return { success: true, user: result.user };
     } catch (error: any) {
       console.error('❌ Firebase sign up failed:', error.message);
-      throw error;
+      return { success: false, error: error.message };
     }
   }
 
   // Sign out from Firebase
   static async signOut() {
     try {
-      console.log('🔐 Firebase sign out');
+      console.log('🔐 Starting logout process...');
+      
+      // Get current user before signing out
+      const currentUser = this.getCurrentUser();
+      const userId = currentUser?.uid;
+      
+      // Sign out from Firebase
+      console.log('🔄 Signing out from Firebase...');
       await signOut(auth);
       console.log('✅ Firebase sign out successful');
+      
+      // Notify Supabase about logout (for session management)
+      if (userId) {
+        try {
+          console.log('🔄 Notifying Supabase of logout...');
+          
+          // Update user's last logout timestamp in Supabase
+          const { error: updateError } = await supabaseService
+            .from('users')
+            .update({ 
+              last_logout: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            })
+            .eq('firebase_uid', userId);
+          
+          if (updateError) {
+            console.warn('⚠️ Failed to update logout timestamp in Supabase:', updateError.message);
+          } else {
+            console.log('📝 Logout timestamp updated in Supabase');
+          }
+        } catch (supabaseError) {
+          console.warn('⚠️ Supabase logout notification failed (non-critical):', supabaseError);
+        }
+      }
+      
+      console.log('✅ Complete logout successful');
+      return { success: true };
     } catch (error: any) {
-      console.error('❌ Firebase sign out failed:', error.message);
-      throw error;
+      console.error('❌ Logout failed:', error.message);
+      return { success: false, error: error.message };
     }
   }
 
@@ -99,7 +134,7 @@ export class HybridAuthService {
       console.log('🔄 Syncing Firebase user to Supabase:', firebaseUser.uid);
       
       // Check if user exists in Supabase
-      const { data: existingUser, error: fetchError } = await supabase
+      const { data: existingUser, error: fetchError } = await supabaseService
         .from('users')
         .select('id')
         .eq('firebase_uid', firebaseUser.uid)
@@ -112,7 +147,7 @@ export class HybridAuthService {
 
       if (!existingUser) {
         // Create user in Supabase
-        const { error: insertError } = await supabase
+        const { error: insertError } = await supabaseService
           .from('users')
           .insert({
             firebase_uid: firebaseUser.uid,

@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { supabaseService } from './supabase-service';
 import { HybridAuthService } from './hybrid-auth';
 
 export interface UserMapping {
@@ -38,8 +39,8 @@ export class UserMappingService {
         return existingUser.id;
       }
 
-      // Create new user mapping
-      const { data: newUser, error: insertError } = await supabase
+      // Create new user mapping using service role (bypasses RLS)
+      const { data: newUser, error: insertError } = await supabaseService
         .from('users')
         .insert({
           firebase_uid: firebaseUser.uid,
@@ -74,7 +75,7 @@ export class UserMappingService {
 
       console.log('🔍 Getting Supabase user ID for Firebase UID:', firebaseUser.uid);
 
-      const { data: user, error } = await supabase
+      const { data: user, error } = await supabaseService
         .from('users')
         .select('id')
         .eq('firebase_uid', firebaseUser.uid)
@@ -115,7 +116,7 @@ export class UserMappingService {
       const firebaseUser = HybridAuthService.getCurrentUser();
       if (!firebaseUser) return null;
 
-      const { data: user, error } = await supabase
+      const { data: user, error } = await supabaseService
         .from('users')
         .select('*')
         .eq('firebase_uid', firebaseUser.uid)
@@ -139,7 +140,7 @@ export class UserMappingService {
       const firebaseUser = HybridAuthService.getCurrentUser();
       if (!firebaseUser) return false;
 
-      const { error } = await supabase
+      const { error } = await supabaseService
         .from('users')
         .update(updates)
         .eq('firebase_uid', firebaseUser.uid);

@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { HybridAuthService } from '../../lib/hybrid-auth';
 import { UserMappingService } from '../../lib/user-mapping';
-import { HybridFavouritesService } from '../../lib/favourites-hybrid';
 
 export default function ProfileFirebaseScreen() {
   const [user, setUser] = useState<any>(null);
@@ -38,7 +36,7 @@ export default function ProfileFirebaseScreen() {
   const handleSignOut = async () => {
     Alert.alert(
       'Sign Out',
-      'Are you sure you want to sign out? You will need to sign in again to access your favourites.',
+      'Are you sure you want to sign out?',
       [
         { text: 'Cancel', style: 'cancel' },
         { 
@@ -47,33 +45,14 @@ export default function ProfileFirebaseScreen() {
           onPress: async () => {
             try {
               setSigningOut(true);
-              console.log('🔄 Starting complete logout process...');
+              console.log('🔄 Signing out...');
               
-              // Step 1: Sign out from Firebase and notify Supabase
-              console.log('🔄 Step 1: Firebase logout...');
-              const signOutResult = await HybridAuthService.signOut();
-              
-              if (signOutResult.success) {
-                // Step 2: Clear user-specific data from local storage
-                console.log('🔄 Step 2: Clearing local user data...');
-                await HybridFavouritesService.clearUserData();
-                await clearLocalData();
-                
-                console.log('✅ Complete logout successful');
-              } else {
-                throw new Error(signOutResult.error || 'Sign out failed');
-              }
-              
-              // Show success message
-              Alert.alert(
-                'Signed Out', 
-                'You have been successfully signed out.',
-                [{ text: 'OK' }]
-              );
+              await HybridAuthService.signOut();
+              console.log('✅ Sign out successful');
               
             } catch (error) {
               console.error('❌ Sign out error:', error);
-              Alert.alert('Error', 'Failed to sign out. Please try again.');
+              Alert.alert('Error', 'Failed to sign out');
             } finally {
               setSigningOut(false);
             }
@@ -81,27 +60,6 @@ export default function ProfileFirebaseScreen() {
         }
       ]
     );
-  };
-
-  const clearLocalData = async () => {
-    try {
-      // Clear known user-specific keys directly
-      const userKeys = [
-        'user_favourites',
-        'favourites_sync_status',
-        'user_favourites_sync_timestamp',
-        'user_favourites_last_sync'
-      ];
-      
-      // Remove each key individually (multiRemove not available)
-      for (const key of userKeys) {
-        await AsyncStorage.removeItem(key);
-      }
-      console.log('🧹 Cleared local user data:', userKeys);
-      
-    } catch (error) {
-      console.error('❌ Error clearing local data:', error);
-    }
   };
 
   if (loading) {
@@ -163,7 +121,7 @@ export default function ProfileFirebaseScreen() {
         </View>
 
         <View style={styles.section}>
-          {/* <Text style={styles.sectionTitle}>Support</Text>
+          <Text style={styles.sectionTitle}>Support</Text>
           
           <TouchableOpacity style={styles.menuItem}>
             <Text style={styles.menuText}>Help Center</Text>
@@ -173,7 +131,7 @@ export default function ProfileFirebaseScreen() {
           <TouchableOpacity style={styles.menuItem}>
             <Text style={styles.menuText}>Contact Us</Text>
             <Text style={styles.menuArrow}>›</Text>
-          </TouchableOpacity> */}
+          </TouchableOpacity>
         </View>
 
         <TouchableOpacity
@@ -210,7 +168,6 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 24,
-    paddingBottom: 100, // Add space for tab bar
   },
   title: {
     fontSize: 32,

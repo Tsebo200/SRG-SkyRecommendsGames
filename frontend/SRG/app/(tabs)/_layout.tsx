@@ -21,7 +21,7 @@ export default function TabLayout() {
         tabBarBackground: () => (
           <BlurView
             tint="dark"
-            intensity={Platform.OS === 'ios' ? 80 : 100} // Higher intensity for Android to simulate blur
+            intensity={Platform.OS === 'ios' ? 80 : 100}
             style={StyleSheet.absoluteFillObject}
           />
         ),

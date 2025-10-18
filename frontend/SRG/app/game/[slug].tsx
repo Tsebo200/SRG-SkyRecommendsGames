@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Linking, T
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
-import { PersistentFavouritesService } from '../../lib/favourites-persistent';
+import { HybridFavouritesService } from '../../lib/favourites-hybrid';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function GameDetailsScreen() {
@@ -36,7 +36,7 @@ export default function GameDetailsScreen() {
     const checkFavorite = async () => {
       try {
         const slug = typeof params.slug === 'string' ? params.slug : '';
-        const favorited = await PersistentFavouritesService.isFavorited(slug);
+        const favorited = await HybridFavouritesService.isFavorited(slug);
         setIsFavorited(favorited);
       } catch (error) {
         console.error('Error checking favorite status:', error);
@@ -50,7 +50,7 @@ export default function GameDetailsScreen() {
       setFavoriteLoading(true);
       const slug = typeof params.slug === 'string' ? params.slug : '';
       
-      const newFavoriteStatus = await PersistentFavouritesService.toggleFavorite(
+      const newFavoriteStatus = await HybridFavouritesService.toggleFavorite(
         slug, // Using slug as the ID
         name,
         slug,

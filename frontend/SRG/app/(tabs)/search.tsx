@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { apiClient, Game } from '../../lib/api';
-import { PersistentFavouritesService } from '../../lib/favourites-persistent';
+import { HybridFavouritesService } from '../../lib/favourites-hybrid';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
@@ -112,7 +112,7 @@ export default function SearchScreen() {
       const isFavorited = favorites.has(gameSlug);
       
       if (isFavorited) {
-        await PersistentFavouritesService.removeFavorite(gameSlug);
+        await HybridFavouritesService.removeFavorite(gameSlug);
         setFavorites(prev => {
           const newSet = new Set(prev);
           newSet.delete(gameSlug);
@@ -120,7 +120,7 @@ export default function SearchScreen() {
         });
         Alert.alert('Removed', 'Game removed from favourites');
       } else {
-        await PersistentFavouritesService.addFavorite(game.id.toString(), game.name, game.slug, game.background_image);
+        await HybridFavouritesService.addFavorite(game.id.toString(), game.name, game.slug, game.background_image);
         setFavorites(prev => new Set(prev).add(gameSlug));
         Alert.alert('Added', 'Game added to favourites');
       }
@@ -133,7 +133,7 @@ export default function SearchScreen() {
   useEffect(() => {
     const loadFavorites = async () => {
       try {
-        const favoriteGames = await PersistentFavouritesService.getFavorites();
+        const favoriteGames = await HybridFavouritesService.getFavorites();
         const favoriteSlugs = new Set(favoriteGames.map(fav => fav.game_slug).filter(Boolean));
         setFavorites(favoriteSlugs);
       } catch (error) {

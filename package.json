@@ -1,6 +1,7 @@
 {
   "scripts": {
-    "stop:all": "bash scripts/stop-all.sh"
+    "stop:all": "bash scripts/stop-all.sh",
+    "stop:frontend": "bash scripts/stop-frontend.sh"
   },
   "devDependencies": {
     "supabase": "^2.51.0"

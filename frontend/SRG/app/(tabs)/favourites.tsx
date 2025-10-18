@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { PersistentFavouritesService, FavouriteGame } from '../../lib/favourites-persistent';
+import { HybridFavouritesService, FavouriteGame } from '../../lib/favourites-hybrid';
 
 export default function FavouritesScreen() {
   const router = useRouter();
@@ -30,10 +30,10 @@ export default function FavouritesScreen() {
       console.log('🔍 Loading favourites with persistence...');
       
       // First, remove any duplicates
-      await PersistentFavouritesService.removeDuplicates();
+      await HybridFavouritesService.removeDuplicates();
       
       // Then load the favourites
-      const data = await PersistentFavouritesService.getFavorites();
+      const data = await HybridFavouritesService.getFavorites();
       console.log('✅ Favourites loaded (deduplicated):', data.length, 'items');
       setFavourites(data);
     } catch (err: any) {
@@ -68,7 +68,7 @@ export default function FavouritesScreen() {
             onPress: async () => {
               try {
                 setRemovingGameId(gameId);
-                await PersistentFavouritesService.removeFavorite(favourite.game_slug!);
+                await HybridFavouritesService.removeFavorite(favourite.game_slug!);
                 setFavourites(prev => prev.filter(fav => fav.game_id !== gameId));
                 Alert.alert('Removed', 'Game removed from favourites');
               } catch (err: any) {
