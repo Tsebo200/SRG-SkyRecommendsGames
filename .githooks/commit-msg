@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Prevent committing messages that reference internal planning tools.
+# Forbidden terms (case-insensitive): spec, speckit, specify
+
+msg_file="$1"
+if grep -Eiq '\b(spec|speckit|specify)\b' "$msg_file"; then
+  echo "ERROR: Commit message contains a forbidden term (spec/speckit/specify). Please reword without referencing internal tools." >&2
+  exit 1
+fi
+
+exit 0

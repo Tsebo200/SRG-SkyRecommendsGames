@@ -1,0 +1,132 @@
+openapi: 3.0.3
+info:
+  title: SRG Backend API
+  version: 0.1.0
+servers:
+  - url: http://localhost:8080
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+  /rawg/search:
+    get:
+      summary: Search RAWG for games
+      parameters:
+        - in: query
+          name: q
+          schema:
+            type: string
+          required: true
+          description: Search query string
+      responses:
+        '200':
+          description: RAWG search results
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Missing query
+        '502':
+          description: Upstream error
+  /games/upsert:
+    post:
+      summary: Upsert a game and its embedding
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [slug, name]
+              properties:
+                slug:
+                  type: string
+                name:
+                  type: string
+                platforms:
+                  type: array
+                  items: { type: string }
+                genres:
+                  type: array
+                  items: { type: string }
+                store_urls:
+                  type: object
+                  additionalProperties: { type: string }
+                rubric:
+                  type: object
+                embedding:
+                  type: array
+                  items: { type: number, format: float }
+      responses:
+        '200':
+          description: Upsert result (uuid)
+          content:
+            application/json:
+              schema:
+                type: object
+        '400':
+          description: Invalid payload
+        '502':
+          description: RPC error
+  /games/similar:
+    get:
+      summary: Find similar games by embedding similarity
+      parameters:
+        - in: query
+          name: embedding
+          schema:
+            type: string
+          required: true
+          description: Comma-separated embedding vector (e.g., "0.1,0.2,0.3")
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          description: Maximum number of results to return
+      responses:
+        '200':
+          description: Similar games with similarity scores
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      format: uuid
+                    slug:
+                      type: string
+                    name:
+                      type: string
+                    platforms:
+                      type: array
+                      items: { type: string }
+                    genres:
+                      type: array
+                      items: { type: string }
+                    store_urls:
+                      type: object
+                    rubric:
+                      type: object
+                    similarity_score:
+                      type: number
+                      format: float
+        '400':
+          description: Missing or invalid embedding parameter
+        '502':
+          description: RPC error

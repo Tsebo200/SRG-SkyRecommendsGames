@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+# Block staging code that includes forbidden terms in application source files.
+# Forbidden terms (case-insensitive): spec, speckit, specify
+# Only scan non-ignored app code (exclude .git, .specify, specs/ planning docs, and contracts docs).
+
+# Get list of staged files
+staged_files=$(git diff --cached --name-only --diff-filter=ACM)
+
+# Patterns to include (adjust as your repo grows)
+include_regex='\.(js|jsx|ts|tsx|json|md|yml|yaml|sh|swift|kt|java|py|rb)$'
+
+# Exclusions
+exclude_paths='^(\.git/|\.specify/|specs/|README|LICENSE|docs/|CHANGELOG|CONTRIBUTING|\.githooks/)'
+
+violations=()
+while IFS= read -r file; do
+  # Skip excluded paths
+  if [[ "$file" =~ $exclude_paths ]]; then
+    continue
+  fi
+  # Only check included file types
+  if [[ ! "$file" =~ $include_regex ]]; then
+    continue
+  fi
+  # Check content for forbidden terms
+  if git show :"$file" | grep -Eiq '\b(spec|speckit|specify)\b'; then
+    violations+=("$file")
+  fi
+done <<< "$staged_files"
+
+if [[ ${#violations[@]} -gt 0 ]]; then
+  echo "ERROR: The following staged files contain forbidden terms (spec/speckit/specify):" >&2
+  for f in "${violations[@]}"; do
+    echo "  - $f" >&2
+  done
+  echo "Please remove or rename these references before committing." >&2
+  exit 1
+fi
+
+exit 0

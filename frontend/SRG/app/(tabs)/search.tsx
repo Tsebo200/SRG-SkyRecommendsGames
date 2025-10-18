@@ -1,0 +1,333 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  Image,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { apiClient, Game } from '../../lib/api';
+import { PersistentFavouritesService } from '../../lib/favourites-persistent';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+
+export default function SearchScreen() {
+  const router = useRouter();
+  const [query, setQuery] = useState('');
+  const [games, setGames] = useState<Game[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+
+  // Debounced search function
+  const debouncedSearch = useCallback(
+    (() => {
+      let timeoutId: NodeJS.Timeout;
+      return (searchQuery: string) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(async () => {
+          if (searchQuery.trim().length >= 2) {
+            setLoading(true);
+            setError(null);
+            try {
+              const response = await apiClient.searchGames(searchQuery);
+              setGames(response.results);
+            } catch (err) {
+              setError('Failed to search games. Please try again.');
+              console.error('Search error:', err);
+            } finally {
+              setLoading(false);
+            }
+          } else {
+            setGames([]);
+          }
+        }, 500); // 500ms debounce
+      };
+    })(),
+    []
+  );
+
+  useEffect(() => {
+    debouncedSearch(query);
+  }, [query, debouncedSearch]);
+
+  const handleGamePress = async (game: Game) => {
+    try {
+      // Convert game data to upsert format
+      const upsertData = {
+        slug: game.slug,
+        name: game.name,
+        platforms: game.platforms?.map(p => p.platform.name) || [],
+        genres: game.genres?.map(g => g.name) || [],
+        store_urls: game.stores?.reduce((acc, store) => {
+          acc[store.store.name.toLowerCase()] = store.url;
+          return acc;
+        }, {} as Record<string, string>) || {},
+        rubric: {
+          completeness: 0.5, // Default values - would be calculated in real app
+          monetisation: 0.5,
+          accessibility: 0.5,
+          creativity: 0.5,
+        },
+      };
+
+      await apiClient.upsertGame(upsertData);
+      Alert.alert('Success', 'Game added to database with AI embedding!');
+    } catch (err) {
+      Alert.alert('Error', 'Failed to add game to database');
+      console.error('Upsert error:', err);
+    }
+  };
+
+  const goToDetails = (game: Game) => {
+    const platformsLabel = game.platforms?.map(p => p.platform.name).join(', ') || '';
+    const genresLabel = game.genres?.map(g => g.name).join(', ') || '';
+    const storeMap = (game.stores || []).reduce((acc, s) => {
+      acc[s.store.name.toLowerCase()] = s.url;
+      return acc;
+    }, {} as Record<string, string>);
+
+    router.push({
+      pathname: `/game/${game.slug}`,
+      params: {
+        name: game.name,
+        image: game.background_image || '',
+        platforms: platformsLabel,
+        genres: genresLabel,
+        stores: JSON.stringify(storeMap),
+      },
+    });
+  };
+
+  const toggleFavorite = async (game: Game, event: any) => {
+    event.stopPropagation(); // Prevent navigation when tapping heart
+    
+    try {
+      const gameSlug = game.slug;
+      const isFavorited = favorites.has(gameSlug);
+      
+      if (isFavorited) {
+        await PersistentFavouritesService.removeFavorite(gameSlug);
+        setFavorites(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(gameSlug);
+          return newSet;
+        });
+        Alert.alert('Removed', 'Game removed from favourites');
+      } else {
+        await PersistentFavouritesService.addFavorite(game.id.toString(), game.name, game.slug, game.background_image);
+        setFavorites(prev => new Set(prev).add(gameSlug));
+        Alert.alert('Added', 'Game added to favourites');
+      }
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to update favourites');
+    }
+  };
+
+  // Load favorites on mount
+  useEffect(() => {
+    const loadFavorites = async () => {
+      try {
+        const favoriteGames = await PersistentFavouritesService.getFavorites();
+        const favoriteSlugs = new Set(favoriteGames.map(fav => fav.game_slug).filter(Boolean));
+        setFavorites(favoriteSlugs);
+      } catch (error) {
+        console.error('Error loading favourites:', error);
+      }
+    };
+    loadFavorites();
+  }, []);
+
+  const renderGame = ({ item }: { item: Game }) => {
+    const isFavorited = favorites.has(item.slug);
+    
+    return (
+      <TouchableOpacity onPress={() => goToDetails(item)}>
+        <View style={styles.gameCard}>
+          <View style={styles.gameInfo}>
+            {item.background_image && (
+              <Image source={{ uri: item.background_image }} style={styles.gameImage} />
+            )}
+            <View style={styles.gameDetails}>
+              <Text style={styles.gameName}>{item.name}</Text>
+              {item.genres && item.genres.length > 0 && (
+                <Text style={styles.gameGenres}>
+                  {item.genres.slice(0, 3).map(g => g.name).join(', ')}
+                </Text>
+              )}
+              {item.platforms && item.platforms.length > 0 && (
+                <Text style={styles.gamePlatforms}>
+                  {item.platforms.slice(0, 3).map(p => p.platform.name).join(', ')}
+                </Text>
+              )}
+            </View>
+          </View>
+          <TouchableOpacity
+            onPress={(e) => toggleFavorite(item, e)}
+            style={[styles.favoriteButton, isFavorited && styles.favoriteButtonActive]}
+            accessibilityRole="button"
+            accessibilityLabel={isFavorited ? 'Remove from favourites' : 'Add to favourites'}
+          >
+            <Ionicons 
+              name={isFavorited ? 'heart' : 'heart-outline'} 
+              size={20} 
+              color={isFavorited ? '#ff6b6b' : '#a0a0a0'} 
+            />
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+          {/* <View style={styles.container}> */}
+        <View style={styles.searchCard}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search for games..."
+            placeholderTextColor="#666"
+            value={query}
+            onChangeText={setQuery}
+            autoFocus
+            autoCorrect={false}
+            autoCapitalize="none"
+            returnKeyType="search"
+            clearButtonMode="while-editing"
+            keyboardType="default"
+            textContentType="none"
+          />
+          {loading && <ActivityIndicator style={styles.loader} color="#fff" />}
+        </View>
+
+      {error && (
+        <View style={styles.errorCard}>
+          <Text style={styles.errorText}>{error}</Text>
+        </View>
+      )}
+
+      <FlatList
+        data={games}
+        renderItem={renderGame}
+        keyExtractor={(item) => item.id.toString()}
+        style={styles.gamesList}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          query.length > 0 && !loading ? (
+            <View style={styles.emptyCard}>
+              <Text style={styles.emptyText}>No games found</Text>
+            </View>
+          ) : null
+        }
+      />
+    {/* </View> */}
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#0a0a0a',
+    padding: 16,
+  },
+  searchCard: {
+    padding: 16,
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.2)',
+  },
+  searchInput: {
+    flex: 1,
+    color: '#fff',
+    fontSize: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 0,
+    borderWidth: 0,
+    // outline: 'none',
+  },
+  loader: {
+    marginLeft: 12,
+  },
+  errorCard: {
+    padding: 16,
+    marginBottom: 16,
+    backgroundColor: 'rgba(255, 0, 0, 0.1)',
+    borderColor: 'rgba(255, 0, 0, 0.3)',
+  },
+  errorText: {
+    color: '#ff6b6b',
+    textAlign: 'center',
+  },
+  gamesList: {
+    flex: 1,
+  },
+  gameCard: {
+    marginBottom: 12,
+    padding: 16,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  gameInfo: {
+    flexDirection: 'row',
+  },
+  gameImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    marginRight: 12,
+  },
+  gameDetails: {
+    flex: 1,
+  },
+  gameName: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  gameGenres: {
+    color: '#a0a0a0',
+    fontSize: 14,
+    marginBottom: 2,
+  },
+  gamePlatforms: {
+    color: '#808080',
+    fontSize: 12,
+  },
+  favoriteButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    marginLeft: 12,
+  },
+  favoriteButtonActive: {
+    backgroundColor: 'rgba(255,107,107,0.2)',
+  },
+  emptyCard: {
+    padding: 32,
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  emptyText: {
+    color: '#666',
+    fontSize: 16,
+  },
+});
