@@ -137,7 +137,7 @@ The app connects to the Go backend for:
 
 ## Future Enhancements
 - [ ] User authentication with Firebase
-- [ ] Favorites and wishlist functionality
+- [ ] Favourites and wishlist functionality
 - [ ] Push notifications for game updates
 - [ ] Advanced accessibility settings panel
 - [ ] Haptic feedback for interactions

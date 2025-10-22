@@ -57,7 +57,7 @@ async function testAuthenticatedGameCreation() {
     if (gameData) {
       // Try to add to favourites
       const { error: favError } = await supabase
-        .from('favorites')
+        .from('favourites')
         .insert({
           game_id: gameData.id
         });

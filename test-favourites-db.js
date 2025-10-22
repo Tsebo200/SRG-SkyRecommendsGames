@@ -1,9 +1,9 @@
-// Test favorites database operations directly
+// Test favourites database operations directly
 const { createClient } = require('@supabase/supabase-js');
 
-// Test database connection and favorites table
-async function testFavoritesDatabase() {
-  console.log('🧪 Testing Favorites Database Operations...\n');
+// Test database connection and favourites table
+async function testFavouritesDatabase() {
+  console.log('🧪 Testing Favourites Database Operations...\n');
 
   // Initialize Supabase client
   const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'http://127.0.0.1:54321';
@@ -17,17 +17,17 @@ async function testFavoritesDatabase() {
     if (error) throw error;
     console.log('✅ Database connection successful');
 
-    console.log('2. Testing favorites table structure...');
-    const { data: favoritesData, error: favoritesError } = await supabase
-      .from('favorites')
+    console.log('2. Testing favourites table structure...');
+    const { data: favouritesData, error: favouritesError } = await supabase
+      .from('favourites')
       .select('*')
       .limit(1);
     
-    if (favoritesError) {
-      console.log('❌ Favorites table error:', favoritesError.message);
+    if (favouritesError) {
+      console.log('❌ Favourites table error:', favouritesError.message);
       return;
     }
-    console.log('✅ Favorites table accessible');
+    console.log('✅ Favourites table accessible');
 
     console.log('3. Testing games table structure...');
     const { data: gamesData, error: gamesError } = await supabase
@@ -48,9 +48,9 @@ async function testFavoritesDatabase() {
       console.log('⚠️  No sample games found');
     }
 
-    console.log('5. Testing favorites query...');
-    const { data: allFavorites, error: allFavoritesError } = await supabase
-      .from('favorites')
+    console.log('5. Testing favourites query...');
+    const { data: allFavourites, error: allFavouritesError } = await supabase
+      .from('favourites')
       .select(`
         user_id,
         game_id,
@@ -64,10 +64,10 @@ async function testFavoritesDatabase() {
       `)
       .limit(5);
 
-    if (allFavoritesError) {
-      console.log('❌ Favorites query error:', allFavoritesError.message);
+    if (allFavouritesError) {
+      console.log('❌ Favourites query error:', allFavouritesError.message);
     } else {
-      console.log('✅ Favorites query successful, found', allFavorites?.length || 0, 'favorites');
+      console.log('✅ Favourites query successful, found', allFavourites?.length || 0, 'favourites');
     }
 
   } catch (error) {
@@ -78,4 +78,4 @@ async function testFavoritesDatabase() {
 }
 
 // Run the test
-testFavoritesDatabase().catch(console.error);
+testFavouritesDatabase().catch(console.error);

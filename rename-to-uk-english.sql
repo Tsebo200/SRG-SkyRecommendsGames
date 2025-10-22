@@ -1,14 +1,14 @@
 -- Rename tables from US English to UK English
 -- Run this in your Supabase SQL Editor
 
--- 1. Rename 'favorites' table to 'favourites'
-ALTER TABLE public.favorites RENAME TO favourites;
+-- 1. Rename 'favourites' table to 'favourites'
+ALTER TABLE public.favourites RENAME TO favourites;
 
 -- 2. Update any references in RLS policies
 -- Drop existing policies on the old table name
-DROP POLICY IF EXISTS "Allow authenticated users to manage favorites" ON public.favourites;
-DROP POLICY IF EXISTS "Allow authenticated users to read favorites" ON public.favourites;
-DROP POLICY IF EXISTS "Allow authenticated users to delete favorites" ON public.favourites;
+DROP POLICY IF EXISTS "Allow authenticated users to manage favourites" ON public.favourites;
+DROP POLICY IF EXISTS "Allow authenticated users to read favourites" ON public.favourites;
+DROP POLICY IF EXISTS "Allow authenticated users to delete favourites" ON public.favourites;
 
 -- Create new policies with UK English naming
 CREATE POLICY "Allow authenticated users to manage favourites" ON public.favourites
@@ -30,4 +30,4 @@ USING (auth.uid() = user_id);
 -- 4. Verify the changes
 SELECT table_name FROM information_schema.tables 
 WHERE table_schema = 'public' 
-AND table_name IN ('favourites', 'favorites');
+AND table_name IN ('favourites', 'favourites');

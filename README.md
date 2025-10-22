@@ -13,7 +13,7 @@ AI-powered game recommendations with rubric scoring, accessibility focus, and mo
   - User preferences (e.g., no pay‑to‑win, strong accessibility)
 - Multi-platform integration (Steam/Xbox/PSN/Nintendo)
 - Accessibility-first design (WCAG AA/AAA, color‑vision modes, reduced motion, TTS/STT)
-- Favorites/Wishlist with notifications
+- Favourites/Wishlist with notifications
 - QR/Barcode integration with SkyScansGames (planned)
 
 ## Architecture (MVP)
@@ -28,7 +28,7 @@ AI-powered game recommendations with rubric scoring, accessibility focus, and mo
   - 30s in-memory cache per query
   - Client guidance: 300–500ms input debounce
 - RLS in Supabase:
-  - `user_preferences`, `favorites` protected with user‑owned policies
+  - `user_preferences`, `favourites` protected with user‑owned policies
   - `games` has RLS enabled; reads allowed for anon/auth; writes via `rpc_upsert_game` only
 - Secure RPC:
   - `rpc_upsert_game` is `SECURITY DEFINER`; clients call RPC, not write tables directly

@@ -28,7 +28,7 @@ export interface Game {
   created_at: string;
 }
 
-export interface FavoriteGame {
+export interface FavouriteGame {
   id: number;
   user_id: string;
   game_id: number;
@@ -73,56 +73,56 @@ export async function getGameBySlug(slug: string): Promise<Game | null> {
 }
 
 // Favourites API
-export class FavoritesService {
-  static async addFavorite(userId: string, gameId: number): Promise<void> {
+export class FavouritesService {
+  static async addFavourite(userId: string, gameId: number): Promise<void> {
     try {
-      await axios.post(\`\${API_BASE_URL}/favorites\`, {
+      await axios.post(\`\${API_BASE_URL}/favourites\`, {
         userId,
         gameId
       });
     } catch (error) {
-      console.error('Add favorite error:', error);
+      console.error('Add favourite error:', error);
       throw error;
     }
   }
 
-  static async removeFavorite(userId: string, gameId: number): Promise<void> {
+  static async removeFavourite(userId: string, gameId: number): Promise<void> {
     try {
-      await axios.delete(\`\${API_BASE_URL}/favorites/\${userId}/\${gameId}\`);
+      await axios.delete(\`\${API_BASE_URL}/favourites/\${userId}/\${gameId}\`);
     } catch (error) {
-      console.error('Remove favorite error:', error);
+      console.error('Remove favourite error:', error);
       throw error;
     }
   }
 
-  static async getFavorites(userId: string): Promise<FavoriteGame[]> {
+  static async getFavourites(userId: string): Promise<FavouriteGame[]> {
     try {
-      const response = await axios.get(\`\${API_BASE_URL}/favorites/\${userId}\`);
+      const response = await axios.get(\`\${API_BASE_URL}/favourites/\${userId}\`);
       return response.data;
     } catch (error) {
-      console.error('Get favorites error:', error);
+      console.error('Get favourites error:', error);
       return [];
     }
   }
 
-  static async isFavorited(userId: string, gameId: number): Promise<boolean> {
+  static async isFavourited(userId: string, gameId: number): Promise<boolean> {
     try {
-      const response = await axios.get(\`\${API_BASE_URL}/favorites/\${userId}/\${gameId}\`);
-      return response.data.isFavorited;
+      const response = await axios.get(\`\${API_BASE_URL}/favourites/\${userId}/\${gameId}\`);
+      return response.data.isFavourited;
     } catch (error) {
-      console.error('Check favorite error:', error);
+      console.error('Check favourite error:', error);
       return false;
     }
   }
 
-  static async toggleFavorite(userId: string, gameId: number): Promise<boolean> {
-    const isFavorited = await this.isFavorited(userId, gameId);
+  static async toggleFavourite(userId: string, gameId: number): Promise<boolean> {
+    const isFavourited = await this.isFavourited(userId, gameId);
     
-    if (isFavorited) {
-      await this.removeFavorite(userId, gameId);
+    if (isFavourited) {
+      await this.removeFavourite(userId, gameId);
       return false;
     } else {
-      await this.addFavorite(userId, gameId);
+      await this.addFavourite(userId, gameId);
       return true;
     }
   }

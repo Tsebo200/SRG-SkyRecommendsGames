@@ -56,17 +56,17 @@ async function testRemoteConnection() {
       console.log('   Games found:', gamesData?.length || 0);
     }
 
-    // Test favorites table
-    const { data: favoritesData, error: favoritesError } = await supabase
-      .from('favorites')
+    // Test favourites table
+    const { data: favouritesData, error: favouritesError } = await supabase
+      .from('favourites')
       .select('user_id, game_id')
       .limit(3);
 
-    if (favoritesError) {
-      console.log('❌ Favorites table error:', favoritesError.message);
+    if (favouritesError) {
+      console.log('❌ Favourites table error:', favouritesError.message);
     } else {
-      console.log('✅ Favorites table accessible!');
-      console.log('   Favorites found:', favoritesData?.length || 0);
+      console.log('✅ Favourites table accessible!');
+      console.log('   Favourites found:', favouritesData?.length || 0);
     }
 
   } catch (error) {

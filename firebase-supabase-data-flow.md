@@ -20,7 +20,7 @@ VALUES ('firebase_user_123', 'user@example.com', 'John Doe');
 ### **Step 3: User Adds Favourite Game**
 ```typescript
 // User adds a game to favourites
-await HybridFavouritesService.addFavorite(
+await HybridFavouritesService.addFavourite(
   'game_789', 
   'Cyberpunk 2077', 
   'cyberpunk-2077'
@@ -37,7 +37,7 @@ VALUES ('supabase_user_456', 'game_789');
 ### **Step 5: User Views Favourites**
 ```typescript
 // App fetches favourites using Firebase UID → Supabase User ID mapping
-const favourites = await HybridFavouritesService.getFavorites();
+const favourites = await HybridFavouritesService.getFavourites();
 ```
 
 ## 🗄️ Database Schema
@@ -102,7 +102,7 @@ const supabaseUserId = await UserMappingService.createUserMapping();
 ### **3. Add Favourite**
 ```typescript
 // Add game to favourites
-await HybridFavouritesService.addFavorite(
+await HybridFavouritesService.addFavourite(
   'game_789',
   'The Witcher 3',
   'the-witcher-3'
@@ -119,7 +119,7 @@ VALUES ('supabase_def456', 'game_789', NOW());
 ### **5. Retrieve Favourites**
 ```typescript
 // Get user's favourites
-const favourites = await HybridFavouritesService.getFavorites();
+const favourites = await HybridFavouritesService.getFavourites();
 // Returns: [{ game_name: 'The Witcher 3', game_slug: 'the-witcher-3', ... }]
 ```
 

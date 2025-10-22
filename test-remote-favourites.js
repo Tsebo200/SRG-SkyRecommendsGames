@@ -1,7 +1,7 @@
 // Test favourites functionality with remote Supabase
 const { createClient } = require('@supabase/supabase-js');
 
-async function testRemoteFavorites() {
+async function testRemoteFavourites() {
   console.log('🔍 Testing Remote Supabase Favourites...\n');
 
   const supabaseUrl = 'https://fwqzmyrjhajpukhqdfrh.supabase.co';
@@ -40,16 +40,16 @@ async function testRemoteFavorites() {
       console.log('✅ Games table accessible');
     }
 
-    // Check if favorites table exists
-    const { data: favoritesData, error: favoritesError } = await supabase
-      .from('favorites')
+    // Check if favourites table exists
+    const { data: favouritesData, error: favouritesError } = await supabase
+      .from('favourites')
       .select('count')
       .limit(1);
 
-    if (favoritesError) {
-      console.log('❌ Favorites table error:', favoritesError.message);
+    if (favouritesError) {
+      console.log('❌ Favourites table error:', favouritesError.message);
     } else {
-      console.log('✅ Favorites table accessible');
+      console.log('✅ Favourites table accessible');
     }
 
     console.log('\n3. ❤️ Testing favourite operations...');
@@ -58,8 +58,8 @@ async function testRemoteFavorites() {
     const { data: gameData, error: gameError } = await supabase
       .from('games')
       .insert({
-        slug: 'test-favorite-game',
-        name: 'Test Favorite Game',
+        slug: 'test-favourite-game',
+        name: 'Test Favourite Game',
         platforms: ['PC'],
         genres: ['Action'],
         store_urls: {},
@@ -75,18 +75,18 @@ async function testRemoteFavorites() {
       console.log('✅ Game created successfully!');
       console.log(`   Game ID: ${gameData.id}`);
 
-      // Try to add to favorites
+      // Try to add to favourites
       const { error: favError } = await supabase
-        .from('favorites')
+        .from('favourites')
         .insert({
           user_id: signInData.user.id,
           game_id: gameData.id
         });
 
       if (favError) {
-        console.log('❌ Favorite creation failed:', favError.message);
+        console.log('❌ Favourite creation failed:', favError.message);
       } else {
-        console.log('✅ Favorite added successfully!');
+        console.log('✅ Favourite added successfully!');
       }
     }
 
@@ -95,4 +95,4 @@ async function testRemoteFavorites() {
   }
 }
 
-testRemoteFavorites().catch(console.error);
+testRemoteFavourites().catch(console.error);

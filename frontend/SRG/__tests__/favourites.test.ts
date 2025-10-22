@@ -30,7 +30,7 @@ describe('FavouritesService', () => {
     jest.clearAllMocks();
   });
 
-  describe('addFavorite', () => {
+  describe('addFavourite', () => {
     it('should create game and add to favourites when game does not exist', async () => {
       const mockGameId = 'test-game-id';
       const mockGameName = 'Test Game';
@@ -65,7 +65,7 @@ describe('FavouritesService', () => {
         })
       });
 
-      await expect(FavouritesService.addFavorite(mockGameId, mockGameName, mockGameSlug, mockGameImage))
+      await expect(FavouritesService.addFavourite(mockGameId, mockGameName, mockGameSlug, mockGameImage))
         .resolves.not.toThrow();
 
       expect(supabase.from).toHaveBeenCalledWith('games');
@@ -96,7 +96,7 @@ describe('FavouritesService', () => {
         })
       });
 
-      await expect(FavouritesService.addFavorite(mockGameId, mockGameName, mockGameSlug))
+      await expect(FavouritesService.addFavourite(mockGameId, mockGameName, mockGameSlug))
         .resolves.not.toThrow();
     });
 
@@ -124,13 +124,13 @@ describe('FavouritesService', () => {
         })
       });
 
-      await expect(FavouritesService.addFavorite('test-id', 'Test Game', 'test-game'))
+      await expect(FavouritesService.addFavourite('test-id', 'Test Game', 'test-game'))
         .rejects.toThrow('Database error');
     });
   });
 
-  describe('removeFavorite', () => {
-    it('should remove favorite when game exists', async () => {
+  describe('removeFavourite', () => {
+    it('should remove favourite when game exists', async () => {
       const mockGameSlug = 'test-game';
       const mockGameId = 'test-game-id';
 
@@ -155,7 +155,7 @@ describe('FavouritesService', () => {
         })
       });
 
-      await expect(FavouritesService.removeFavorite(mockGameSlug))
+      await expect(FavouritesService.removeFavourite(mockGameSlug))
         .resolves.not.toThrow();
     });
 
@@ -171,14 +171,14 @@ describe('FavouritesService', () => {
         })
       });
 
-      await expect(FavouritesService.removeFavorite(mockGameSlug))
+      await expect(FavouritesService.removeFavourite(mockGameSlug))
         .rejects.toThrow();
     });
   });
 
-  describe('getFavorites', () => {
+  describe('getFavourites', () => {
     it('should return user favourites with game data', async () => {
-      const mockFavorites = [
+      const mockFavourites = [
         {
           user_id: 'user-1',
           game_id: 'game-1',
@@ -195,13 +195,13 @@ describe('FavouritesService', () => {
       (supabase.from as jest.Mock).mockReturnValueOnce({
         select: jest.fn().mockReturnValue({
           order: jest.fn().mockResolvedValue({
-            data: mockFavorites,
+            data: mockFavourites,
             error: null
           })
         })
       });
 
-      const result = await FavouritesService.getFavorites();
+      const result = await FavouritesService.getFavourites();
 
       expect(result).toHaveLength(1);
       expect(result[0]).toEqual({
@@ -225,7 +225,7 @@ describe('FavouritesService', () => {
         })
       });
 
-      const result = await FavouritesService.getFavorites();
+      const result = await FavouritesService.getFavourites();
 
       expect(result).toEqual([]);
     });
@@ -242,13 +242,13 @@ describe('FavouritesService', () => {
         })
       });
 
-      await expect(FavouritesService.getFavorites())
+      await expect(FavouritesService.getFavourites())
         .rejects.toThrow('Database error');
     });
   });
 
-  describe('isFavorited', () => {
-    it('should return true when game is favorited', async () => {
+  describe('isFavourited', () => {
+    it('should return true when game is favourited', async () => {
       const mockGameSlug = 'test-game';
       const mockGameId = 'test-game-id';
 
@@ -276,12 +276,12 @@ describe('FavouritesService', () => {
         })
       });
 
-      const result = await FavouritesService.isFavorited(mockGameSlug);
+      const result = await FavouritesService.isFavourited(mockGameSlug);
 
       expect(result).toBe(true);
     });
 
-    it('should return false when game is not favorited', async () => {
+    it('should return false when game is not favourited', async () => {
       const mockGameSlug = 'test-game';
       const mockGameId = 'test-game-id';
 
@@ -306,7 +306,7 @@ describe('FavouritesService', () => {
         })
       });
 
-      const result = await FavouritesService.isFavorited(mockGameSlug);
+      const result = await FavouritesService.isFavourited(mockGameSlug);
 
       expect(result).toBe(false);
     });
@@ -323,41 +323,41 @@ describe('FavouritesService', () => {
         })
       });
 
-      const result = await FavouritesService.isFavorited(mockGameSlug);
+      const result = await FavouritesService.isFavourited(mockGameSlug);
 
       expect(result).toBe(false);
     });
   });
 
-  describe('toggleFavorite', () => {
-    it('should add favorite when not favorited', async () => {
+  describe('toggleFavourite', () => {
+    it('should add favourite when not favourited', async () => {
       const mockGameId = 'test-game-id';
       const mockGameName = 'Test Game';
       const mockGameSlug = 'test-game';
 
-      // Mock isFavorited returns false
-      jest.spyOn(FavouritesService, 'isFavorited').mockResolvedValue(false);
-      jest.spyOn(FavouritesService, 'addFavorite').mockResolvedValue();
+      // Mock isFavourited returns false
+      jest.spyOn(FavouritesService, 'isFavourited').mockResolvedValue(false);
+      jest.spyOn(FavouritesService, 'addFavourite').mockResolvedValue();
 
-      const result = await FavouritesService.toggleFavorite(mockGameId, mockGameName, mockGameSlug);
+      const result = await FavouritesService.toggleFavourite(mockGameId, mockGameName, mockGameSlug);
 
       expect(result).toBe(true);
-      expect(FavouritesService.addFavorite).toHaveBeenCalledWith(mockGameId, mockGameName, mockGameSlug, undefined);
+      expect(FavouritesService.addFavourite).toHaveBeenCalledWith(mockGameId, mockGameName, mockGameSlug, undefined);
     });
 
-    it('should remove favorite when already favorited', async () => {
+    it('should remove favourite when already favourited', async () => {
       const mockGameId = 'test-game-id';
       const mockGameName = 'Test Game';
       const mockGameSlug = 'test-game';
 
-      // Mock isFavorited returns true
-      jest.spyOn(FavouritesService, 'isFavorited').mockResolvedValue(true);
-      jest.spyOn(FavouritesService, 'removeFavorite').mockResolvedValue();
+      // Mock isFavourited returns true
+      jest.spyOn(FavouritesService, 'isFavourited').mockResolvedValue(true);
+      jest.spyOn(FavouritesService, 'removeFavourite').mockResolvedValue();
 
-      const result = await FavouritesService.toggleFavorite(mockGameId, mockGameName, mockGameSlug);
+      const result = await FavouritesService.toggleFavourite(mockGameId, mockGameName, mockGameSlug);
 
       expect(result).toBe(false);
-      expect(FavouritesService.removeFavorite).toHaveBeenCalledWith(mockGameSlug);
+      expect(FavouritesService.removeFavourite).toHaveBeenCalledWith(mockGameSlug);
     });
   });
 });

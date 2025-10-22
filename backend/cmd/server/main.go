@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -30,6 +31,7 @@ type AppConfig struct {
 	SupabaseURL  string
 	SupabaseAnon string
 	OpenAIKey    string
+	SteamAPIKey  string
 }
 
 func loadDotEnv() {
@@ -170,7 +172,8 @@ func mustLoadConfig() AppConfig {
 	supabaseURL := os.Getenv("SUPABASE_URL")
 	supabaseAnon := os.Getenv("SUPABASE_ANON_KEY")
 	openAIKey := os.Getenv("OPENAI_API_KEY")
-	return AppConfig{Port: port, RawgAPIKey: rawg, SupabaseURL: supabaseURL, SupabaseAnon: supabaseAnon, OpenAIKey: openAIKey}
+	steamAPIKey := os.Getenv("STEAM_API_KEY")
+	return AppConfig{Port: port, RawgAPIKey: rawg, SupabaseURL: supabaseURL, SupabaseAnon: supabaseAnon, OpenAIKey: openAIKey, SteamAPIKey: steamAPIKey}
 }
 
 func clientIP(r *http.Request) string {
@@ -248,6 +251,276 @@ func main() {
 		_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 	})
 
+	// Steam API endpoints
+	r.Get("/steam/player/{steamId}", func(w http.ResponseWriter, r *http.Request) {
+		steamId := chi.URLParam(r, "steamId")
+		if steamId == "" {
+			http.Error(w, "Steam ID required", http.StatusBadRequest)
+			return
+		}
+
+		url := fmt.Sprintf("https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=%s&steamids=%s", cfg.SteamAPIKey, steamId)
+		resp, err := http.Get(url)
+		if err != nil {
+			http.Error(w, "Failed to fetch Steam data", http.StatusInternalServerError)
+			return
+		}
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			http.Error(w, "Failed to read Steam response", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(body)
+	})
+
+	r.Get("/steam/games/{steamId}", func(w http.ResponseWriter, r *http.Request) {
+		steamId := chi.URLParam(r, "steamId")
+		if steamId == "" {
+			http.Error(w, "Steam ID required", http.StatusBadRequest)
+			return
+		}
+
+		url := fmt.Sprintf("https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=%s&steamid=%s&include_played_free_games=true&include_appinfo=true&format=json", cfg.SteamAPIKey, steamId)
+		resp, err := http.Get(url)
+		if err != nil {
+			http.Error(w, "Failed to fetch Steam games", http.StatusInternalServerError)
+			return
+		}
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			http.Error(w, "Failed to read Steam response", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(body)
+	})
+
+	r.Get("/steam/recommendations/{steamId}", func(w http.ResponseWriter, r *http.Request) {
+		steamId := chi.URLParam(r, "steamId")
+		if steamId == "" {
+			http.Error(w, "Steam ID required", http.StatusBadRequest)
+			return
+		}
+
+		// Get user's games and profile data
+		gamesUrl := fmt.Sprintf("https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=%s&steamid=%s&include_played_free_games=true&include_appinfo=true&format=json", cfg.SteamAPIKey, steamId)
+		profileUrl := fmt.Sprintf("https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=%s&steamids=%s", cfg.SteamAPIKey, steamId)
+
+		// Fetch games data
+		gamesResp, err := http.Get(gamesUrl)
+		if err != nil {
+			http.Error(w, "Failed to fetch Steam games for recommendations", http.StatusInternalServerError)
+			return
+		}
+		defer gamesResp.Body.Close()
+
+		gamesBody, err := io.ReadAll(gamesResp.Body)
+		if err != nil {
+			http.Error(w, "Failed to read Steam games response", http.StatusInternalServerError)
+			return
+		}
+
+		// Fetch profile data
+		profileResp, err := http.Get(profileUrl)
+		if err != nil {
+			http.Error(w, "Failed to fetch Steam profile for recommendations", http.StatusInternalServerError)
+			return
+		}
+		defer profileResp.Body.Close()
+
+		profileBody, err := io.ReadAll(profileResp.Body)
+		if err != nil {
+			http.Error(w, "Failed to read Steam profile response", http.StatusInternalServerError)
+			return
+		}
+
+		// Parse the responses
+		var gamesData map[string]interface{}
+		var profileData map[string]interface{}
+
+		if err := json.Unmarshal(gamesBody, &gamesData); err != nil {
+			http.Error(w, "Failed to parse Steam games data", http.StatusInternalServerError)
+			return
+		}
+
+		if err := json.Unmarshal(profileBody, &profileData); err != nil {
+			http.Error(w, "Failed to parse Steam profile data", http.StatusInternalServerError)
+			return
+		}
+
+		// Generate AI-powered recommendations using OpenAI
+		recommendations := generateSteamRecommendations(gamesData, profileData, cfg.OpenAIKey)
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(recommendations)
+	})
+
+	// PlayStation API endpoints
+	r.Get("/playstation/profile/{psnId}", func(w http.ResponseWriter, r *http.Request) {
+		psnId := chi.URLParam(r, "psnId")
+		if psnId == "" {
+			http.Error(w, "PSN ID required", http.StatusBadRequest)
+			return
+		}
+
+		// PlayStation API endpoint for profile
+		url := fmt.Sprintf("https://m.np.playstation.com/api/userProfile/v1/internal/users/%s/profiles", psnId)
+		resp, err := http.Get(url)
+		if err != nil {
+			http.Error(w, "Failed to fetch PlayStation profile", http.StatusInternalServerError)
+			return
+		}
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			http.Error(w, "Failed to read PlayStation response", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(body)
+	})
+
+	r.Get("/playstation/games/{psnId}", func(w http.ResponseWriter, r *http.Request) {
+		psnId := chi.URLParam(r, "psnId")
+		if psnId == "" {
+			http.Error(w, "PSN ID required", http.StatusBadRequest)
+			return
+		}
+
+		// PlayStation API endpoint for games
+		url := fmt.Sprintf("https://m.np.playstation.com/api/gamelist/v2/users/%s/titles", psnId)
+		resp, err := http.Get(url)
+		if err != nil {
+			http.Error(w, "Failed to fetch PlayStation games", http.StatusInternalServerError)
+			return
+		}
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			http.Error(w, "Failed to read PlayStation response", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(body)
+	})
+
+	r.Get("/playstation/trophies/{psnId}", func(w http.ResponseWriter, r *http.Request) {
+		psnId := chi.URLParam(r, "psnId")
+		if psnId == "" {
+			http.Error(w, "PSN ID required", http.StatusBadRequest)
+			return
+		}
+
+		// PlayStation API endpoint for trophies
+		url := fmt.Sprintf("https://m.np.playstation.com/api/trophy/v1/users/%s/trophySummary", psnId)
+		resp, err := http.Get(url)
+		if err != nil {
+			http.Error(w, "Failed to fetch PlayStation trophies", http.StatusInternalServerError)
+			return
+		}
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			http.Error(w, "Failed to read PlayStation response", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(body)
+	})
+
+	// Xbox API endpoints
+	r.Get("/xbox/profile/{gamertag}", func(w http.ResponseWriter, r *http.Request) {
+		gamertag := chi.URLParam(r, "gamertag")
+		if gamertag == "" {
+			http.Error(w, "Gamertag required", http.StatusBadRequest)
+			return
+		}
+
+		// Xbox API endpoint for profile
+		url := fmt.Sprintf("https://xbl.io/api/v2/account/%s", gamertag)
+		resp, err := http.Get(url)
+		if err != nil {
+			http.Error(w, "Failed to fetch Xbox profile", http.StatusInternalServerError)
+			return
+		}
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			http.Error(w, "Failed to read Xbox response", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(body)
+	})
+
+	r.Get("/xbox/games/{gamertag}", func(w http.ResponseWriter, r *http.Request) {
+		gamertag := chi.URLParam(r, "gamertag")
+		if gamertag == "" {
+			http.Error(w, "Gamertag required", http.StatusBadRequest)
+			return
+		}
+
+		// Xbox API endpoint for games
+		url := fmt.Sprintf("https://xbl.io/api/v2/games/%s", gamertag)
+		resp, err := http.Get(url)
+		if err != nil {
+			http.Error(w, "Failed to fetch Xbox games", http.StatusInternalServerError)
+			return
+		}
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			http.Error(w, "Failed to read Xbox response", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(body)
+	})
+
+	r.Get("/xbox/achievements/{gamertag}/{gameId}", func(w http.ResponseWriter, r *http.Request) {
+		gamertag := chi.URLParam(r, "gamertag")
+		gameId := chi.URLParam(r, "gameId")
+		if gamertag == "" || gameId == "" {
+			http.Error(w, "Gamertag and Game ID required", http.StatusBadRequest)
+			return
+		}
+
+		// Xbox API endpoint for achievements
+		url := fmt.Sprintf("https://xbl.io/api/v2/achievements/%s/%s", gamertag, gameId)
+		resp, err := http.Get(url)
+		if err != nil {
+			http.Error(w, "Failed to fetch Xbox achievements", http.StatusInternalServerError)
+			return
+		}
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			http.Error(w, "Failed to read Xbox response", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(body)
+	})
+
 	// RAWG search proxy with rate limiting + caching
 	// @Summary Search RAWG for games
 	// @Description Proxies search requests to RAWG API with rate limiting and caching
@@ -308,23 +581,49 @@ func main() {
 			http.Error(w, "embedding must be 1536 floats", http.StatusBadRequest)
 			return
 		}
-		// If no embedding provided, try to generate from name + genres
+		// If no embedding provided, try to generate from name + genres using gpt-3.5-turbo
 		if len(req.Embedding) == 0 && cfg.OpenAIKey != "" {
 			client := openai.NewClient(cfg.OpenAIKey)
 			text := req.Name
 			if len(req.Genres) > 0 {
 				text = text + " | genres: " + strings.Join(req.Genres, ", ")
 			}
-			resp, err := client.CreateEmbeddings(r.Context(), openai.EmbeddingRequest{
-				Input: []string{text},
-				Model: openai.AdaEmbeddingV2, // 1536-dim
+
+			// Use gpt-3.5-turbo for text generation to create a description, then convert to embedding
+			completionResp, err := client.CreateChatCompletion(r.Context(), openai.ChatCompletionRequest{
+				Model: "gpt-3.5-turbo",
+				Messages: []openai.ChatCompletionMessage{
+					{
+						Role:    "system",
+						Content: "You are a game recommendation AI. Generate a brief, descriptive text about this game that captures its essence, genre, and appeal. Keep it concise but informative.",
+					},
+					{
+						Role:    "user",
+						Content: fmt.Sprintf("Game: %s", text),
+					},
+				},
+				MaxTokens: 100,
 			})
-			if err != nil || len(resp.Data) == 0 {
-				http.Error(w, "failed to generate embedding", http.StatusBadGateway)
+
+			if err != nil {
+				http.Error(w, "failed to generate game description with gpt-3.5-turbo", http.StatusBadGateway)
 				return
 			}
-			vec := make([]float32, len(resp.Data[0].Embedding))
-			copy(vec, resp.Data[0].Embedding)
+
+			// Now use the description to create an embedding
+			description := completionResp.Choices[0].Message.Content
+			embeddingResp, err := client.CreateEmbeddings(r.Context(), openai.EmbeddingRequest{
+				Input: []string{description},
+				Model: openai.AdaEmbeddingV2, // Still use Ada for embeddings
+			})
+
+			if err != nil || len(embeddingResp.Data) == 0 {
+				http.Error(w, "failed to generate embedding from gpt-3.5-turbo description", http.StatusBadGateway)
+				return
+			}
+
+			vec := make([]float32, len(embeddingResp.Data[0].Embedding))
+			copy(vec, embeddingResp.Data[0].Embedding)
 			req.Embedding = vec
 		}
 		payload := rpcUpsertPayload{
@@ -383,9 +682,10 @@ func main() {
 			http.Error(w, "empty embedding", http.StatusBadRequest)
 			return
 		}
+		limit, _ := strconv.Atoi(limitParam)
 		payload := map[string]any{
 			"p_user_embedding": embedding,
-			"p_limit":          limitParam,
+			"p_limit":          limit,
 		}
 		b, _ := json.Marshal(payload)
 		endpoint := cfg.SupabaseURL + "/rest/v1/rpc/rpc_similar_games"
@@ -404,6 +704,91 @@ func main() {
 		_, _ = io.Copy(w, resp.Body)
 	})
 
+	// New endpoint: Generate recommendations using gpt-3.5-turbo
+	r.Get("/games/recommendations", func(w http.ResponseWriter, r *http.Request) {
+		if cfg.OpenAIKey == "" {
+			http.Error(w, "OpenAI key not configured", http.StatusServiceUnavailable)
+			return
+		}
+
+		// Get user's favourite games from query params
+		favouriteGames := r.URL.Query().Get("favourites")
+		if favouriteGames == "" {
+			http.Error(w, "favourites parameter required", http.StatusBadRequest)
+			return
+		}
+
+		client := openai.NewClient(cfg.OpenAIKey)
+
+		// Use gpt-3.5-turbo to generate personalized recommendations
+		completionResp, err := client.CreateChatCompletion(r.Context(), openai.ChatCompletionRequest{
+			Model: "gpt-3.5-turbo",
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role:    "system",
+					Content: "You are a game recommendation AI. Based on the user's favourite games, suggest 5 similar games they might enjoy. For each game, provide: name, brief description, and why it's similar to their favourites. Format as JSON array with fields: name, description, similarity_reason.",
+				},
+				{
+					Role:    "user",
+					Content: fmt.Sprintf("My favourite games are: %s. Please recommend 5 similar games I might enjoy.", favouriteGames),
+				},
+			},
+			MaxTokens: 500,
+		})
+
+		if err != nil {
+			http.Error(w, "failed to generate recommendations with gpt-3.5-turbo", http.StatusBadGateway)
+			return
+		}
+
+		// Return the gpt-3.5-turbo generated recommendations
+		w.Header().Set("Content-Type", "application/json")
+		response := map[string]interface{}{
+			"recommendations": completionResp.Choices[0].Message.Content,
+			"model":           "gpt-3.5-turbo",
+			"favourites":      favouriteGames,
+		}
+
+		json.NewEncoder(w).Encode(response)
+	})
+
+	// Test endpoint: Mock recommendations without OpenAI
+	r.Get("/games/test-recommendations", func(w http.ResponseWriter, r *http.Request) {
+		favouriteGames := r.URL.Query().Get("favourites")
+		if favouriteGames == "" {
+			http.Error(w, "favourites parameter required", http.StatusBadRequest)
+			return
+		}
+
+		// Return mock recommendations
+		mockRecommendations := []map[string]interface{}{
+			{
+				"name":              "The Witcher 3: Wild Hunt",
+				"description":       "An epic open-world RPG with rich storytelling and immersive gameplay",
+				"similarity_reason": "Similar to your action-adventure preferences",
+			},
+			{
+				"name":              "God of War (2018)",
+				"description":       "A cinematic action-adventure with deep combat and emotional storytelling",
+				"similarity_reason": "Matches your preference for narrative-driven action games",
+			},
+			{
+				"name":              "Horizon Zero Dawn",
+				"description":       "An open-world action RPG with unique combat and exploration",
+				"similarity_reason": "Similar open-world action-adventure gameplay",
+			},
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		response := map[string]interface{}{
+			"recommendations": mockRecommendations,
+			"model":           "mock-test",
+			"favourites":      favouriteGames,
+		}
+
+		json.NewEncoder(w).Encode(response)
+	})
+
 	log.Printf("server listening on :%s\n", cfg.Port)
 	if err := http.ListenAndServe(":"+cfg.Port, r); err != nil {
 		log.Fatal(err)
@@ -413,4 +798,224 @@ func main() {
 func urlQueryEscape(s string) string {
 	// Small helper to avoid importing net/url everywhere in this file
 	return (&url.URL{Path: s}).EscapedPath()
+}
+
+// generateSteamRecommendations creates AI-powered game recommendations based on Steam profile
+func generateSteamRecommendations(gamesData, profileData map[string]interface{}, openAIKey string) map[string]interface{} {
+	// Extract games from Steam API response
+	games, ok := gamesData["response"].(map[string]interface{})
+	if !ok {
+		return map[string]interface{}{
+			"error": "Failed to parse Steam games data",
+		}
+	}
+
+	gamesList, ok := games["games"].([]interface{})
+	if !ok || len(gamesList) == 0 {
+		return map[string]interface{}{
+			"error": "No games found in Steam library",
+		}
+	}
+
+	// Extract top played games (most playtime)
+	var topGames []string
+	var totalPlaytime float64
+	gameGenres := make(map[string]int)
+
+	for _, game := range gamesList {
+		gameMap, ok := game.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		playtime, _ := gameMap["playtime_forever"].(float64)
+		totalPlaytime += playtime
+
+		// Get top 10 most played games
+		if len(topGames) < 10 {
+			if name, ok := gameMap["name"].(string); ok {
+				topGames = append(topGames, name)
+			}
+		}
+
+		// Extract genres (simplified)
+		if name, ok := gameMap["name"].(string); ok {
+			nameLower := strings.ToLower(name)
+			if strings.Contains(nameLower, "strategy") || strings.Contains(nameLower, "rts") {
+				gameGenres["Strategy"]++
+			}
+			if strings.Contains(nameLower, "rpg") || strings.Contains(nameLower, "role") {
+				gameGenres["RPG"]++
+			}
+			if strings.Contains(nameLower, "shooter") || strings.Contains(nameLower, "fps") {
+				gameGenres["Shooter"]++
+			}
+			if strings.Contains(nameLower, "puzzle") || strings.Contains(nameLower, "indie") {
+				gameGenres["Puzzle/Indie"]++
+			}
+			if strings.Contains(nameLower, "racing") || strings.Contains(nameLower, "car") {
+				gameGenres["Racing"]++
+			}
+			if strings.Contains(nameLower, "simulation") || strings.Contains(nameLower, "sim") {
+				gameGenres["Simulation"]++
+			}
+		}
+	}
+
+	// Determine gaming profile
+	var gamingLevel string
+	avgPlaytime := totalPlaytime / float64(len(gamesList))
+	if totalPlaytime > 2000 {
+		gamingLevel = "Hardcore Gamer"
+	} else if totalPlaytime > 1000 {
+		gamingLevel = "Enthusiast"
+	} else if totalPlaytime > 500 {
+		gamingLevel = "Regular Gamer"
+	} else {
+		gamingLevel = "Casual Gamer"
+	}
+
+	// Find preferred genres
+	var preferredGenres []string
+	maxCount := 0
+	for genre, count := range gameGenres {
+		if count > maxCount {
+			maxCount = count
+			preferredGenres = []string{genre}
+		} else if count == maxCount {
+			preferredGenres = append(preferredGenres, genre)
+		}
+	}
+
+	// Create prompt for OpenAI
+	topGamesStr := strings.Join(topGames[:min(5, len(topGames))], ", ")
+	preferredGenresStr := strings.Join(preferredGenres, ", ")
+
+	prompt := fmt.Sprintf(`Based on this Steam gaming profile, recommend 5 games:
+
+Gaming Profile:
+- Total Games: %d
+- Total Playtime: %.1f hours
+- Gaming Level: %s
+- Top Games: %s
+- Preferred Genres: %s
+- Average Playtime per Game: %.1f hours
+
+Please recommend 5 games that match this player's preferences. For each recommendation, provide:
+1. Game name
+2. Brief reason why they'd like it
+3. Confidence level (1-10)
+4. Genre
+5. Estimated playtime
+
+Format as JSON with this structure:
+{
+  "recommendations": [
+    {
+      "gameName": "Game Name",
+      "reason": "Why they'd like it",
+      "confidence": 8,
+      "genre": "Genre",
+      "estimatedPlaytime": "20-40 hours"
+    }
+  ],
+  "gamingProfile": {
+    "preferredGenres": ["%s"],
+    "playStyle": "Based on their gaming patterns",
+    "gamingLevel": "%s",
+    "interests": ["derived from their game library"]
+  }
+}`, len(gamesList), totalPlaytime/60, gamingLevel, topGamesStr, preferredGenresStr, avgPlaytime/60, preferredGenresStr, gamingLevel)
+
+	// Call OpenAI API
+	client := &http.Client{Timeout: 30 * time.Second}
+	requestBody := map[string]interface{}{
+		"model": "gpt-3.5-turbo",
+		"messages": []map[string]interface{}{
+			{
+				"role":    "system",
+				"content": "You are a gaming expert who analyzes Steam profiles and recommends games. Always respond with valid JSON.",
+			},
+			{
+				"role":    "user",
+				"content": prompt,
+			},
+		},
+		"max_tokens":  1000,
+		"temperature": 0.7,
+	}
+
+	jsonBody, _ := json.Marshal(requestBody)
+	req, err := http.NewRequest("POST", "https://api.openai.com/v1/chat/completions", bytes.NewBuffer(jsonBody))
+	if err != nil {
+		return map[string]interface{}{
+			"error": "Failed to create OpenAI request",
+		}
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+openAIKey)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return map[string]interface{}{
+			"error": "Failed to call OpenAI API",
+		}
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return map[string]interface{}{
+			"error": "Failed to read OpenAI response",
+		}
+	}
+
+	var openAIResponse map[string]interface{}
+	if err := json.Unmarshal(body, &openAIResponse); err != nil {
+		return map[string]interface{}{
+			"error": "Failed to parse OpenAI response",
+		}
+	}
+
+	// Extract the content from OpenAI response
+	if choices, ok := openAIResponse["choices"].([]interface{}); ok && len(choices) > 0 {
+		if choice, ok := choices[0].(map[string]interface{}); ok {
+			if message, ok := choice["message"].(map[string]interface{}); ok {
+				if content, ok := message["content"].(string); ok {
+					// Try to parse the JSON response from OpenAI
+					var recommendations map[string]interface{}
+					if err := json.Unmarshal([]byte(content), &recommendations); err == nil {
+						return recommendations
+					}
+				}
+			}
+		}
+	}
+
+	// Fallback: return basic recommendations
+	return map[string]interface{}{
+		"recommendations": []map[string]interface{}{
+			{
+				"gameName":          "Based on your gaming profile",
+				"reason":            "AI analysis of your Steam library",
+				"confidence":        7,
+				"genre":             preferredGenres[0],
+				"estimatedPlaytime": "20-40 hours",
+			},
+		},
+		"gamingProfile": map[string]interface{}{
+			"preferredGenres": preferredGenres,
+			"playStyle":       "Based on your gaming patterns",
+			"gamingLevel":     gamingLevel,
+			"interests":       preferredGenres,
+		},
+	}
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }

@@ -1,8 +1,8 @@
-// End-to-end test of favorites functionality
+// End-to-end test of favourites functionality
 const { createClient } = require('@supabase/supabase-js');
 
-async function testFavoritesEndToEnd() {
-  console.log('🧪 Testing Favorites End-to-End...\n');
+async function testFavouritesEndToEnd() {
+  console.log('🧪 Testing Favourites End-to-End...\n');
 
   // Use the same environment as the app
   const supabaseUrl = 'http://127.0.0.1:54321';
@@ -11,8 +11,8 @@ async function testFavoritesEndToEnd() {
   const supabase = createClient(supabaseUrl, supabaseKey);
 
   const testUser = '00000000-0000-0000-0000-000000000001';
-  const testGameSlug = 'test-favorites-game';
-  const testGameName = 'Test Favorites Game';
+  const testGameSlug = 'test-favourites-game';
+  const testGameName = 'Test Favourites Game';
 
   try {
     console.log('1. Testing game creation...');
@@ -38,27 +38,27 @@ async function testFavoritesEndToEnd() {
     }
     console.log('✅ Game created:', gameData.id);
 
-    console.log('2. Testing favorite addition...');
+    console.log('2. Testing favourite addition...');
     
-    // Add to favorites
-    const { error: favoriteError } = await supabase
-      .from('favorites')
+    // Add to favourites
+    const { error: favouriteError } = await supabase
+      .from('favourites')
       .insert({
         user_id: testUser,
         game_id: gameData.id
       });
 
-    if (favoriteError) {
-      console.log('❌ Favorite addition failed:', favoriteError.message);
+    if (favouriteError) {
+      console.log('❌ Favourite addition failed:', favouriteError.message);
       return;
     }
-    console.log('✅ Favorite added successfully');
+    console.log('✅ Favourite added successfully');
 
-    console.log('3. Testing favorites retrieval...');
+    console.log('3. Testing favourites retrieval...');
     
-    // Get favorites with game data
-    const { data: favoritesData, error: favoritesError } = await supabase
-      .from('favorites')
+    // Get favourites with game data
+    const { data: favouritesData, error: favouritesError } = await supabase
+      .from('favourites')
       .select(`
         user_id,
         game_id,
@@ -72,31 +72,31 @@ async function testFavoritesEndToEnd() {
       `)
       .eq('user_id', testUser);
 
-    if (favoritesError) {
-      console.log('❌ Favorites retrieval failed:', favoritesError.message);
+    if (favouritesError) {
+      console.log('❌ Favourites retrieval failed:', favouritesError.message);
       return;
     }
 
-    console.log('✅ Favorites retrieved:', favoritesData.length, 'items');
-    if (favoritesData.length > 0) {
-      console.log('   - Game:', favoritesData[0].games.name);
-      console.log('   - Slug:', favoritesData[0].games.slug);
+    console.log('✅ Favourites retrieved:', favouritesData.length, 'items');
+    if (favouritesData.length > 0) {
+      console.log('   - Game:', favouritesData[0].games.name);
+      console.log('   - Slug:', favouritesData[0].games.slug);
     }
 
-    console.log('4. Testing favorite removal...');
+    console.log('4. Testing favourite removal...');
     
-    // Remove from favorites
+    // Remove from favourites
     const { error: removeError } = await supabase
-      .from('favorites')
+      .from('favourites')
       .delete()
       .eq('user_id', testUser)
       .eq('game_id', gameData.id);
 
     if (removeError) {
-      console.log('❌ Favorite removal failed:', removeError.message);
+      console.log('❌ Favourite removal failed:', removeError.message);
       return;
     }
-    console.log('✅ Favorite removed successfully');
+    console.log('✅ Favourite removed successfully');
 
     console.log('5. Testing cleanup...');
     
@@ -112,9 +112,9 @@ async function testFavoritesEndToEnd() {
       console.log('✅ Test data cleaned up');
     }
 
-    console.log('\n🎉 All favorites tests passed!');
+    console.log('\n🎉 All favourites tests passed!');
     console.log('✅ Database operations work correctly');
-    console.log('✅ Favorites can be added, retrieved, and removed');
+    console.log('✅ Favourites can be added, retrieved, and removed');
     console.log('✅ Game data joins work properly');
 
   } catch (error) {
@@ -123,4 +123,4 @@ async function testFavoritesEndToEnd() {
 }
 
 // Run the test
-testFavoritesEndToEnd().catch(console.error);
+testFavouritesEndToEnd().catch(console.error);

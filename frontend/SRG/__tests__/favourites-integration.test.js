@@ -1,14 +1,14 @@
 // Integration test for favourites functionality
 const { FavouritesService } = require('../lib/favourites');
 
-describe('Favorites Integration Tests', () => {
+describe('Favourites Integration Tests', () => {
   test('FavouritesService should be importable', () => {
     expect(FavouritesService).toBeDefined();
-    expect(typeof FavouritesService.addFavorite).toBe('function');
-    expect(typeof FavouritesService.removeFavorite).toBe('function');
-    expect(typeof FavouritesService.getFavorites).toBe('function');
-    expect(typeof FavouritesService.isFavorited).toBe('function');
-    expect(typeof FavouritesService.toggleFavorite).toBe('function');
+    expect(typeof FavouritesService.addFavourite).toBe('function');
+    expect(typeof FavouritesService.removeFavourite).toBe('function');
+    expect(typeof FavouritesService.getFavourites).toBe('function');
+    expect(typeof FavouritesService.isFavourited).toBe('function');
+    expect(typeof FavouritesService.toggleFavourite).toBe('function');
   });
 
   test('FavouritesService methods should be callable', async () => {
@@ -22,32 +22,32 @@ describe('Favorites Integration Tests', () => {
 
     // These will likely fail due to no database connection, but we can test the interface
     try {
-      await FavouritesService.addFavorite(testParams.gameId, testParams.gameName, testParams.gameSlug, testParams.gameImage);
+      await FavouritesService.addFavourite(testParams.gameId, testParams.gameName, testParams.gameSlug, testParams.gameImage);
     } catch (error) {
       // Expected to fail without real database, but should not throw syntax errors
       expect(error).toBeDefined();
     }
 
     try {
-      await FavouritesService.removeFavorite(testParams.gameSlug);
+      await FavouritesService.removeFavourite(testParams.gameSlug);
     } catch (error) {
       expect(error).toBeDefined();
     }
 
     try {
-      await FavouritesService.getFavorites();
+      await FavouritesService.getFavourites();
     } catch (error) {
       expect(error).toBeDefined();
     }
 
     try {
-      await FavouritesService.isFavorited(testParams.gameSlug);
+      await FavouritesService.isFavourited(testParams.gameSlug);
     } catch (error) {
       expect(error).toBeDefined();
     }
 
     try {
-      await FavouritesService.toggleFavorite(testParams.gameId, testParams.gameName, testParams.gameSlug, testParams.gameImage);
+      await FavouritesService.toggleFavourite(testParams.gameId, testParams.gameName, testParams.gameSlug, testParams.gameImage);
     } catch (error) {
       expect(error).toBeDefined();
     }
@@ -56,19 +56,19 @@ describe('Favorites Integration Tests', () => {
   test('FavouritesService should handle edge cases', async () => {
     // Test with empty/null parameters
     try {
-      await FavouritesService.addFavorite('', '', '');
+      await FavouritesService.addFavourite('', '', '');
     } catch (error) {
       expect(error).toBeDefined();
     }
 
     try {
-      await FavouritesService.removeFavorite('');
+      await FavouritesService.removeFavourite('');
     } catch (error) {
       expect(error).toBeDefined();
     }
 
     try {
-      await FavouritesService.isFavorited('');
+      await FavouritesService.isFavourited('');
     } catch (error) {
       expect(error).toBeDefined();
     }

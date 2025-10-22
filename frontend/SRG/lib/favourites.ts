@@ -14,7 +14,7 @@ export interface FavouriteGame {
 
 export class FavouritesService {
   // Add a game to favourites
-  static async addFavorite(gameId: string, gameName: string, gameSlug: string, gameImage?: string): Promise<void> {
+  static async addFavourite(gameId: string, gameName: string, gameSlug: string, gameImage?: string): Promise<void> {
     // Check if user is authenticated
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     console.log('🔍 Add favourite - Auth check:', { 
@@ -73,7 +73,7 @@ export class FavouritesService {
   }
 
   // Remove a game from favourites
-  static async removeFavorite(gameSlug: string): Promise<void> {
+  static async removeFavourite(gameSlug: string): Promise<void> {
     // Check if user is authenticated
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     console.log('🔍 Remove favourite - Auth check:', { 
@@ -139,7 +139,7 @@ export class FavouritesService {
   }
 
   // Get user's favourite games with full game data
-  static async getFavorites(): Promise<FavouriteGame[]> {
+  static async getFavourites(): Promise<FavouriteGame[]> {
     // Check if user is authenticated
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     console.log('🔍 Get favourites - Auth check:', { 
@@ -183,11 +183,11 @@ export class FavouritesService {
   }
 
   // Check if a game is favourited
-  static async isFavorited(gameSlug: string): Promise<boolean> {
+  static async isFavourited(gameSlug: string): Promise<boolean> {
     // Check if user is authenticated
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      return false; // Not authenticated, so not favorited
+      return false; // Not authenticated, so not favourited
     }
 
     // First get the game ID from the slug
@@ -198,7 +198,7 @@ export class FavouritesService {
       .single();
 
     if (fetchError && fetchError.code === 'PGRST116') {
-      // Game doesn't exist, so it's not favorited
+      // Game doesn't exist, so it's not favourited
       return false;
     }
     if (fetchError) throw fetchError;
@@ -214,15 +214,15 @@ export class FavouritesService {
     return !!data;
   }
 
-  // Toggle favorite status
-  static async toggleFavorite(gameId: string, gameName: string, gameSlug: string, gameImage?: string): Promise<boolean> {
-    const isFavorited = await this.isFavorited(gameSlug);
+  // Toggle favourite status
+  static async toggleFavourite(gameId: string, gameName: string, gameSlug: string, gameImage?: string): Promise<boolean> {
+    const isFavourited = await this.isFavourited(gameSlug);
     
-    if (isFavorited) {
-      await this.removeFavorite(gameSlug);
+    if (isFavourited) {
+      await this.removeFavourite(gameSlug);
       return false;
     } else {
-      await this.addFavorite(gameId, gameName, gameSlug, gameImage);
+      await this.addFavourite(gameId, gameName, gameSlug, gameImage);
       return true;
     }
   }

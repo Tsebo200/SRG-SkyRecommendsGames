@@ -86,7 +86,7 @@ export default function RootLayout() {
         // User is signed in, redirect to main app
         if (inAuthGroup) {
           console.log('🔄 Redirecting to main app');
-          router.replace('/(tabs)');
+          router.replace('/(tabs)/');
         }
       }
     }, 100); // Small delay to prevent flashing

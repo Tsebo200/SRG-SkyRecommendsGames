@@ -16,7 +16,7 @@ describe('HomeScreen', () => {
     
     expect(getByText('Sky Recommends Games')).toBeTruthy();
     expect(getByText('AI-Powered Game Recommendations')).toBeTruthy();
-    expect(getByText('Discover your next favorite game with personalized recommendations based on your gaming profile.')).toBeTruthy();
+    expect(getByText('Discover your next favourite game with personalised recommendations based on your gaming profile.')).toBeTruthy();
   });
 
   it('renders search button', () => {

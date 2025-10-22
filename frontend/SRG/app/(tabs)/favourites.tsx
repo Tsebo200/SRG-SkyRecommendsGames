@@ -33,7 +33,7 @@ export default function FavouritesScreen() {
       await HybridFavouritesService.removeDuplicates();
       
       // Then load the favourites
-      const data = await HybridFavouritesService.getFavorites();
+      const data = await HybridFavouritesService.getFavourites();
       console.log('✅ Favourites loaded (deduplicated):', data.length, 'items');
       setFavourites(data);
     } catch (err: any) {
@@ -68,7 +68,7 @@ export default function FavouritesScreen() {
             onPress: async () => {
               try {
                 setRemovingGameId(gameId);
-                await HybridFavouritesService.removeFavorite(favourite.game_slug!);
+                await HybridFavouritesService.removeFavourite(favourite.game_slug!);
                 setFavourites(prev => prev.filter(fav => fav.game_id !== gameId));
                 Alert.alert('Removed', 'Game removed from favourites');
               } catch (err: any) {

@@ -35,7 +35,7 @@ export default function SignInFirebase() {
       if (result.success) {
         console.log('✅ Firebase sign in successful');
         // Navigation will be handled by _layout-hybrid.tsx
-        router.replace('/(tabs)');
+        router.replace('/(tabs)/');
       } else {
         console.log('❌ Firebase sign in failed:', result.error);
         Alert.alert('Sign In Failed', result.error || 'Please check your credentials');

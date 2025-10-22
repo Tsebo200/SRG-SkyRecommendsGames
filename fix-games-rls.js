@@ -71,22 +71,22 @@ async function fixGamesRLS() {
       console.log('✅ Game creation successful!');
       console.log(`   Game ID: ${newGameData.id}`);
 
-      console.log('\n4. ❤️ Testing favorite creation...');
+      console.log('\n4. ❤️ Testing favourite creation...');
       
-      // Try to add to favorites
+      // Try to add to favourites
       const { error: favError } = await supabase
-        .from('favorites')
+        .from('favourites')
         .insert({
           user_id: userData.user.id,
           game_id: newGameData.id
         });
 
       if (favError) {
-        console.log('❌ Favorite creation failed:', favError.message);
+        console.log('❌ Favourite creation failed:', favError.message);
         console.log('   Error code:', favError.code);
         console.log('   Error details:', favError.details);
       } else {
-        console.log('✅ Favorite creation successful!');
+        console.log('✅ Favourite creation successful!');
         console.log('🎉 All tests passed!');
       }
     }
@@ -94,7 +94,7 @@ async function fixGamesRLS() {
     console.log('\n📋 Summary:');
     console.log('✅ Authentication: Working');
     console.log('✅ Games table read: Working');
-    console.log('✅ Favorites table: Working');
+    console.log('✅ Favourites table: Working');
     console.log('❌ Games table write: Blocked by RLS');
     
     console.log('\n🔧 To fix this, you need to:');

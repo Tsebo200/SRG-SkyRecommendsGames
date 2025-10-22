@@ -51,22 +51,22 @@ async function testAfterRLSFix() {
       console.log('✅ Game creation successful!');
       console.log(`   Game ID: ${newGameData.id}`);
 
-      console.log('\n3. ❤️ Testing favorite creation...');
+      console.log('\n3. ❤️ Testing favourite creation...');
       
-      // Try to add to favorites
+      // Try to add to favourites
       const { error: favError } = await supabase
-        .from('favorites')
+        .from('favourites')
         .insert({
           user_id: authData.user.id,
           game_id: newGameData.id
         });
 
       if (favError) {
-        console.log('❌ Favorite creation failed:', favError.message);
+        console.log('❌ Favourite creation failed:', favError.message);
         console.log('   Error code:', favError.code);
-        console.log('   You still need to add the RLS policy for favorites table');
+        console.log('   You still need to add the RLS policy for favourites table');
       } else {
-        console.log('✅ Favorite creation successful!');
+        console.log('✅ Favourite creation successful!');
         console.log('🎉 RLS policies are working!');
         console.log('🎉 Favourites feature should now work in your app!');
       }

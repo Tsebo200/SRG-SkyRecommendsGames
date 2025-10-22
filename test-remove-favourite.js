@@ -1,8 +1,8 @@
-// Test remove favorite functionality
+// Test remove favourite functionality
 const { createClient } = require('@supabase/supabase-js');
 
-async function testRemoveFavorite() {
-  console.log('🧪 Testing Remove Favorite Functionality...\n');
+async function testRemoveFavourite() {
+  console.log('🧪 Testing Remove Favourite Functionality...\n');
 
   const supabaseUrl = 'https://fwqzmyrjhajpukhqdfrh.supabase.co';
   const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3cXpteXJqaGFqcHVraHFkZnJoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1MDE3OTIsImV4cCI6MjA3NjA3Nzc5Mn0.EyPG_-S0JF64iV6dK0ZJ5I_YOZPI38bgvHYv9xzwmkg';
@@ -52,57 +52,57 @@ async function testRemoveFavorite() {
     console.log(`   Game ID: ${gameData.id}`);
     console.log(`   Game Slug: ${gameData.slug}`);
 
-    console.log('\n3. ❤️ Adding to favorites...');
+    console.log('\n3. ❤️ Adding to favourites...');
     
-    // Add to favorites
+    // Add to favourites
     const { error: addError } = await supabase
-      .from('favorites')
+      .from('favourites')
       .insert({
         user_id: authData.user.id,
         game_id: gameData.id
       });
 
     if (addError) {
-      console.log('❌ Add favorite failed:', addError.message);
+      console.log('❌ Add favourite failed:', addError.message);
       return;
     }
 
-    console.log('✅ Favorite added successfully!');
+    console.log('✅ Favourite added successfully!');
 
-    console.log('\n4. 🗑️ Testing remove favorite...');
+    console.log('\n4. 🗑️ Testing remove favourite...');
     
-    // Test remove favorite with user_id filter
+    // Test remove favourite with user_id filter
     const { error: removeError } = await supabase
-      .from('favorites')
+      .from('favourites')
       .delete()
       .eq('game_id', gameData.id)
       .eq('user_id', authData.user.id);
 
     if (removeError) {
-      console.log('❌ Remove favorite failed:', removeError.message);
+      console.log('❌ Remove favourite failed:', removeError.message);
       console.log('   Error code:', removeError.code);
       console.log('   Error details:', removeError.details);
     } else {
-      console.log('✅ Remove favorite successful!');
-      console.log('🎉 Remove favorite functionality is working!');
+      console.log('✅ Remove favourite successful!');
+      console.log('🎉 Remove favourite functionality is working!');
     }
 
     console.log('\n5. 🔍 Verifying removal...');
     
-    // Check if favorite was actually removed
+    // Check if favourite was actually removed
     const { data: checkData, error: checkError } = await supabase
-      .from('favorites')
+      .from('favourites')
       .select('game_id')
       .eq('game_id', gameData.id)
       .eq('user_id', authData.user.id)
       .single();
 
     if (checkError && checkError.code === 'PGRST116') {
-      console.log('✅ Favorite successfully removed (not found in database)');
+      console.log('✅ Favourite successfully removed (not found in database)');
     } else if (checkError) {
       console.log('❌ Error checking removal:', checkError.message);
     } else {
-      console.log('⚠️  Favorite still exists after removal attempt');
+      console.log('⚠️  Favourite still exists after removal attempt');
     }
 
   } catch (error) {
@@ -110,4 +110,4 @@ async function testRemoveFavorite() {
   }
 }
 
-testRemoveFavorite().catch(console.error);
+testRemoveFavourite().catch(console.error);

@@ -25,7 +25,7 @@ create table if not exists public.user_preferences (
   updated_at timestamptz not null default now()
 );
 
-create table if not exists public.favorites (
+create table if not exists public.favourites (
   user_id uuid not null,
   game_id uuid not null references public.games(id) on delete cascade,
   created_at timestamptz not null default now(),
@@ -54,11 +54,11 @@ for each row execute function public.set_updated_at();
 
 -- RLS
 alter table public.user_preferences enable row level security;
-alter table public.favorites enable row level security;
+alter table public.favourites enable row level security;
 
 -- Drop existing policies if present to avoid duplicate errors during re-run
 drop policy if exists "user can manage own preferences" on public.user_preferences;
-drop policy if exists "user can manage own favorites" on public.favorites;
+drop policy if exists "user can manage own favourites" on public.favourites;
 
 create policy "user can manage own preferences"
   on public.user_preferences
@@ -66,8 +66,8 @@ create policy "user can manage own preferences"
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
-create policy "user can manage own favorites"
-  on public.favorites
+create policy "user can manage own favourites"
+  on public.favourites
   for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);

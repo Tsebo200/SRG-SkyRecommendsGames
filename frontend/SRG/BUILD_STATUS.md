@@ -118,7 +118,7 @@ The frontend is **fully functional** and ready for development:
 - [ ] Add accessibility settings panel
 - [ ] Implement haptic feedback
 - [ ] Add offline support
-- [ ] Performance optimization
+- [ ] Performance optimisation
 
 ## 🎉 Summary
 

@@ -99,7 +99,7 @@ app.get('/api/games/search/:query', (req, res) => {
 });
 
 // Get user's favourites
-app.get('/api/favorites/:userId', (req, res) => {
+app.get('/api/favourites/:userId', (req, res) => {
   const { userId } = req.params;
   
   db.all(`
@@ -112,16 +112,16 @@ app.get('/api/favorites/:userId', (req, res) => {
       g.slug as game_slug,
       g.platforms,
       g.genres
-    FROM favorites f
+    FROM favourites f
     JOIN games g ON f.game_id = g.id
     WHERE f.user_id = ?
     ORDER BY f.created_at DESC
   `, [userId], (err, rows) => {
     if (err) {
-      console.error('Error fetching favorites:', err);
-      res.status(500).json({ error: 'Failed to fetch favorites' });
+      console.error('Error fetching favourites:', err);
+      res.status(500).json({ error: 'Failed to fetch favourites' });
     } else {
-      const favorites = rows.map(row => ({
+      const favourites = rows.map(row => ({
         id: row.id,
         user_id: row.user_id,
         game_id: row.game_id,
@@ -131,13 +131,13 @@ app.get('/api/favorites/:userId', (req, res) => {
         platforms: JSON.parse(row.platforms),
         genres: JSON.parse(row.genres)
       }));
-      res.json(favorites);
+      res.json(favourites);
     }
   });
 });
 
 // Add favourite
-app.post('/api/favorites', (req, res) => {
+app.post('/api/favourites', (req, res) => {
   const { userId, gameId } = req.body;
   
   if (!userId || !gameId) {
@@ -145,16 +145,16 @@ app.post('/api/favorites', (req, res) => {
   }
   
   db.run(`
-    INSERT OR IGNORE INTO favorites (user_id, game_id)
+    INSERT OR IGNORE INTO favourites (user_id, game_id)
     VALUES (?, ?)
   `, [userId, gameId], function(err) {
     if (err) {
-      console.error('Error adding favorite:', err);
-      res.status(500).json({ error: 'Failed to add favorite' });
+      console.error('Error adding favourite:', err);
+      res.status(500).json({ error: 'Failed to add favourite' });
     } else {
       res.json({ 
         success: true, 
-        message: 'Favorite added successfully',
+        message: 'Favourite added successfully',
         changes: this.changes 
       });
     }
@@ -162,20 +162,20 @@ app.post('/api/favorites', (req, res) => {
 });
 
 // Remove favourite
-app.delete('/api/favorites/:userId/:gameId', (req, res) => {
+app.delete('/api/favourites/:userId/:gameId', (req, res) => {
   const { userId, gameId } = req.params;
   
   db.run(`
-    DELETE FROM favorites 
+    DELETE FROM favourites 
     WHERE user_id = ? AND game_id = ?
   `, [userId, gameId], function(err) {
     if (err) {
-      console.error('Error removing favorite:', err);
-      res.status(500).json({ error: 'Failed to remove favorite' });
+      console.error('Error removing favourite:', err);
+      res.status(500).json({ error: 'Failed to remove favourite' });
     } else {
       res.json({ 
         success: true, 
-        message: 'Favorite removed successfully',
+        message: 'Favourite removed successfully',
         changes: this.changes 
       });
     }
@@ -183,18 +183,18 @@ app.delete('/api/favorites/:userId/:gameId', (req, res) => {
 });
 
 // Check if game is favourited
-app.get('/api/favorites/:userId/:gameId', (req, res) => {
+app.get('/api/favourites/:userId/:gameId', (req, res) => {
   const { userId, gameId } = req.params;
   
   db.get(`
-    SELECT id FROM favorites 
+    SELECT id FROM favourites 
     WHERE user_id = ? AND game_id = ?
   `, [userId, gameId], (err, row) => {
     if (err) {
-      console.error('Error checking favorite:', err);
-      res.status(500).json({ error: 'Failed to check favorite' });
+      console.error('Error checking favourite:', err);
+      res.status(500).json({ error: 'Failed to check favourite' });
     } else {
-      res.json({ isFavorited: !!row });
+      res.json({ isFavourited: !!row });
     }
   });
 });
@@ -216,10 +216,10 @@ app.listen(PORT, () => {
   console.log(`   GET  /api/games - Get all games`);
   console.log(`   GET  /api/games/:slug - Get game by slug`);
   console.log(`   GET  /api/games/search/:query - Search games`);
-  console.log(`   GET  /api/favorites/:userId - Get user's favourites`);
-  console.log(`   POST /api/favorites - Add favourite`);
-  console.log(`   DELETE /api/favorites/:userId/:gameId - Remove favourite`);
-  console.log(`   GET  /api/favorites/:userId/:gameId - Check if favourited`);
+  console.log(`   GET  /api/favourites/:userId - Get user's favourites`);
+  console.log(`   POST /api/favourites - Add favourite`);
+  console.log(`   DELETE /api/favourites/:userId/:gameId - Remove favourite`);
+  console.log(`   GET  /api/favourites/:userId/:gameId - Check if favourited`);
   console.log('\n🎮 Ready to serve games data to the app!');
 });
 

@@ -148,7 +148,7 @@ export class PersistentFavouritesService {
   }
 
   // Add a game to favourites (with local storage backup)
-  static async addFavorite(gameId: string, gameName: string, gameSlug: string, gameImage?: string): Promise<void> {
+  static async addFavourite(gameId: string, gameName: string, gameSlug: string, gameImage?: string): Promise<void> {
     console.log('🔍 Adding favourite with persistence...');
     
     // First, add to local storage immediately
@@ -228,7 +228,7 @@ export class PersistentFavouritesService {
   }
 
   // Remove a game from favourites (with local storage backup)
-  static async removeFavorite(gameSlug: string): Promise<void> {
+  static async removeFavourite(gameSlug: string): Promise<void> {
     console.log('🔍 Removing favourite with persistence...');
     
     try {
@@ -275,7 +275,7 @@ export class PersistentFavouritesService {
   }
 
   // Get user's favourite games (from local storage with Supabase sync)
-  static async getFavorites(): Promise<FavouriteGame[]> {
+  static async getFavourites(): Promise<FavouriteGame[]> {
     console.log('🔍 Getting favourites with persistence...');
     
     try {
@@ -325,7 +325,7 @@ export class PersistentFavouritesService {
   }
 
   // Check if a game is favourited (from local storage)
-  static async isFavorited(gameSlug: string): Promise<boolean> {
+  static async isFavourited(gameSlug: string): Promise<boolean> {
     try {
       const localFavourites = await this.loadFromLocalStorage();
       return localFavourites.some(fav => fav.game_slug === gameSlug);
@@ -335,15 +335,15 @@ export class PersistentFavouritesService {
     }
   }
 
-  // Toggle favorite status (with persistence)
-  static async toggleFavorite(gameId: string, gameName: string, gameSlug: string, gameImage?: string): Promise<boolean> {
-    const isFavorited = await this.isFavorited(gameSlug);
+  // Toggle favourite status (with persistence)
+  static async toggleFavourite(gameId: string, gameName: string, gameSlug: string, gameImage?: string): Promise<boolean> {
+    const isFavourited = await this.isFavourited(gameSlug);
     
-    if (isFavorited) {
-      await this.removeFavorite(gameSlug);
+    if (isFavourited) {
+      await this.removeFavourite(gameSlug);
       return false;
     } else {
-      await this.addFavorite(gameId, gameName, gameSlug, gameImage);
+      await this.addFavourite(gameId, gameName, gameSlug, gameImage);
       return true;
     }
   }

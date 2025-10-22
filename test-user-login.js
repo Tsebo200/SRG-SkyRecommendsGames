@@ -31,12 +31,12 @@ async function testUserLogin() {
 
     console.log('\n🧪 Testing favourites functionality...');
     
-    // Test adding a favorite
+    // Test adding a favourite
     const { data: gameData, error: gameError } = await supabase
       .from('games')
       .insert({
-        slug: 'test-favorite-user',
-        name: 'Test Favorite for User',
+        slug: 'test-favourite-user',
+        name: 'Test Favourite for User',
         platforms: ['PC'],
         genres: ['Action'],
         store_urls: {},
@@ -51,18 +51,18 @@ async function testUserLogin() {
     } else {
       console.log('✅ Game created successfully!');
       
-      // Try to add to favorites
+      // Try to add to favourites
       const { error: favError } = await supabase
-        .from('favorites')
+        .from('favourites')
         .insert({
           user_id: data.user.id,
           game_id: gameData.id
         });
 
       if (favError) {
-        console.log('❌ Favorite creation failed:', favError.message);
+        console.log('❌ Favourite creation failed:', favError.message);
       } else {
-        console.log('✅ Favorite added successfully!');
+        console.log('✅ Favourite added successfully!');
         console.log('🎉 Favourites feature is working!');
       }
     }

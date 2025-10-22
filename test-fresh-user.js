@@ -73,7 +73,7 @@ async function createFreshTestUser() {
     console.log('\n4. ❤️ Testing favourite addition...');
     
     const { error: favError } = await supabase
-      .from('favorites')
+      .from('favourites')
       .insert({
         user_id: signInData.user.id,
         game_id: gameData.id

@@ -89,6 +89,34 @@ class ApiClient {
     const response = await this.client.get('/health');
     return response.data;
   }
+
+  // New method: Get recommendations using gpt-3.5-turbo
+  async getRecommendations(favouriteGames: string[]): Promise<{
+    recommendations: string;
+    model: string;
+    favourites: string;
+  }> {
+    const response = await this.client.get('/games/recommendations', {
+      params: {
+        favourites: favouriteGames.join(', '),
+      },
+    });
+    return response.data;
+  }
+
+  // Test method: Get mock recommendations without OpenAI
+  async getTestRecommendations(favouriteGames: string[]): Promise<{
+    recommendations: any[];
+    model: string;
+    favourites: string;
+  }> {
+    const response = await this.client.get('/games/test-recommendations', {
+      params: {
+        favourites: favouriteGames.join(', '),
+      },
+    });
+    return response.data;
+  }
 }
 
 export const apiClient = new ApiClient();

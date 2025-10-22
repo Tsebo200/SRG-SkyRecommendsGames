@@ -1,4 +1,4 @@
-// Fix RLS policies for games and favorites tables
+// Fix RLS policies for games and favourites tables
 const { createClient } = require('@supabase/supabase-js');
 
 async function fixRLSPolicies() {
@@ -24,16 +24,16 @@ async function fixRLSPolicies() {
       console.log('✅ Games table accessible with service role');
     }
 
-    // Check if favorites table has RLS enabled
-    const { data: favoritesRLS, error: favoritesError } = await supabase
-      .from('favorites')
+    // Check if favourites table has RLS enabled
+    const { data: favouritesRLS, error: favouritesError } = await supabase
+      .from('favourites')
       .select('*')
       .limit(1);
 
-    if (favoritesError) {
-      console.log('❌ Favorites table RLS error:', favoritesError.message);
+    if (favouritesError) {
+      console.log('❌ Favourites table RLS error:', favouritesError.message);
     } else {
-      console.log('✅ Favorites table accessible with service role');
+      console.log('✅ Favourites table accessible with service role');
     }
 
     console.log('\n2. 🔐 Testing with authenticated user...');
@@ -51,7 +51,7 @@ async function fixRLSPolicies() {
       console.log('✅ Test user created successfully!');
       console.log(`   User ID: ${userData.user.id}`);
       
-      // Test favorites with authenticated user
+      // Test favourites with authenticated user
       const { data: gameData, error: gameError } = await supabase
         .from('games')
         .insert({
@@ -71,18 +71,18 @@ async function fixRLSPolicies() {
       } else {
         console.log('✅ Game created successfully!');
         
-        // Try to add to favorites
+        // Try to add to favourites
         const { error: favError } = await supabase
-          .from('favorites')
+          .from('favourites')
           .insert({
             user_id: userData.user.id,
             game_id: gameData.id
           });
 
         if (favError) {
-          console.log('❌ Favorite creation failed:', favError.message);
+          console.log('❌ Favourite creation failed:', favError.message);
         } else {
-          console.log('✅ Favorite added successfully!');
+          console.log('✅ Favourite added successfully!');
           console.log('🎉 RLS policies are working!');
         }
       }

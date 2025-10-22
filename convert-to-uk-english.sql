@@ -6,26 +6,26 @@
 -- ===========================================
 
 -- Create backup tables (optional safety measure)
-CREATE TABLE IF NOT EXISTS favorites_backup AS SELECT * FROM public.favorites;
+CREATE TABLE IF NOT EXISTS favourites_backup AS SELECT * FROM public.favourites;
 
 -- ===========================================
 -- STEP 2: RENAME TABLES
 -- ===========================================
 
--- Rename 'favorites' table to 'favourites'
-ALTER TABLE public.favorites RENAME TO favourites;
+-- Rename 'favourites' table to 'favourites'
+ALTER TABLE public.favourites RENAME TO favourites;
 
 -- ===========================================
 -- STEP 3: UPDATE RLS POLICIES
 -- ===========================================
 
 -- Drop all existing policies on the old table name
-DROP POLICY IF EXISTS "Allow authenticated users to manage favorites" ON public.favourites;
-DROP POLICY IF EXISTS "Allow authenticated users to read favorites" ON public.favourites;
-DROP POLICY IF EXISTS "Allow authenticated users to delete favorites" ON public.favourites;
-DROP POLICY IF EXISTS "Allow authenticated users to create favorites" ON public.favourites;
-DROP POLICY IF EXISTS "user can manage own favorites" ON public.favourites;
-DROP POLICY IF EXISTS "authenticated_users_favorites" ON public.favourites;
+DROP POLICY IF EXISTS "Allow authenticated users to manage favourites" ON public.favourites;
+DROP POLICY IF EXISTS "Allow authenticated users to read favourites" ON public.favourites;
+DROP POLICY IF EXISTS "Allow authenticated users to delete favourites" ON public.favourites;
+DROP POLICY IF EXISTS "Allow authenticated users to create favourites" ON public.favourites;
+DROP POLICY IF EXISTS "user can manage own favourites" ON public.favourites;
+DROP POLICY IF EXISTS "authenticated_users_favourites" ON public.favourites;
 
 -- Create new UK English policies
 CREATE POLICY "Allow authenticated users to manage favourites" ON public.favourites
@@ -55,7 +55,7 @@ SELECT
     routine_name,
     routine_definition
 FROM information_schema.routines 
-WHERE routine_definition ILIKE '%favorites%'
+WHERE routine_definition ILIKE '%favourites%'
 AND routine_schema = 'public';
 
 -- ===========================================
@@ -85,7 +85,7 @@ SELECT COUNT(*) as total_favourites FROM public.favourites;
 -- ===========================================
 
 -- Drop backup table if everything looks good
--- DROP TABLE IF EXISTS favorites_backup;
+-- DROP TABLE IF EXISTS favourites_backup;
 
 -- ===========================================
 -- SUCCESS MESSAGE

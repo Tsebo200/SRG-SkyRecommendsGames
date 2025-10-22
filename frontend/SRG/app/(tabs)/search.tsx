@@ -22,7 +22,7 @@ export default function SearchScreen() {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const [favourites, setFavourites] = useState<Set<string>>(new Set());
 
   // Debounced search function
   const debouncedSearch = useCallback(
@@ -104,24 +104,24 @@ export default function SearchScreen() {
     });
   };
 
-  const toggleFavorite = async (game: Game, event: any) => {
+  const toggleFavourite = async (game: Game, event: any) => {
     event.stopPropagation(); // Prevent navigation when tapping heart
     
     try {
       const gameSlug = game.slug;
-      const isFavorited = favorites.has(gameSlug);
+      const isFavourited = favourites.has(gameSlug);
       
-      if (isFavorited) {
-        await HybridFavouritesService.removeFavorite(gameSlug);
-        setFavorites(prev => {
+      if (isFavourited) {
+        await HybridFavouritesService.removeFavourite(gameSlug);
+        setFavourites(prev => {
           const newSet = new Set(prev);
           newSet.delete(gameSlug);
           return newSet;
         });
         Alert.alert('Removed', 'Game removed from favourites');
       } else {
-        await HybridFavouritesService.addFavorite(game.id.toString(), game.name, game.slug, game.background_image);
-        setFavorites(prev => new Set(prev).add(gameSlug));
+        await HybridFavouritesService.addFavourite(game.id.toString(), game.name, game.slug, game.background_image);
+        setFavourites(prev => new Set(prev).add(gameSlug));
         Alert.alert('Added', 'Game added to favourites');
       }
     } catch (error: any) {
@@ -129,22 +129,22 @@ export default function SearchScreen() {
     }
   };
 
-  // Load favorites on mount
+  // Load favourites on mount
   useEffect(() => {
-    const loadFavorites = async () => {
+    const loadFavourites = async () => {
       try {
-        const favoriteGames = await HybridFavouritesService.getFavorites();
-        const favoriteSlugs = new Set(favoriteGames.map(fav => fav.game_slug).filter(Boolean));
-        setFavorites(favoriteSlugs);
+        const favouriteGames = await HybridFavouritesService.getFavourites();
+        const favouriteSlugs = new Set(favouriteGames.map(fav => fav.game_slug).filter(Boolean));
+        setFavourites(favouriteSlugs);
       } catch (error) {
         console.error('Error loading favourites:', error);
       }
     };
-    loadFavorites();
+    loadFavourites();
   }, []);
 
   const renderGame = ({ item }: { item: Game }) => {
-    const isFavorited = favorites.has(item.slug);
+    const isFavourited = favourites.has(item.slug);
     
     return (
       <TouchableOpacity onPress={() => goToDetails(item)}>
@@ -168,15 +168,15 @@ export default function SearchScreen() {
             </View>
           </View>
           <TouchableOpacity
-            onPress={(e) => toggleFavorite(item, e)}
-            style={[styles.favoriteButton, isFavorited && styles.favoriteButtonActive]}
+            onPress={(e) => toggleFavourite(item, e)}
+            style={[styles.favouriteButton, isFavourited && styles.favouriteButtonActive]}
             accessibilityRole="button"
-            accessibilityLabel={isFavorited ? 'Remove from favourites' : 'Add to favourites'}
+            accessibilityLabel={isFavourited ? 'Remove from favourites' : 'Add to favourites'}
           >
             <Ionicons 
-              name={isFavorited ? 'heart' : 'heart-outline'} 
+              name={isFavourited ? 'heart' : 'heart-outline'} 
               size={20} 
-              color={isFavorited ? '#ff6b6b' : '#a0a0a0'} 
+              color={isFavourited ? '#ff6b6b' : '#a0a0a0'} 
             />
           </TouchableOpacity>
         </View>
@@ -309,13 +309,13 @@ const styles = StyleSheet.create({
     color: '#808080',
     fontSize: 12,
   },
-  favoriteButton: {
+  favouriteButton: {
     padding: 8,
     borderRadius: 8,
     backgroundColor: 'rgba(255,255,255,0.1)',
     marginLeft: 12,
   },
-  favoriteButtonActive: {
+  favouriteButtonActive: {
     backgroundColor: 'rgba(255,107,107,0.2)',
   },
   emptyCard: {

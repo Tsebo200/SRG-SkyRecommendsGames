@@ -71,12 +71,16 @@ export class HybridFavouritesService {
   private static async loadFromLocalStorage(): Promise<LocalFavourite[]> {
     try {
       const storageKey = await this.getStorageKey();
+      console.log('🔑 Storage key:', storageKey);
       const stored = await AsyncStorage.getItem(storageKey);
+      console.log('📦 Stored data:', stored ? 'found' : 'not found');
       if (stored) {
         const favourites = JSON.parse(stored);
         console.log('📱 Loaded favourites from local storage:', favourites.length, 'items');
+        console.log('📱 Sample favourite:', favourites[0]);
         return favourites;
       }
+      console.log('📱 No stored favourites found');
       return [];
     } catch (error) {
       console.error('❌ Failed to load favourites from local storage:', error);
@@ -160,7 +164,7 @@ export class HybridFavouritesService {
   }
 
   // Add a game to favourites (with local storage backup)
-  static async addFavorite(gameId: string, gameName: string, gameSlug: string, gameImage?: string): Promise<void> {
+  static async addFavourite(gameId: string, gameName: string, gameSlug: string, gameImage?: string): Promise<void> {
     console.log('🔍 Adding favourite with hybrid persistence...');
     
     // First, add to local storage immediately
@@ -240,7 +244,7 @@ export class HybridFavouritesService {
   }
 
   // Remove a game from favourites (with local storage backup)
-  static async removeFavorite(gameSlug: string): Promise<void> {
+  static async removeFavourite(gameSlug: string): Promise<void> {
     console.log('🔍 Removing favourite with hybrid persistence...');
     
     try {
@@ -287,15 +291,18 @@ export class HybridFavouritesService {
   }
 
   // Get user's favourite games (from local storage with Supabase sync)
-  static async getFavorites(): Promise<FavouriteGame[]> {
+  static async getFavourites(): Promise<FavouriteGame[]> {
     console.log('🔍 Getting favourites with hybrid persistence...');
     
     try {
       // First, try to sync with Supabase
+      console.log('🔄 Attempting to sync with Supabase...');
       await this.syncWithSupabase();
       
       // Load from local storage
+      console.log('📱 Loading from local storage...');
       const localFavourites = await this.loadFromLocalStorage();
+      console.log('📱 Local favourites loaded:', localFavourites.length, 'items');
       
       // Convert to FavouriteGame format and deduplicate
       const favourites: FavouriteGame[] = localFavourites
@@ -321,8 +328,10 @@ export class HybridFavouritesService {
       return favourites;
     } catch (error) {
       console.error('❌ Failed to get favourites:', error);
+      console.log('🔄 Falling back to local storage only...');
       // Return local favourites even if sync fails
       const localFavourites = await this.loadFromLocalStorage();
+      console.log('📱 Fallback local favourites:', localFavourites.length, 'items');
       return localFavourites.map(fav => ({
         user_id: '',
         game_id: fav.game_id,
@@ -337,7 +346,7 @@ export class HybridFavouritesService {
   }
 
   // Check if a game is favourited (from local storage)
-  static async isFavorited(gameSlug: string): Promise<boolean> {
+  static async isFavourited(gameSlug: string): Promise<boolean> {
     try {
       const localFavourites = await this.loadFromLocalStorage();
       return localFavourites.some(fav => fav.game_slug === gameSlug);
@@ -347,15 +356,15 @@ export class HybridFavouritesService {
     }
   }
 
-  // Toggle favorite status (with persistence)
-  static async toggleFavorite(gameId: string, gameName: string, gameSlug: string, gameImage?: string): Promise<boolean> {
-    const isFavorited = await this.isFavorited(gameSlug);
+  // Toggle favourite status (with persistence)
+  static async toggleFavourite(gameId: string, gameName: string, gameSlug: string, gameImage?: string): Promise<boolean> {
+    const isFavourited = await this.isFavourited(gameSlug);
     
-    if (isFavorited) {
-      await this.removeFavorite(gameSlug);
+    if (isFavourited) {
+      await this.removeFavourite(gameSlug);
       return false;
     } else {
-      await this.addFavorite(gameId, gameName, gameSlug, gameImage);
+      await this.addFavourite(gameId, gameName, gameSlug, gameImage);
       return true;
     }
   }

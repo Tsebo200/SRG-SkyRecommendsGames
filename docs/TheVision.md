@@ -220,4 +220,4 @@ For support and questions, please open an issue in the GitHub repository or cont
 
 ---
 
-**SRG - Sky Recommends Games** - Discover your next favorite game with AI-powered recommendations!
+**SRG - Sky Recommends Games** - Discover your next favourite game with AI-powered recommendations!

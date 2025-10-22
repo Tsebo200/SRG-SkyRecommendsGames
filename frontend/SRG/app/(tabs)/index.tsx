@@ -7,7 +7,7 @@ export default function HomeScreen() {
         <Text style={styles.title}>Sky Recommends Games</Text>
         <Text style={styles.subtitle}>AI-Powered Game Recommendations</Text>
         <Text style={styles.description}>
-          Discover your next favorite game with personalized recommendations based on your gaming profile.
+          Discover your next favourite game with personalised recommendations based on your gaming profile.
         </Text>
 
         <Text style={styles.navigationHint}>

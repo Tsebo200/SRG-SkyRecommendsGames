@@ -12,8 +12,8 @@ export default function GameDetailsScreen() {
   const [liked, setLiked] = useState<boolean | null>(null);
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [isFavorited, setIsFavorited] = useState(false);
-  const [favoriteLoading, setFavoriteLoading] = useState(false);
+  const [isFavourited, setIsFavourited] = useState(false);
+  const [favouriteLoading, setFavouriteLoading] = useState(false);
 
   const name = typeof params.name === 'string' ? params.name : '';
   const image = typeof params.image === 'string' ? params.image : undefined;
@@ -31,44 +31,44 @@ export default function GameDetailsScreen() {
 
   const storeEntries = Object.entries(stores);
 
-  // Check if game is favorited on mount
+  // Check if game is favourited on mount
   useEffect(() => {
-    const checkFavorite = async () => {
+    const checkFavourite = async () => {
       try {
         const slug = typeof params.slug === 'string' ? params.slug : '';
-        const favorited = await HybridFavouritesService.isFavorited(slug);
-        setIsFavorited(favorited);
+        const favourited = await HybridFavouritesService.isFavourited(slug);
+        setIsFavourited(favourited);
       } catch (error) {
-        console.error('Error checking favorite status:', error);
+        console.error('Error checking favourite status:', error);
       }
     };
-    checkFavorite();
+    checkFavourite();
   }, [params.slug]);
 
-  const toggleFavorite = async () => {
+  const toggleFavourite = async () => {
     try {
-      setFavoriteLoading(true);
+      setFavouriteLoading(true);
       const slug = typeof params.slug === 'string' ? params.slug : '';
       
-      const newFavoriteStatus = await HybridFavouritesService.toggleFavorite(
+      const newFavouriteStatus = await HybridFavouritesService.toggleFavourite(
         slug, // Using slug as the ID
         name,
         slug,
         image
       );
       
-      setIsFavorited(newFavoriteStatus);
+      setIsFavourited(newFavouriteStatus);
       
       Alert.alert(
-        newFavoriteStatus ? 'Added to Favorites' : 'Removed from Favorites',
-        newFavoriteStatus 
+        newFavouriteStatus ? 'Added to Favourites' : 'Removed from Favourites',
+        newFavouriteStatus 
           ? 'Game added to your favourites!' 
           : 'Game removed from your favourites.'
       );
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to update favourites');
     } finally {
-      setFavoriteLoading(false);
+      setFavouriteLoading(false);
     }
   };
 
@@ -85,16 +85,16 @@ export default function GameDetailsScreen() {
       <View style={styles.titleRow}>
         <Text style={styles.title}>{name}</Text>
         <TouchableOpacity
-          onPress={toggleFavorite}
-          style={[styles.favoriteButton, isFavorited && styles.favoriteButtonActive]}
-          disabled={favoriteLoading}
+          onPress={toggleFavourite}
+          style={[styles.favouriteButton, isFavourited && styles.favouriteButtonActive]}
+          disabled={favouriteLoading}
           accessibilityRole="button"
-          accessibilityLabel={isFavorited ? 'Remove from favourites' : 'Add to favourites'}
+          accessibilityLabel={isFavourited ? 'Remove from favourites' : 'Add to favourites'}
         >
           <Ionicons 
-            name={isFavorited ? 'heart' : 'heart-outline'} 
+            name={isFavourited ? 'heart' : 'heart-outline'} 
             size={24} 
-            color={isFavorited ? '#ff6b6b' : '#a0a0a0'} 
+            color={isFavourited ? '#ff6b6b' : '#a0a0a0'} 
           />
         </TouchableOpacity>
       </View>
@@ -231,12 +231,12 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 12,
   },
-  favoriteButton: {
+  favouriteButton: {
     padding: 8,
     borderRadius: 8,
     backgroundColor: 'rgba(255,255,255,0.1)',
   },
-  favoriteButtonActive: {
+  favouriteButtonActive: {
     backgroundColor: 'rgba(255,107,107,0.2)',
   },
   section: {

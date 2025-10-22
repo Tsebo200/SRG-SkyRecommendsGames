@@ -35,6 +35,20 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="scanner"
+        options={{
+          title: 'Scan',
+          tabBarIcon: ({ color, size }) => <Ionicons name="qr-code" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="recommendations"
+        options={{
+          title: 'For You',
+          tabBarIcon: ({ color, size }) => <Ionicons name="sparkles" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="search"
         options={{
           title: 'Search',
@@ -44,8 +58,17 @@ export default function TabLayout() {
       <Tabs.Screen
         name="favourites"
         options={{
-          title: 'Favorites',
+          title: 'Favourites',
           tabBarIcon: ({ color, size }) => <Ionicons name="heart" size={size} color={color} />,
+        }}
+      />
+
+      
+      <Tabs.Screen
+        name="steam-profile"
+        options={{
+          title: 'Steam',
+          tabBarIcon: ({ color, size }) => <Ionicons name="game-controller" size={size} color={color} />,
         }}
       />
       <Tabs.Screen

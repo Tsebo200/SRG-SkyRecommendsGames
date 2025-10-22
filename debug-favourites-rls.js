@@ -1,8 +1,8 @@
-// Debug favorites RLS policy specifically
+// Debug favourites RLS policy specifically
 const { createClient } = require('@supabase/supabase-js');
 
-async function debugFavoritesRLS() {
-  console.log('🔍 Debugging Favorites RLS Policy...\n');
+async function debugFavouritesRLS() {
+  console.log('🔍 Debugging Favourites RLS Policy...\n');
 
   const supabaseUrl = 'https://fwqzmyrjhajpukhqdfrh.supabase.co';
   const anonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ3cXpteXJqaGFqcHVraHFkZnJoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1MDE3OTIsImV4cCI6MjA3NjA3Nzc5Mn0.EyPG_-S0JF64iV6dK0ZJ5I_YOZPI38bgvHYv9xzwmkg';
@@ -32,8 +32,8 @@ async function debugFavoritesRLS() {
     const { data: gameData, error: gameError } = await supabase
       .from('games')
       .insert({
-        slug: `favorites-test-${Date.now()}`,
-        name: 'Favorites Test Game',
+        slug: `favourites-test-${Date.now()}`,
+        name: 'Favourites Test Game',
         platforms: ['PC'],
         genres: ['Action'],
         store_urls: {},
@@ -51,28 +51,28 @@ async function debugFavoritesRLS() {
     console.log('✅ Game created successfully!');
     console.log(`   Game ID: ${gameData.id}`);
 
-    console.log('\n3. ❤️ Testing favorite creation with explicit user_id...');
+    console.log('\n3. ❤️ Testing favourite creation with explicit user_id...');
     
-    // Try to add to favorites with explicit user_id
+    // Try to add to favourites with explicit user_id
     const { error: favError } = await supabase
-      .from('favorites')
+      .from('favourites')
       .insert({
         user_id: authData.user.id,  // Explicitly set user_id
         game_id: gameData.id
       });
 
     if (favError) {
-      console.log('❌ Favorite creation failed:', favError.message);
+      console.log('❌ Favourite creation failed:', favError.message);
       console.log('   Error code:', favError.code);
       console.log('   Error details:', favError.details);
       
-      console.log('\n🔧 The issue is with the favorites RLS policy.');
+      console.log('\n🔧 The issue is with the favourites RLS policy.');
       console.log('   The policy might not be correctly configured.');
       console.log('   Let me check what the current policy looks like...');
       
     } else {
-      console.log('✅ Favorite creation successful!');
-      console.log('🎉 Favorites RLS policy is working!');
+      console.log('✅ Favourite creation successful!');
+      console.log('🎉 Favourites RLS policy is working!');
     }
 
     console.log('\n4. 🔍 Testing auth.uid() function...');
@@ -93,4 +93,4 @@ async function debugFavoritesRLS() {
   }
 }
 
-debugFavoritesRLS().catch(console.error);
+debugFavouritesRLS().catch(console.error);

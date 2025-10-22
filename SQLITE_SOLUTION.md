@@ -53,10 +53,10 @@
 - `GET /api/games/search/:query` - Search games
 
 ### **Favourites**
-- `GET /api/favorites/:userId` - Get user's favourites
-- `POST /api/favorites` - Add favourite
-- `DELETE /api/favorites/:userId/:gameId` - Remove favourite
-- `GET /api/favorites/:userId/:gameId` - Check if favourited
+- `GET /api/favourites/:userId` - Get user's favourites
+- `POST /api/favourites` - Add favourite
+- `DELETE /api/favourites/:userId/:gameId` - Remove favourite
+- `GET /api/favourites/:userId/:gameId` - Check if favourited
 
 ### **System**
 - `GET /api/health` - Health check
@@ -109,10 +109,10 @@ curl http://localhost:3001/api/games/black-myth-wukong
 # Add favourite
 curl -X POST -H "Content-Type: application/json" \
   -d '{"userId":"test-user","gameId":1}' \
-  http://localhost:3001/api/favorites
+  http://localhost:3001/api/favourites
 
 # Get user's favourites
-curl http://localhost:3001/api/favorites/test-user
+curl http://localhost:3001/api/favourites/test-user
 ```
 
 ### **3. Integrate with App**
@@ -173,7 +173,7 @@ CREATE TABLE games (
 );
 
 -- Favourites table
-CREATE TABLE favorites (
+CREATE TABLE favourites (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id TEXT NOT NULL,
   game_id INTEGER NOT NULL,

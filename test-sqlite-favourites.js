@@ -2,7 +2,7 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 
-async function testSQLiteFavorites() {
+async function testSQLiteFavourites() {
   console.log('🧪 Testing Favourites with SQLite Database...\n');
 
   const dbPath = path.join(__dirname, 'games.db');
@@ -49,7 +49,7 @@ async function testSQLiteFavorites() {
     // Create favourites table
     await new Promise((resolve, reject) => {
       db.run(`
-        CREATE TABLE IF NOT EXISTS favorites (
+        CREATE TABLE IF NOT EXISTS favourites (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
           user_id TEXT NOT NULL,
           game_id INTEGER NOT NULL,
@@ -71,7 +71,7 @@ async function testSQLiteFavorites() {
     for (const game of testGames) {
       await new Promise((resolve, reject) => {
         db.run(`
-          INSERT OR IGNORE INTO favorites (user_id, game_id)
+          INSERT OR IGNORE INTO favourites (user_id, game_id)
           VALUES (?, ?)
         `, [testUserId, game.id], (err) => {
           if (err) reject(err);
@@ -84,7 +84,7 @@ async function testSQLiteFavorites() {
     console.log('\n5. 📋 Testing favourites retrieval...');
     
     // Get user's favourites with game details
-    const favorites = await new Promise((resolve, reject) => {
+    const favourites = await new Promise((resolve, reject) => {
       db.all(`
         SELECT 
           f.id,
@@ -95,7 +95,7 @@ async function testSQLiteFavorites() {
           g.slug as game_slug,
           g.platforms,
           g.genres
-        FROM favorites f
+        FROM favourites f
         JOIN games g ON f.game_id = g.id
         WHERE f.user_id = ?
         ORDER BY f.created_at DESC
@@ -105,10 +105,10 @@ async function testSQLiteFavorites() {
       });
     });
 
-    console.log(`✅ Retrieved ${favorites.length} favourites`);
+    console.log(`✅ Retrieved ${favourites.length} favourites`);
     
     console.log('\n📋 User\'s favourites:');
-    favorites.forEach(fav => {
+    favourites.forEach(fav => {
       const platforms = JSON.parse(fav.platforms);
       const genres = JSON.parse(fav.genres);
       console.log(`   - ${fav.game_name} (${fav.game_slug})`);
@@ -123,7 +123,7 @@ async function testSQLiteFavorites() {
     const gameToRemove = testGames[0];
     await new Promise((resolve, reject) => {
       db.run(`
-        DELETE FROM favorites 
+        DELETE FROM favourites 
         WHERE user_id = ? AND game_id = ?
       `, [testUserId, gameToRemove.id], (err) => {
         if (err) reject(err);
@@ -133,9 +133,9 @@ async function testSQLiteFavorites() {
     console.log(`✅ Removed from favourites: ${gameToRemove.name}`);
 
     // Verify removal
-    const remainingFavorites = await new Promise((resolve, reject) => {
+    const remainingFavourites = await new Promise((resolve, reject) => {
       db.get(`
-        SELECT COUNT(*) as count FROM favorites 
+        SELECT COUNT(*) as count FROM favourites 
         WHERE user_id = ? AND game_id = ?
       `, [testUserId, gameToRemove.id], (err, row) => {
         if (err) reject(err);
@@ -143,7 +143,7 @@ async function testSQLiteFavorites() {
       });
     });
 
-    if (remainingFavorites === 0) {
+    if (remainingFavourites === 0) {
       console.log('✅ Favourite removal verified');
     } else {
       console.log('❌ Favourite removal failed');
@@ -152,16 +152,16 @@ async function testSQLiteFavorites() {
     console.log('\n7. 🔍 Testing data integrity...');
     
     // Final count
-    const finalFavorites = await new Promise((resolve, reject) => {
+    const finalFavourites = await new Promise((resolve, reject) => {
       db.get(`
-        SELECT COUNT(*) as count FROM favorites WHERE user_id = ?
+        SELECT COUNT(*) as count FROM favourites WHERE user_id = ?
       `, [testUserId], (err, row) => {
         if (err) reject(err);
         else resolve(row.count);
       });
     });
 
-    console.log(`✅ Final favourites count: ${finalFavorites} (expected: ${testGames.length - 1})`);
+    console.log(`✅ Final favourites count: ${finalFavourites} (expected: ${testGames.length - 1})`);
 
     console.log('\n🎉 All SQLite favourites tests passed!');
     console.log('✅ Database operations working correctly');
@@ -177,4 +177,4 @@ async function testSQLiteFavorites() {
 }
 
 // Run the test
-testSQLiteFavorites().catch(console.error);
+testSQLiteFavourites().catch(console.error);

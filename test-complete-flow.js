@@ -65,7 +65,7 @@ async function testCompleteFlow() {
     
     // Add to favourites
     const { error: favError } = await supabase
-      .from('favorites')
+      .from('favourites')
       .insert({
         user_id: authData.user.id,
         game_id: gameData.id
@@ -81,8 +81,8 @@ async function testCompleteFlow() {
     console.log('\n4. 📋 Retrieving favourites...');
     
     // Get user's favourites
-    const { data: favorites, error: favsError } = await supabase
-      .from('favorites')
+    const { data: favourites, error: favsError } = await supabase
+      .from('favourites')
       .select(`
         id,
         game_id,
@@ -98,8 +98,8 @@ async function testCompleteFlow() {
     if (favsError) {
       console.log('❌ Favourites retrieval failed:', favsError.message);
     } else {
-      console.log(`✅ Retrieved ${favorites.length} favourites:`);
-      favorites.forEach(fav => {
+      console.log(`✅ Retrieved ${favourites.length} favourites:`);
+      favourites.forEach(fav => {
         console.log(`   - ${fav.games.name} (${fav.games.slug})`);
         console.log(`     Platforms: ${fav.games.platforms.join(', ')}`);
         console.log(`     Genres: ${fav.games.genres.join(', ')}`);

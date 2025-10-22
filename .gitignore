@@ -3,4 +3,7 @@
 *specs
 .env
 *node_modules
-.specify
+.specify# Environment variables
+.env
+.env.local
+.env.production

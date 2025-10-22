@@ -1,8 +1,8 @@
-// Test favorites with proper authentication
+// Test favourites with proper authentication
 const { createClient } = require('@supabase/supabase-js');
 
-async function testFavoritesWithAuth() {
-  console.log('🧪 Testing Favorites with Authentication...\n');
+async function testFavouritesWithAuth() {
+  console.log('🧪 Testing Favourites with Authentication...\n');
 
   // Use service role for database operations (bypasses RLS)
   const supabaseUrl = 'http://127.0.0.1:54321';
@@ -11,8 +11,8 @@ async function testFavoritesWithAuth() {
   const supabase = createClient(supabaseUrl, serviceKey);
 
   const testUser = '00000000-0000-0000-0000-000000000001';
-  const testGameSlug = 'test-favorites-game-auth';
-  const testGameName = 'Test Favorites Game Auth';
+  const testGameSlug = 'test-favourites-game-auth';
+  const testGameName = 'Test Favourites Game Auth';
 
   try {
     console.log('1. Testing game creation with service role...');
@@ -38,27 +38,27 @@ async function testFavoritesWithAuth() {
     }
     console.log('✅ Game created:', gameData.id);
 
-    console.log('2. Testing favorite addition with service role...');
+    console.log('2. Testing favourite addition with service role...');
     
-    // Add to favorites using service role
-    const { error: favoriteError } = await supabase
-      .from('favorites')
+    // Add to favourites using service role
+    const { error: favouriteError } = await supabase
+      .from('favourites')
       .insert({
         user_id: testUser,
         game_id: gameData.id
       });
 
-    if (favoriteError) {
-      console.log('❌ Favorite addition failed:', favoriteError.message);
+    if (favouriteError) {
+      console.log('❌ Favourite addition failed:', favouriteError.message);
       return;
     }
-    console.log('✅ Favorite added successfully');
+    console.log('✅ Favourite added successfully');
 
-    console.log('3. Testing favorites retrieval...');
+    console.log('3. Testing favourites retrieval...');
     
-    // Get favorites with game data
-    const { data: favoritesData, error: favoritesError } = await supabase
-      .from('favorites')
+    // Get favourites with game data
+    const { data: favouritesData, error: favouritesError } = await supabase
+      .from('favourites')
       .select(`
         user_id,
         game_id,
@@ -72,33 +72,33 @@ async function testFavoritesWithAuth() {
       `)
       .eq('user_id', testUser);
 
-    if (favoritesError) {
-      console.log('❌ Favorites retrieval failed:', favoritesError.message);
+    if (favouritesError) {
+      console.log('❌ Favourites retrieval failed:', favouritesError.message);
       return;
     }
 
-    console.log('✅ Favorites retrieved:', favoritesData.length, 'items');
-    if (favoritesData.length > 0) {
-      console.log('   - Game:', favoritesData[0].games.name);
-      console.log('   - Slug:', favoritesData[0].games.slug);
-      console.log('   - Platforms:', favoritesData[0].games.platforms);
-      console.log('   - Genres:', favoritesData[0].games.genres);
+    console.log('✅ Favourites retrieved:', favouritesData.length, 'items');
+    if (favouritesData.length > 0) {
+      console.log('   - Game:', favouritesData[0].games.name);
+      console.log('   - Slug:', favouritesData[0].games.slug);
+      console.log('   - Platforms:', favouritesData[0].games.platforms);
+      console.log('   - Genres:', favouritesData[0].games.genres);
     }
 
-    console.log('4. Testing favorite removal...');
+    console.log('4. Testing favourite removal...');
     
-    // Remove from favorites
+    // Remove from favourites
     const { error: removeError } = await supabase
-      .from('favorites')
+      .from('favourites')
       .delete()
       .eq('user_id', testUser)
       .eq('game_id', gameData.id);
 
     if (removeError) {
-      console.log('❌ Favorite removal failed:', removeError.message);
+      console.log('❌ Favourite removal failed:', removeError.message);
       return;
     }
-    console.log('✅ Favorite removed successfully');
+    console.log('✅ Favourite removed successfully');
 
     console.log('5. Testing cleanup...');
     
@@ -114,9 +114,9 @@ async function testFavoritesWithAuth() {
       console.log('✅ Test data cleaned up');
     }
 
-    console.log('\n🎉 All favorites tests passed!');
+    console.log('\n🎉 All favourites tests passed!');
     console.log('✅ Database operations work correctly');
-    console.log('✅ Favorites can be added, retrieved, and removed');
+    console.log('✅ Favourites can be added, retrieved, and removed');
     console.log('✅ Game data joins work properly');
     console.log('✅ RLS policies are working correctly');
 
@@ -126,4 +126,4 @@ async function testFavoritesWithAuth() {
 }
 
 // Run the test
-testFavoritesWithAuth().catch(console.error);
+testFavouritesWithAuth().catch(console.error);
