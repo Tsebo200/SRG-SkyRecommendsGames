@@ -15,9 +15,11 @@ import { apiClient, Game } from '../../lib/api';
 import { HybridFavouritesService } from '../../lib/favourites-hybrid';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { useThemeColors } from '../../lib/theme-context';
 
 export default function SearchScreen() {
   const router = useRouter();
+  const themeColors = useThemeColors();
   const [query, setQuery] = useState('');
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(false);
@@ -148,20 +150,20 @@ export default function SearchScreen() {
     
     return (
       <TouchableOpacity onPress={() => goToDetails(item)}>
-        <View style={styles.gameCard}>
+        <View style={[styles.gameCard, { backgroundColor: themeColors.card }]}>
           <View style={styles.gameInfo}>
             {item.background_image && (
               <Image source={{ uri: item.background_image }} style={styles.gameImage} />
             )}
             <View style={styles.gameDetails}>
-              <Text style={styles.gameName}>{item.name}</Text>
+              <Text style={[styles.gameName, { color: themeColors.text }]}>{item.name}</Text>
               {item.genres && item.genres.length > 0 && (
-                <Text style={styles.gameGenres}>
+                <Text style={[styles.gameGenres, { color: themeColors.textSecondary }]}>
                   {item.genres.slice(0, 3).map(g => g.name).join(', ')}
                 </Text>
               )}
               {item.platforms && item.platforms.length > 0 && (
-                <Text style={styles.gamePlatforms}>
+                <Text style={[styles.gamePlatforms, { color: themeColors.textSecondary }]}>
                   {item.platforms.slice(0, 3).map(p => p.platform.name).join(', ')}
                 </Text>
               )}
@@ -176,7 +178,7 @@ export default function SearchScreen() {
             <Ionicons 
               name={isFavourited ? 'heart' : 'heart-outline'} 
               size={20} 
-              color={isFavourited ? '#ff6b6b' : '#a0a0a0'} 
+              color={isFavourited ? themeColors.error : themeColors.textSecondary} 
             />
           </TouchableOpacity>
         </View>
@@ -185,13 +187,13 @@ export default function SearchScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
           {/* <View style={styles.container}> */}
-        <View style={styles.searchCard}>
+        <View style={[styles.searchCard, { backgroundColor: themeColors.surface, borderColor: themeColors.border }]}>
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: themeColors.text, backgroundColor: themeColors.background }]}
             placeholder="Search for games..."
-            placeholderTextColor="#666"
+            placeholderTextColor={themeColors.textSecondary}
             value={query}
             onChangeText={setQuery}
             autoFocus
@@ -202,12 +204,12 @@ export default function SearchScreen() {
             keyboardType="default"
             textContentType="none"
           />
-          {loading && <ActivityIndicator style={styles.loader} color="#fff" />}
+          {loading && <ActivityIndicator style={styles.loader} color={themeColors.primary} />}
         </View>
 
       {error && (
-        <View style={styles.errorCard}>
-          <Text style={styles.errorText}>{error}</Text>
+        <View style={[styles.errorCard, { backgroundColor: themeColors.error }]}>
+          <Text style={[styles.errorText, { color: themeColors.buttonText }]}>{error}</Text>
         </View>
       )}
 
@@ -219,8 +221,8 @@ export default function SearchScreen() {
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           query.length > 0 && !loading ? (
-            <View style={styles.emptyCard}>
-              <Text style={styles.emptyText}>No games found</Text>
+            <View style={[styles.emptyCard, { backgroundColor: themeColors.surface }]}>
+              <Text style={[styles.emptyText, { color: themeColors.textSecondary }]}>No games found</Text>
             </View>
           ) : null
         }

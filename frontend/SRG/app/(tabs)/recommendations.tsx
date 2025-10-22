@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
   RefreshControl,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,6 +17,7 @@ import { useRouter } from 'expo-router';
 import { apiClient, Game } from '../../lib/api';
 import { HybridFavouritesService } from '../../lib/favourites-hybrid';
 import { SteamAPIService } from '../../lib/steam-api';
+import { useThemeColors } from '../../lib/theme-context';
 
 interface RecommendationGame extends Game {
   similarity_score?: number;
@@ -41,6 +43,7 @@ interface SteamRecommendations {
 
 export default function RecommendationsScreen() {
   const router = useRouter();
+  const themeColors = useThemeColors();
   const [recommendations, setRecommendations] = useState<RecommendationGame[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -219,28 +222,28 @@ export default function RecommendationsScreen() {
     console.log('🔍 Rendering empty state - recommendations:', recommendations.length, 'loading:', loading, 'error:', error);
     return (
       <View style={styles.emptyState}>
-        <Ionicons name="bulb" size={64} color="#666" />
-        <Text style={styles.emptyTitle}>No Recommendations Yet</Text>
-        <Text style={styles.emptySubtitle}>
+        <Ionicons name="bulb" size={64} color={themeColors.textSecondary} />
+        <Text style={[styles.emptyTitle, { color: themeColors.text }]}>No Recommendations Yet</Text>
+        <Text style={[styles.emptySubtitle, { color: themeColors.textSecondary }]}>
           Add games to your favourites by searching or scanning QR codes to get personalised recommendations!
         </Text>
         <View style={styles.emptyActions}>
-          <TouchableOpacity style={styles.ctaButton} onPress={generateRecommendations}>
-            <Text style={styles.ctaButtonText}>Get Recommendations</Text>
+          <TouchableOpacity style={[styles.ctaButton, { backgroundColor: themeColors.primary }]} onPress={generateRecommendations}>
+            <Text style={[styles.ctaButtonText, { color: themeColors.buttonText }]}>Get Recommendations</Text>
           </TouchableOpacity>
           <TouchableOpacity 
-            style={styles.secondaryButton} 
+            style={[styles.secondaryButton, { backgroundColor: themeColors.surface }]} 
             onPress={() => router.push('/(tabs)/search')}
           >
-            <Ionicons name="search" size={16} color="#007AFF" />
-            <Text style={styles.secondaryButtonText}>Search Games</Text>
+            <Ionicons name="search" size={16} color={themeColors.primary} />
+            <Text style={[styles.secondaryButtonText, { color: themeColors.primary }]}>Search Games</Text>
           </TouchableOpacity>
           <TouchableOpacity 
-            style={styles.secondaryButton} 
+            style={[styles.secondaryButton, { backgroundColor: themeColors.surface }]} 
             onPress={() => router.push('/(tabs)/scanner')}
           >
-            <Ionicons name="qr-code" size={16} color="#007AFF" />
-            <Text style={styles.secondaryButtonText}>Scan QR Code</Text>
+            <Ionicons name="qr-code" size={16} color={themeColors.primary} />
+            <Text style={[styles.secondaryButtonText, { color: themeColors.primary }]}>Scan QR Code</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -259,20 +262,25 @@ export default function RecommendationsScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Recommendations</Text>
-        <TouchableOpacity onPress={generateRecommendations} disabled={loading}>
-          <Ionicons 
-            name="refresh" 
-            size={24} 
-            color={loading ? "#666" : "#007AFF"} 
-          />
-        </TouchableOpacity>
-      </View>
+    <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]} edges={['top', 'left', 'right']}>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <Text style={[styles.headerTitle, { color: themeColors.text }]}>Recommendations</Text>
+          <TouchableOpacity onPress={generateRecommendations} disabled={loading}>
+            <Ionicons 
+              name="refresh" 
+              size={24} 
+              color={loading ? themeColors.textSecondary : themeColors.primary} 
+            />
+          </TouchableOpacity>
+        </View>
 
-      {/* Steam Recommendations Section - Optional */}
-      {steamProfile ? (
+        {/* Steam Recommendations Section - Optional */}
+        {steamProfile ? (
         <View style={styles.steamSection}>
           <View style={styles.steamHeader}>
             <View style={styles.steamTitleContainer}>
@@ -370,6 +378,7 @@ export default function RecommendationsScreen() {
           showsVerticalScrollIndicator={false}
         />
       )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -378,6 +387,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#000',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: 100, // Add space for tab bar
   },
   header: {
     flexDirection: 'row',

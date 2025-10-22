@@ -3,9 +3,11 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Alert, Activ
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { HybridFavouritesService, FavouriteGame } from '../../lib/favourites-hybrid';
+import { useThemeColors } from '../../lib/theme-context';
 
 export default function FavouritesScreen() {
   const router = useRouter();
+  const themeColors = useThemeColors();
   const [favourites, setFavourites] = useState<FavouriteGame[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -104,19 +106,22 @@ export default function FavouritesScreen() {
 
   const renderFavourite = ({ item }: { item: FavouriteGame }) => (
     <TouchableOpacity 
-      style={styles.favouriteCard}
+      style={[styles.favouriteCard, { 
+        backgroundColor: themeColors.card,
+        borderColor: themeColors.border 
+      }]}
       onPress={() => goToGameDetails(item)}
     >
       <View style={styles.favouriteInfo}>
         <View style={styles.favouriteDetails}>
-          <Text style={styles.favouriteName}>{item.game_name}</Text>
+          <Text style={[styles.favouriteName, { color: themeColors.text }]}>{item.game_name}</Text>
           {item.genres && item.genres.length > 0 && (
-            <Text style={styles.favouriteGenres}>
+            <Text style={[styles.favouriteGenres, { color: themeColors.textSecondary }]}>
               {item.genres.slice(0, 2).join(', ')}
             </Text>
           )}
           {item.platforms && item.platforms.length > 0 && (
-            <Text style={styles.favouritePlatforms}>
+            <Text style={[styles.favouritePlatforms, { color: themeColors.textSecondary }]}>
               {item.platforms.slice(0, 2).join(', ')}
             </Text>
           )}
@@ -125,6 +130,7 @@ export default function FavouritesScreen() {
           onPress={() => removeFavourite(item.game_id)}
           style={[
             styles.removeButton,
+            { backgroundColor: themeColors.error },
             removingGameId === item.game_id && styles.removeButtonDisabled
           ]}
           accessibilityRole="button"
@@ -132,9 +138,9 @@ export default function FavouritesScreen() {
           disabled={removingGameId === item.game_id}
         >
           {removingGameId === item.game_id ? (
-            <ActivityIndicator size="small" color="#fff" />
+            <ActivityIndicator size="small" color={themeColors.buttonText} />
           ) : (
-            <Text style={styles.removeButtonText}>Remove</Text>
+            <Text style={[styles.removeButtonText, { color: themeColors.buttonText }]}>Remove</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -143,10 +149,10 @@ export default function FavouritesScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3b82f6" />
-          <Text style={styles.loadingText}>Loading favourites...</Text>
+          <ActivityIndicator size="large" color={themeColors.primary} />
+          <Text style={[styles.loadingText, { color: themeColors.textSecondary }]}>Loading favourites...</Text>
         </View>
       </SafeAreaView>
     );
@@ -154,11 +160,11 @@ export default function FavouritesScreen() {
 
   if (error) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity onPress={loadFavourites} style={styles.retryButton}>
-            <Text style={styles.retryButtonText}>Try Again</Text>
+          <Text style={[styles.errorText, { color: themeColors.error }]}>{error}</Text>
+          <TouchableOpacity onPress={loadFavourites} style={[styles.retryButton, { backgroundColor: themeColors.primary }]}>
+            <Text style={[styles.retryButtonText, { color: themeColors.buttonText }]}>Try Again</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -166,10 +172,10 @@ export default function FavouritesScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
       <View style={styles.header}>
-        <Text style={styles.title}>Favourites</Text>
-        <Text style={styles.subtitle}>
+        <Text style={[styles.title, { color: themeColors.text }]}>Favourites</Text>
+        <Text style={[styles.subtitle, { color: themeColors.textSecondary }]}>
           {favourites.length === 0 
             ? 'No favourite games yet' 
             : `${favourites.length} favourite${favourites.length === 1 ? '' : 's'}`
@@ -179,8 +185,8 @@ export default function FavouritesScreen() {
 
       {favourites.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyTitle}>No Favourites Yet</Text>
-          <Text style={styles.emptySubtitle}>
+          <Text style={[styles.emptyTitle, { color: themeColors.text }]}>No Favourites Yet</Text>
+          <Text style={[styles.emptySubtitle, { color: themeColors.textSecondary }]}>
             Games you favourite will appear here. Start by searching for games and tapping the heart icon!
           </Text>
         </View>
@@ -276,8 +282,6 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   favouriteCard: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderColor: 'rgba(255,255,255,0.15)',
     borderWidth: 1,
     borderRadius: 12,
     marginBottom: 12,
