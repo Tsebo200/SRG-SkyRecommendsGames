@@ -200,10 +200,23 @@ export default function SearchScreen() {
             autoCorrect={false}
             autoCapitalize="none"
             returnKeyType="search"
-            clearButtonMode="while-editing"
             keyboardType="default"
             textContentType="none"
           />
+          {query.length > 0 && (
+            <TouchableOpacity 
+              onPress={() => setQuery('')} 
+              style={styles.clearButton}
+              accessibilityRole="button"
+              accessibilityLabel="Clear search"
+            >
+              <Ionicons 
+                name="close-circle" 
+                size={20} 
+                color="#87CEEB" 
+              />
+            </TouchableOpacity>
+          )}
           {loading && <ActivityIndicator style={styles.loader} color={themeColors.primary} />}
         </View>
 
@@ -259,6 +272,10 @@ const styles = StyleSheet.create({
   },
   loader: {
     marginLeft: 12,
+  },
+  clearButton: {
+    marginLeft: 8,
+    padding: 4,
   },
   errorCard: {
     padding: 16,
