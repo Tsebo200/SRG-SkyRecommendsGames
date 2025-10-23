@@ -10,6 +10,7 @@ import {
   Alert,
   RefreshControl,
   ScrollView,
+  Switch,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -55,6 +56,9 @@ export default function RecommendationsScreen() {
   const [steamLoading, setSteamLoading] = useState(false);
   const [steamProfile, setSteamProfile] = useState<string | null>(null);
   const [steamApi] = useState(new SteamAPIService('4E45453FFB33641E29B4C44FF691D29E'));
+  
+  // View mode state
+  const [isGridView, setIsGridView] = useState(true);
 
   // Load user's favourites for heart icons
   useEffect(() => {
@@ -263,15 +267,18 @@ export default function RecommendationsScreen() {
 
     return (
       <TouchableOpacity
-        style={[styles.gameCard, { backgroundColor: themeColors.card }]}
+        style={[
+          isGridView ? styles.gameCard : styles.gameCardList, 
+          { backgroundColor: themeColors.card }
+        ]}
         onPress={() => handleGamePress(item)}
         activeOpacity={0.8}
       >
-        <View style={styles.gameImageContainer}>
+        <View style={isGridView ? styles.gameImageContainer : styles.gameImageContainerList}>
           {item.background_image ? (
             <Image 
               source={{ uri: item.background_image }} 
-              style={styles.gameImage}
+              style={isGridView ? styles.gameImage : styles.gameImageList}
               resizeMode="cover"
               onLoad={() => console.log('✅ Image loaded successfully:', item.background_image)}
               onError={(error) => console.log('❌ Image failed to load:', item.background_image, error)}
@@ -307,7 +314,7 @@ export default function RecommendationsScreen() {
           )}
         </View>
 
-        <View style={styles.gameInfo}>
+        <View style={isGridView ? styles.gameInfo : styles.gameInfoList}>
           <Text style={[styles.gameName, { color: themeColors.text }]} numberOfLines={2}>
             {item.name}
           </Text>
@@ -431,13 +438,33 @@ export default function RecommendationsScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <Text style={[styles.headerTitle, { color: themeColors.text }]}>Recommendations</Text>
-        <TouchableOpacity onPress={generateRecommendations} disabled={loading}>
-          <Ionicons 
-            name="refresh" 
-            size={24} 
-            color={loading ? themeColors.textSecondary : themeColors.primary} 
-          />
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <View style={styles.viewToggle}>
+            <Ionicons 
+              name="grid" 
+              size={16} 
+              color={isGridView ? themeColors.primary : themeColors.textSecondary} 
+            />
+            <Switch
+              value={isGridView}
+              onValueChange={setIsGridView}
+              trackColor={{ false: themeColors.surface, true: themeColors.primary }}
+              thumbColor={isGridView ? themeColors.buttonText : themeColors.textSecondary}
+            />
+            <Ionicons 
+              name="list" 
+              size={16} 
+              color={!isGridView ? themeColors.primary : themeColors.textSecondary} 
+            />
+          </View>
+          <TouchableOpacity onPress={generateRecommendations} disabled={loading}>
+            <Ionicons 
+              name="refresh" 
+              size={24} 
+              color={loading ? themeColors.textSecondary : themeColors.primary} 
+            />
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Loading State */}
@@ -452,8 +479,8 @@ export default function RecommendationsScreen() {
           data={recommendations}
           renderItem={renderGameItem}
           keyExtractor={(item, index) => item.slug || `recommendation-${index}`}
-          numColumns={2}
-          columnWrapperStyle={styles.row}
+          numColumns={isGridView ? 2 : 1}
+          columnWrapperStyle={isGridView ? styles.row : undefined}
           contentContainerStyle={styles.listContainer}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
@@ -542,6 +569,16 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
   },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  viewToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -601,6 +638,38 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  // List view styles
+  gameCardList: {
+    flexDirection: 'row',
+    backgroundColor: '#1a1a1a',
+    borderRadius: 16,
+    marginBottom: 16,
+    marginHorizontal: 16,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  gameImageContainerList: {
+    position: 'relative',
+    width: 120,
+    height: 90,
+  },
+  gameImageList: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  gameInfoList: {
+    flex: 1,
+    padding: 12,
+    justifyContent: 'space-between',
   },
   gameInfo: {
     padding: 12,

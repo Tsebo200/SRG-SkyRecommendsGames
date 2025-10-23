@@ -727,7 +727,7 @@ func main() {
 			Messages: []openai.ChatCompletionMessage{
 				{
 					Role:    "system",
-					Content: "You are a game recommendation AI. Based on the user's favourite games, suggest 5 similar games they might enjoy. CRITICAL: You must return ONLY a valid JSON array. No explanations, no markdown, no additional text. Start with [ and end with ]. Each object must have exactly these fields: name (string), description (string), similarity_reason (string). Use well-known, popular game names. Example: [{\"name\":\"The Witcher 3: Wild Hunt\",\"description\":\"An epic open-world RPG\",\"similarity_reason\":\"Similar fantasy RPG gameplay\"}]",
+					Content: "You are a game recommendation AI. Based on the user's favourite games, suggest 6 similar games they might enjoy. CRITICAL: You must return ONLY a valid JSON array. No explanations, no markdown, no additional text. Start with [ and end with ]. Each object must have exactly these fields: name (string), description (string), similarity_reason (string). Use well-known, popular game names. Example: [{\"name\":\"The Witcher 3: Wild Hunt\",\"description\":\"An epic open-world RPG\",\"similarity_reason\":\"Similar fantasy RPG gameplay\"}]",
 				},
 				{
 					Role:    "user",
