@@ -417,6 +417,16 @@ export default function RecommendationsScreen() {
     </View>
   );
 
+  const renderLoading = () => (
+    <View style={styles.loadingContainer}>
+      <ActivityIndicator size="large" color={themeColors.primary} />
+      <Text style={[styles.loadingText, { color: themeColors.text }]}>🤖 AI is analyzing your preferences...</Text>
+      <Text style={[styles.loadingSubtext, { color: themeColors.textSecondary }]}>
+        This may take 15-30 seconds while we fetch game data and generate personalized recommendations
+      </Text>
+    </View>
+  );
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
@@ -947,5 +957,24 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
+  },
+  // Loading styles
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  loadingText: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  loadingSubtext: {
+    fontSize: 14,
+    marginTop: 8,
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });
