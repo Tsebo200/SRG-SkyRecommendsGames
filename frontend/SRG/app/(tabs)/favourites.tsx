@@ -115,7 +115,6 @@ export default function FavouritesScreen() {
     >
       <View style={styles.favouriteInfo}>
         <View style={styles.favouriteDetails}>
-<<<<<<< HEAD
           <View style={styles.gameTitleRow}>
             {item.game_image && (
               <Image 
@@ -129,17 +128,14 @@ export default function FavouritesScreen() {
           {item.genres && item.genres.length > 0 && (
             <Text style={[styles.favouriteGenres, { color: themeColors.textSecondary }]}>
               {item.genres.slice(0, 3).join(', ')}
-=======
           <Text style={[styles.favouriteName, { color: themeColors.text }]}>{item.game_name}</Text>
           {item.genres && item.genres.length > 0 && (
             <Text style={[styles.favouriteGenres, { color: themeColors.textSecondary }]}>
               {item.genres.slice(0, 2).join(', ')}
->>>>>>> 82691c4
             </Text>
           )}
           {item.platforms && item.platforms.length > 0 && (
             <Text style={[styles.favouritePlatforms, { color: themeColors.textSecondary }]}>
-<<<<<<< HEAD
               {item.platforms.slice(0, 3).join(', ')}
             </Text>
           )}
@@ -171,7 +167,6 @@ export default function FavouritesScreen() {
             )}
           </TouchableOpacity>
         </View>
-=======
               {item.platforms.slice(0, 2).join(', ')}
             </Text>
           )}
@@ -193,7 +188,6 @@ export default function FavouritesScreen() {
             <Text style={[styles.removeButtonText, { color: themeColors.buttonText }]}>Remove</Text>
           )}
         </TouchableOpacity>
->>>>>>> 82691c4
       </View>
     </TouchableOpacity>
   );
@@ -224,11 +218,8 @@ export default function FavouritesScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
-<<<<<<< HEAD
       <View style={[styles.header, { borderBottomColor: themeColors.border }]}>
-=======
       <View style={styles.header}>
->>>>>>> 82691c4
         <Text style={[styles.title, { color: themeColors.text }]}>Favourites</Text>
         <Text style={[styles.subtitle, { color: themeColors.textSecondary }]}>
           {favourites.length === 0 

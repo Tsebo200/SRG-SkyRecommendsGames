@@ -304,11 +304,8 @@ export default function ScannerScreen() {
           <Text style={[styles.historyGameName, { color: themeColors.text }]} numberOfLines={2}>
             {item.game_name || item.scan_data?.gameName || item.scan_data?.name || 'Scanned Item'}
           </Text>
-<<<<<<< HEAD
           <Text style={[styles.historyPlatform, { color: themeColors.primary }]}>
-=======
           <Text style={[styles.historyPlatform, { color: themeColors.textSecondary }]}>
->>>>>>> 82691c4
             {item.platform || item.scan_data?.platform || 'Unknown Platform'}
           </Text>
           <Text style={[styles.historyDate, { color: themeColors.textSecondary }]}>{formatDate(item.scan_date)}</Text>
@@ -328,13 +325,10 @@ export default function ScannerScreen() {
   if (!permission) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
-<<<<<<< HEAD
         <View style={[styles.permissionContainer, { backgroundColor: themeColors.surface }]}>
           <Text style={[styles.permissionText, { color: themeColors.text }]}>Requesting camera permission...</Text>
-=======
         <View style={styles.permissionContainer}>
           <Text style={[styles.permissionText, { color: themeColors.textSecondary }]}>Requesting camera permission...</Text>
->>>>>>> 82691c4
         </View>
       </SafeAreaView>
     );
@@ -343,11 +337,8 @@ export default function ScannerScreen() {
   if (!permission.granted) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
-<<<<<<< HEAD
         <View style={[styles.permissionContainer, { backgroundColor: themeColors.surface }]}>
-=======
         <View style={styles.permissionContainer}>
->>>>>>> 82691c4
           <Ionicons name="camera-outline" size={64} color={themeColors.textSecondary} />
           <Text style={[styles.permissionTitle, { color: themeColors.text }]}>Camera Permission Required</Text>
           <Text style={[styles.permissionText, { color: themeColors.textSecondary }]}>
@@ -363,11 +354,8 @@ export default function ScannerScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
-<<<<<<< HEAD
       <View style={[styles.header, { backgroundColor: themeColors.surface }]}>
-=======
       <View style={styles.header}>
->>>>>>> 82691c4
         <Text style={[styles.headerTitle, { color: themeColors.text }]}>Scan Game QR Code</Text>
         <Text style={[styles.headerSubtitle, { color: themeColors.textSecondary }]}>Point your camera at a game QR code</Text>
       </View>
@@ -378,13 +366,10 @@ export default function ScannerScreen() {
           style={[styles.tabButton, activeTab === 'camera' && [styles.activeTab, { backgroundColor: themeColors.primary }]]}
           onPress={() => setActiveTab('camera')}
         >
-<<<<<<< HEAD
           <Ionicons name="camera" size={20} color={activeTab === 'camera' ? themeColors.primary : themeColors.textSecondary} />
           <Text style={[styles.tabText, { color: activeTab === 'camera' ? themeColors.primary : themeColors.textSecondary }, activeTab === 'camera' && styles.activeTabText]}>
-=======
           <Ionicons name="camera" size={20} color={activeTab === 'camera' ? themeColors.buttonText : themeColors.textSecondary} />
           <Text style={[styles.tabText, { color: activeTab === 'camera' ? themeColors.buttonText : themeColors.textSecondary }, activeTab === 'camera' && styles.activeTabText]}>
->>>>>>> 82691c4
             Camera
           </Text>
         </TouchableOpacity>
@@ -396,13 +381,10 @@ export default function ScannerScreen() {
             loadScanHistory(); // Refresh history when switching to history tab
           }}
         >
-<<<<<<< HEAD
           <Ionicons name="time" size={20} color={activeTab === 'history' ? themeColors.primary : themeColors.textSecondary} />
           <Text style={[styles.tabText, { color: activeTab === 'history' ? themeColors.primary : themeColors.textSecondary }, activeTab === 'history' && styles.activeTabText]}>
-=======
           <Ionicons name="time" size={20} color={activeTab === 'history' ? themeColors.buttonText : themeColors.textSecondary} />
           <Text style={[styles.tabText, { color: activeTab === 'history' ? themeColors.buttonText : themeColors.textSecondary }, activeTab === 'history' && styles.activeTabText]}>
->>>>>>> 82691c4
             History ({scanHistory.length})
           </Text>
         </TouchableOpacity>
@@ -467,13 +449,10 @@ export default function ScannerScreen() {
 
       {/* History View */}
       {activeTab === 'history' && (
-<<<<<<< HEAD
         <View style={[styles.historyContainer, { backgroundColor: themeColors.background }]}>
           <View style={[styles.historyHeader, { backgroundColor: themeColors.surface }]}>
-=======
         <View style={styles.historyContainer}>
           <View style={styles.historyHeader}>
->>>>>>> 82691c4
             <Text style={[styles.historyTitle, { color: themeColors.text }]}>Scan History</Text>
             <View style={styles.historyActions}>
               <TouchableOpacity 
@@ -503,11 +482,8 @@ export default function ScannerScreen() {
           </View>
           
           {scanHistory.length === 0 ? (
-<<<<<<< HEAD
             <View style={[styles.emptyHistory, { backgroundColor: themeColors.background }]}>
-=======
             <View style={styles.emptyHistory}>
->>>>>>> 82691c4
               <Ionicons name="time-outline" size={64} color={themeColors.textSecondary} />
               <Text style={[styles.emptyHistoryTitle, { color: themeColors.text }]}>No Scans Yet</Text>
               <Text style={[styles.emptyHistoryText, { color: themeColors.textSecondary }]}>
