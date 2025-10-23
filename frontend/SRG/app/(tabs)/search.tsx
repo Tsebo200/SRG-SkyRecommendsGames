@@ -10,7 +10,9 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
+  Vibration,
 } from 'react-native';
+import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
@@ -28,6 +30,36 @@ export default function SearchScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [favourites, setFavourites] = useState<Set<string>>(new Set());
+
+  // Play favorite sound and haptic feedback
+  const playFavoriteFeedback = async (isFavourited: boolean) => {
+    try {
+      // Haptic feedback
+      if (isFavourited) {
+        // Light haptic for adding to favorites
+        Vibration.vibrate(50);
+      } else {
+        // Slightly longer haptic for removing from favorites
+        Vibration.vibrate(100);
+      }
+
+      // Sound feedback
+      const { sound } = await Audio.Sound.createAsync(
+        isFavourited 
+          ? require('../../assets/sounds/favorite-add.mp3') 
+          : require('../../assets/sounds/favorite-remove.mp3')
+      );
+      await sound.playAsync();
+      
+      // Clean up sound after playing
+      setTimeout(() => {
+        sound.unloadAsync();
+      }, 1000);
+    } catch (error) {
+      // If sound files don't exist, just provide haptic feedback
+      console.log('Sound feedback not available, using haptic only');
+    }
+  };
 
   // Debounced search function
   const debouncedSearch = useCallback(
@@ -123,10 +155,16 @@ export default function SearchScreen() {
           newSet.delete(gameSlug);
           return newSet;
         });
+        
+        // Play feedback for removing from favorites
+        await playFavoriteFeedback(false);
         Alert.alert('Removed', 'Game removed from favourites');
       } else {
         await HybridFavouritesService.addFavourite(game.id.toString(), game.name, game.slug, game.background_image);
         setFavourites(prev => new Set(prev).add(gameSlug));
+        
+        // Play feedback for adding to favorites
+        await playFavoriteFeedback(true);
         Alert.alert('Added', 'Game added to favourites');
       }
     } catch (error: any) {
@@ -164,7 +202,26 @@ export default function SearchScreen() {
         <View style={styles.rightAction}>
           <TouchableOpacity
             style={[styles.actionButton, { backgroundColor: '#87CEEB' }]}
-            onPress={() => toggleFavourite(item, { stopPropagation: () => {} })}
+            onPress={async () => {
+              const gameSlug = item.slug;
+              const isFavourited = favourites.has(gameSlug);
+              
+              if (!isFavourited) {
+                // Add to favorites with feedback
+                await HybridFavouritesService.addFavourite(item.id.toString(), item.name, item.slug, item.background_image);
+                setFavourites(prev => new Set(prev).add(gameSlug));
+                await playFavoriteFeedback(true);
+              } else {
+                // Remove from favorites with feedback
+                await HybridFavouritesService.removeFavourite(gameSlug);
+                setFavourites(prev => {
+                  const newSet = new Set(prev);
+                  newSet.delete(gameSlug);
+                  return newSet;
+                });
+                await playFavoriteFeedback(false);
+              }
+            }}
           >
             <Text style={styles.actionText}>
               {isFavourited ? 'Remove' : 'Favorite'}
@@ -178,13 +235,16 @@ export default function SearchScreen() {
       <Swipeable
         renderRightActions={renderRightActions}
         rightThreshold={100} // 30% of ~350px card width
-        onSwipeableOpen={(direction: string) => {
+        onSwipeableOpen={async (direction: string) => {
           if (direction === 'right') {
             // Auto-favorite when swiped right
             const gameSlug = item.slug;
             const isFavourited = favourites.has(gameSlug);
             if (!isFavourited) {
-              toggleFavourite(item, { stopPropagation: () => {} });
+              // Add to favorites with feedback
+              await HybridFavouritesService.addFavourite(item.id.toString(), item.name, item.slug, item.background_image);
+              setFavourites(prev => new Set(prev).add(gameSlug));
+              await playFavoriteFeedback(true);
             }
           }
         }}
