@@ -43,11 +43,11 @@ export default function SearchScreen() {
         Vibration.vibrate(100);
       }
 
-      // Sound feedback
+      // Sound feedback - use different sounds for add and remove
       const { sound } = await Audio.Sound.createAsync(
         isFavourited 
-          ? require('../../assets/sounds/favorite-add.mp3') 
-          : require('../../assets/sounds/favorite-remove.mp3')
+          ? require('../../assets/FavouriteSound.mp3') 
+          : require('../../assets/RemoveSound.mp3')
       );
       await sound.playAsync();
       
@@ -56,7 +56,7 @@ export default function SearchScreen() {
         sound.unloadAsync();
       }, 1000);
     } catch (error) {
-      // If sound files don't exist, just provide haptic feedback
+      // If sound file doesn't exist, just provide haptic feedback
       console.log('Sound feedback not available, using haptic only');
     }
   };
