@@ -51,11 +51,12 @@ export default function SearchScreen() {
       console.log('🔊 Loading sound file:', isFavourited ? 'FavouriteSound.mp3' : 'RemoveSound.mp3');
       
       const { sound } = await Audio.Sound.createAsync(soundFile);
+      console.log('🔊 Sound object created successfully');
       
-      // Set volume - make RemoveSound much louder to match FavouriteSound
+      // Set volume - make RemoveSound extremely loud to match FavouriteSound
       if (!isFavourited) {
-        await sound.setVolumeAsync(2.0); // Much higher volume for remove sound
-        console.log('🔊 Playing RemoveSound at 2.0x volume');
+        await sound.setVolumeAsync(3.0); // Extremely high volume for remove sound
+        console.log('🔊 Playing RemoveSound at 3.0x volume');
       } else {
         await sound.setVolumeAsync(1.0); // Normal volume for favorite sound
         console.log('🔊 Playing FavouriteSound at 1.0x volume');
@@ -63,6 +64,10 @@ export default function SearchScreen() {
       
       await sound.playAsync();
       console.log('🔊 Sound playback started');
+      
+      // Check if sound is actually playing
+      const status = await sound.getStatusAsync();
+      console.log('🔊 Sound status:', status);
       
       // Clean up sound after playing
       setTimeout(() => {
