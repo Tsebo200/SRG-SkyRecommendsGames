@@ -152,16 +152,16 @@ export default function SearchScreen() {
   const renderGame = ({ item }: { item: Game }) => {
     const isFavourited = favourites.has(item.slug);
     
-    // Render left action (favorite action)
-    const renderLeftActions = (progress: Animated.AnimatedAddition<number>, dragX: Animated.AnimatedAddition<number>) => {
+    // Render right action (favorite action)
+    const renderRightActions = (progress: Animated.AnimatedAddition<number>, dragX: Animated.AnimatedAddition<number>) => {
       const trans = dragX.interpolate({
         inputRange: [0, 50, 100, 101],
-        outputRange: [-20, 0, 0, 1],
+        outputRange: [20, 0, 0, -1],
         extrapolate: 'clamp',
       });
       
       return (
-        <View style={styles.leftAction}>
+        <View style={styles.rightAction}>
           <TouchableOpacity
             style={[styles.actionButton, { backgroundColor: '#87CEEB' }]}
             onPress={() => toggleFavourite(item, { stopPropagation: () => {} })}
@@ -177,11 +177,11 @@ export default function SearchScreen() {
     
     return (
       <Swipeable
-        renderLeftActions={renderLeftActions}
-        leftThreshold={100} // 30% of ~350px card width
+        renderRightActions={renderRightActions}
+        rightThreshold={100} // 30% of ~350px card width
         onSwipeableOpen={(direction: string) => {
-          if (direction === 'left') {
-            // Auto-favorite when swiped left
+          if (direction === 'right') {
+            // Auto-favorite when swiped right
             const gameSlug = item.slug;
             const isFavourited = favourites.has(gameSlug);
             if (!isFavourited) {
@@ -420,6 +420,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-end',
     paddingRight: 20,
+  },
+  rightAction: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    paddingLeft: 20,
   },
   actionButton: {
     flexDirection: 'row',
