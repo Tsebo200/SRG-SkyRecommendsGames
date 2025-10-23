@@ -217,7 +217,7 @@ export const ACCESSIBILITY_THEMES: AccessibilityTheme[] = [
   {
     id: 'protanomaly',
     name: 'Protanomaly ',
-    description: 'Optimised for red-green colour vision deficiency',
+    description: 'Optimised for red-green colour mode',
     lightColors: {
       primary: '#0066CC',
       secondary: '#4A90E2',
@@ -265,7 +265,7 @@ export const ACCESSIBILITY_THEMES: AccessibilityTheme[] = [
   {
     id: 'deuteranomaly',
     name: 'Deuteranomaly',
-    description: 'Optimised for green-red colour vision deficiency',
+    description: 'Optimised for green-red colour mode',
     lightColors: {
       primary: '#8B5CF6',
       secondary: '#A78BFA',
@@ -313,7 +313,7 @@ export const ACCESSIBILITY_THEMES: AccessibilityTheme[] = [
   {
     id: 'tritanomaly',
     name: 'Tritanomaly',
-    description: 'Optimised for blue-yellow colour vision deficiency',
+    description: 'Optimised for blue-yellow colour mode',
     lightColors: {
       primary: '#DC2626',
       secondary: '#EF4444',

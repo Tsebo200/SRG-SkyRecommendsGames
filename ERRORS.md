@@ -2006,11 +2006,11 @@ export default function AvatarPicker({ onAvatarSelect, currentAvatar, currentSee
 **Timestamp**: 24th October 2025 16:30:00  
 **Severity**: High  
 
-**Root Cause**: Light mode tab bar colors had insufficient contrast ratios for WCAG AA compliance, particularly for color blind users.
+**Root Cause**: Light mode tab bar colors had insufficient contrast ratios for WCAG AA compliance, particularly for users with different colour modes.
 
 **Error Details**:
 - Tab bar background `#F8F9FA` with inactive icons `#B0B0B0` created low contrast
-- Color blind themes needed better visual distinction
+- Different colour mode themes needed better visual distinction
 - Nature palette required unique brown colors separate from other themes
 
 **Resolution Steps**:
@@ -2037,14 +2037,14 @@ custom-nature: {
 
 **Key Learning Points**:
 - WCAG AA requires 4.5:1 contrast ratio minimum
-- Color blind themes need distinct visual patterns
+- Different colour mode themes need distinct visual patterns
 - Theme-specific colors should be isolated appropriately
 - Accessibility testing is crucial for inclusive design
 
 **Prevention Strategies**:
 - Test contrast ratios during development
 - Use accessibility tools for validation
-- Consider color blind users in design decisions
+- Consider users with different colour modes in design decisions
 - Maintain consistent visual hierarchy
 
 ---
@@ -2116,7 +2116,7 @@ custom-nature: {
 
 ## 🛡️ Prevention Strategies (Updated)
 
-1. **Accessibility First** - Test contrast ratios and color blind compatibility during development
+1. **Accessibility First** - Test contrast ratios and different colour mode compatibility during development
 2. **User-Centric Design** - Regular user feedback collection and feature validation
 3. **Clean Architecture** - Proper component lifecycle management and regular cleanup
 4. **External API Research** - Thorough investigation of third-party services before integration

@@ -319,13 +319,13 @@ export default function ProfileFirebaseScreen() {
             </View>
           )}
 
-          {/* Colour Blindness Support */}
+          {/* Colour Mode Support */}
           <TouchableOpacity 
             style={[styles.menuItem, { borderBottomColor: themeColors.border }]}
             onPress={() => setShowAccessibilitySelector(!showAccessibilitySelector)}
           >
             <View style={styles.menuItemContent}>
-              <Text style={[styles.menuText, { color: themeColors.text }]}>Colour Blindness </Text>
+              <Text style={[styles.menuText, { color: themeColors.text }]}>Colour Mode </Text>
               <View style={styles.themeInfo}>
                 <Text style={[styles.currentThemeText, { color: themeColors.textSecondary }]}> 
                   {ColorThemeService.getCurrentAccessibilityTheme().name}
