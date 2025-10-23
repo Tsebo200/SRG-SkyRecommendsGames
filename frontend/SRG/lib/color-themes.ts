@@ -366,6 +366,8 @@ export const COLOR_THEMES: ColorTheme[] = [
     id: 'light',
     name: 'Nature Light',
     description: 'Nature-inspired light interface',
+    name: 'Light Theme',
+    description: 'Clean and bright interface',
     colors: ACCESSIBILITY_THEMES[0].lightColors,
     isDark: false,
     isHighContrast: false,
@@ -379,6 +381,8 @@ export const COLOR_THEMES: ColorTheme[] = [
     id: 'dark',
     name: 'Nature Dark',
     description: 'Nature-inspired dark interface',
+    name: 'Dark Theme',
+    description: 'Easy on the eyes in low light',
     colors: ACCESSIBILITY_THEMES[0].darkColors,
     isDark: true,
     isHighContrast: false,
@@ -395,6 +399,7 @@ export class ColorThemeService {
   private static readonly ACCESSIBILITY_THEME_KEY = 'selected_accessibility_theme';
   private static currentThemeMode: ThemeMode = THEME_MODES[1]; // Default to dark
   private static currentAccessibilityTheme: AccessibilityTheme = ACCESSIBILITY_THEMES[0]; // Default to custom-nature
+  private static currentAccessibilityTheme: AccessibilityTheme = ACCESSIBILITY_THEMES[0]; // Default to standard
 
   /**
    * Get all available theme modes (Light/Dark)
@@ -529,6 +534,7 @@ export class ColorThemeService {
       await AsyncStorage.removeItem(this.ACCESSIBILITY_THEME_KEY);
       this.currentThemeMode = THEME_MODES[1]; // Dark mode
       this.currentAccessibilityTheme = ACCESSIBILITY_THEMES[0]; // Custom Nature Palette
+      this.currentAccessibilityTheme = ACCESSIBILITY_THEMES[0]; // Standard
       console.log('✅ Reset to default theme settings');
       return true;
     } catch (error) {

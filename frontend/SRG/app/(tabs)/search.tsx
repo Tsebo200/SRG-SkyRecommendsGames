@@ -191,7 +191,11 @@ export default function SearchScreen() {
           {/* <View style={styles.container}> */}
         <View style={[styles.searchCard, { backgroundColor: themeColors.surface, borderColor: themeColors.border }]}>
           <TextInput
+<<<<<<< HEAD
             style={[styles.searchInput, { color: themeColors.text }]}
+=======
+            style={[styles.searchInput, { color: themeColors.text, backgroundColor: themeColors.background }]}
+>>>>>>> 82691c4
             placeholder="Search for games..."
             placeholderTextColor={themeColors.textSecondary}
             value={query}

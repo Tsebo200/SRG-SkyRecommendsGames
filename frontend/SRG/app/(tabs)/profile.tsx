@@ -7,8 +7,11 @@ import { UserMappingService } from '../../lib/user-mapping';
 import { HybridFavouritesService } from '../../lib/favourites-hybrid';
 import { ColorThemeService, ColorTheme } from '../../lib/color-themes';
 import ColorThemeSelector from '../../components/ColorThemeSelector';
+<<<<<<< HEAD
 import NetworkStatus from '../../components/NetworkStatus';
 import ColorPalettePreview from '../../components/ColorPalettePreview';
+=======
+>>>>>>> 82691c4
 import { useTheme, useThemeColors } from '../../lib/theme-context';
 
 export default function ProfileFirebaseScreen() {
@@ -17,7 +20,10 @@ export default function ProfileFirebaseScreen() {
   const [signingOut, setSigningOut] = useState(false);
   const [showThemeSelector, setShowThemeSelector] = useState(false);
   const [showAccessibilitySelector, setShowAccessibilitySelector] = useState(false);
+<<<<<<< HEAD
   const [showColorPreview, setShowColorPreview] = useState(false);
+=======
+>>>>>>> 82691c4
   const [accessibilityOptions, setAccessibilityOptions] = useState<any[]>([]);
   
   // Use theme context
@@ -214,11 +220,14 @@ export default function ProfileFirebaseScreen() {
         </View>
 
         <View style={styles.section}>
+<<<<<<< HEAD
           <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Network</Text>
           <NetworkStatus />
         </View>
 
         <View style={styles.section}>
+=======
+>>>>>>> 82691c4
           <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Appearance</Text>
           
           <TouchableOpacity 
@@ -238,6 +247,7 @@ export default function ProfileFirebaseScreen() {
             </View>
           </TouchableOpacity>
 
+<<<<<<< HEAD
           {/* Colour Palette Preview */}
           <TouchableOpacity 
             style={[styles.menuItem, { borderBottomColor: themeColors.border }]}
@@ -257,6 +267,8 @@ export default function ProfileFirebaseScreen() {
             </View>
           )}
 
+=======
+>>>>>>> 82691c4
           {showThemeSelector && (
             <View style={[styles.themeSelectorContainer, { backgroundColor: themeColors.background }]}> 
               <ColorThemeSelector onThemeChange={handleThemeChange} />
@@ -463,12 +475,15 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
   },
+<<<<<<< HEAD
   previewContainer: {
     marginTop: 16,
     borderRadius: 12,
     padding: 16,
     maxHeight: 400,
   },
+=======
+>>>>>>> 82691c4
   inlineChips: {
     flexDirection: 'row',
     flexWrap: 'wrap',
