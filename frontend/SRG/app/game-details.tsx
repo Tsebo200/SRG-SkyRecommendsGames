@@ -92,11 +92,11 @@ export default function GameDetailsScreen() {
         Alert.alert('Removed from Favourites', `${game.name} has been removed from your favourites.`);
       } else {
         await HybridFavouritesService.addFavourite({
-          game_id: game.id.toString(),
+          game_id: game.id?.toString() || game.slug || 'unknown',
           game_name: game.name,
           game_slug: game.slug,
-          genres: game.genres?.map(g => g.name) || [],
-          platforms: game.platforms?.map(p => p.platform.name) || [],
+          genres: game.genres?.map(g => typeof g === 'string' ? g : g.name) || [],
+          platforms: game.platforms?.map(p => typeof p === 'string' ? p : p.platform?.name || p.name) || [],
         });
         setIsFavourite(true);
         Alert.alert('Added to Favourites', `${game.name} has been added to your favourites!`);
