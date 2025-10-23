@@ -31,20 +31,41 @@ export default function FavouritesScreen() {
       setError(null);
       console.log('🔍 Loading favourites with persistence...');
       
-      // First, remove any duplicates
+      // First, force clean any corrupted data
+      await HybridFavouritesService.forceCleanCorruptedData();
+      
+      // Then, remove any duplicates
       await HybridFavouritesService.removeDuplicates();
       
       // Then load the favourites
       const data = await HybridFavouritesService.getFavourites();
       console.log('✅ Favourites loaded (deduplicated):', data.length, 'items');
       
-      // Clean up any corrupted data
-      const cleanedFavourites = data.map(fav => ({
-        ...fav,
-        game_id: typeof fav.game_id === 'string' ? fav.game_id : String(fav.game_id),
-        game_slug: typeof fav.game_slug === 'string' ? fav.game_slug : String(fav.game_slug || ''),
-        game_name: typeof fav.game_name === 'string' ? fav.game_name : String(fav.game_name || 'Unknown Game')
-      }));
+      // Clean up any corrupted data - filter out invalid entries
+      const cleanedFavourites = data
+        .filter(fav => {
+          // Remove entries with invalid game_id or game_slug
+          const hasValidId = fav.game_id && 
+            typeof fav.game_id === 'string' && 
+            fav.game_id !== '[object Object]' && 
+            fav.game_id !== 'unknown' &&
+            fav.game_id.length > 0;
+          
+          const hasValidSlug = fav.game_slug && 
+            typeof fav.game_slug === 'string' && 
+            fav.game_slug.length > 0;
+          
+          return hasValidId && hasValidSlug;
+        })
+        .map(fav => ({
+          ...fav,
+          game_id: String(fav.game_id),
+          game_slug: String(fav.game_slug),
+          game_name: String(fav.game_name || 'Unknown Game'),
+          game_image: fav.game_image || undefined,
+          genres: fav.genres || [],
+          platforms: fav.platforms || []
+        }));
       
       console.log('🧹 Cleaned favourites data:', cleanedFavourites.length, 'items');
       setFavourites(cleanedFavourites);

@@ -379,18 +379,34 @@ export class HybridFavouritesService {
       
       // Clean up corrupted data and deduplicate
       const cleanedAndDeduplicated = localFavourites.reduce((acc: LocalFavourite[], current) => {
+        // Skip entries with invalid data
+        const hasValidId = current.game_id && 
+          typeof current.game_id === 'string' && 
+          current.game_id !== '[object Object]' && 
+          current.game_id !== 'unknown' &&
+          current.game_id.length > 0;
+        
+        const hasValidSlug = current.game_slug && 
+          typeof current.game_slug === 'string' && 
+          current.game_slug.length > 0;
+        
+        if (!hasValidId || !hasValidSlug) {
+          console.log('🗑️ Skipping corrupted entry:', current);
+          return acc;
+        }
+        
         // Ensure all fields are strings
         const cleaned: LocalFavourite = {
-          game_id: typeof current.game_id === 'string' ? current.game_id : String(current.game_id || ''),
-          game_name: typeof current.game_name === 'string' ? current.game_name : String(current.game_name || 'Unknown Game'),
-          game_slug: typeof current.game_slug === 'string' ? current.game_slug : String(current.game_slug || ''),
-          game_image: typeof current.game_image === 'string' ? current.game_image : String(current.game_image || ''),
+          game_id: String(current.game_id),
+          game_name: String(current.game_name || 'Unknown Game'),
+          game_slug: String(current.game_slug),
+          game_image: current.game_image || '',
           added_at: typeof current.added_at === 'string' ? current.added_at : new Date().toISOString()
         };
         
         // Check if this game already exists (deduplicate by game_slug)
         const exists = acc.some(fav => fav.game_slug === cleaned.game_slug);
-        if (!exists && cleaned.game_slug && cleaned.game_slug !== '') {
+        if (!exists) {
           acc.push(cleaned);
         }
         return acc;
@@ -402,6 +418,38 @@ export class HybridFavouritesService {
       console.log(`✅ Cleaned and removed ${localFavourites.length - cleanedAndDeduplicated.length} duplicates/corrupted entries`);
     } catch (error) {
       console.error('❌ Failed to remove duplicates:', error);
+    }
+  }
+
+  // Force clean corrupted data
+  static async forceCleanCorruptedData(): Promise<void> {
+    try {
+      console.log('🧹 Force cleaning corrupted favourites data...');
+      
+      // Load current favourites
+      const localFavourites = await this.loadFromLocalStorage();
+      
+      // Filter out all corrupted entries
+      const validFavourites = localFavourites.filter(fav => {
+        const hasValidId = fav.game_id && 
+          typeof fav.game_id === 'string' && 
+          fav.game_id !== '[object Object]' && 
+          fav.game_id !== 'unknown' &&
+          fav.game_id.length > 0;
+        
+        const hasValidSlug = fav.game_slug && 
+          typeof fav.game_slug === 'string' && 
+          fav.game_slug.length > 0;
+        
+        return hasValidId && hasValidSlug;
+      });
+      
+      // Save only valid favourites
+      await this.saveToLocalStorage(validFavourites);
+      
+      console.log(`✅ Force cleaned: removed ${localFavourites.length - validFavourites.length} corrupted entries`);
+    } catch (error) {
+      console.error('❌ Failed to force clean corrupted data:', error);
     }
   }
 
