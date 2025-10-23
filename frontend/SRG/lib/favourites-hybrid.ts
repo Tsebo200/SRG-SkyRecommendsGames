@@ -175,6 +175,13 @@ export class HybridFavouritesService {
       game_image: gameImage,
       added_at: new Date().toISOString()
     };
+    
+    console.log('🔍 Storing local favourite with image:', {
+      name: gameName,
+      slug: gameSlug,
+      image: gameImage,
+      hasImage: !!gameImage
+    });
 
     try {
       // Add to local storage first
@@ -313,16 +320,24 @@ export class HybridFavouritesService {
           }
           return acc;
         }, [])
-        .map(fav => ({
-          user_id: '', // Will be filled by auth
-          game_id: fav.game_id,
-          created_at: fav.added_at,
-          game_name: fav.game_name,
-          game_slug: fav.game_slug,
-          game_image: fav.game_image,
-          platforms: fav.platforms,
-          genres: fav.genres
-        }));
+        .map(fav => {
+          console.log('🔍 Loading favourite with image data:', {
+            name: fav.game_name,
+            slug: fav.game_slug,
+            image: fav.game_image,
+            hasImage: !!fav.game_image
+          });
+          return {
+            user_id: '', // Will be filled by auth
+            game_id: fav.game_id,
+            created_at: fav.added_at,
+            game_name: fav.game_name,
+            game_slug: fav.game_slug,
+            game_image: fav.game_image,
+            platforms: fav.platforms,
+            genres: fav.genres
+          };
+        });
 
       console.log('✅ Loaded favourites (hybrid, deduplicated):', favourites.length, 'items');
       return favourites;

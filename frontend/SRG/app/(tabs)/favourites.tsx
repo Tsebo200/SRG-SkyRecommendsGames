@@ -57,15 +57,29 @@ export default function FavouritesScreen() {
           
           return hasValidId && hasValidSlug;
         })
-        .map(fav => ({
-          ...fav,
-          game_id: String(fav.game_id),
-          game_slug: String(fav.game_slug),
-          game_name: String(fav.game_name || 'Unknown Game'),
-          game_image: fav.game_image || undefined,
-          genres: fav.genres || [],
-          platforms: fav.platforms || []
-        }));
+        .map(fav => {
+          // Debug specific problem games
+          if (fav.game_name?.includes('Black Myth Wukong') || fav.game_name?.includes('Marvel Spider-Man 2')) {
+            console.log('🚨 PROBLEM GAME IN FAVORITES:', {
+              name: fav.game_name,
+              slug: fav.game_slug,
+              image: fav.game_image,
+              imageType: typeof fav.game_image,
+              imageLength: fav.game_image?.length || 0,
+              hasImage: !!fav.game_image
+            });
+          }
+          
+          return {
+            ...fav,
+            game_id: String(fav.game_id),
+            game_slug: String(fav.game_slug),
+            game_name: String(fav.game_name || 'Unknown Game'),
+            game_image: fav.game_image || undefined,
+            genres: fav.genres || [],
+            platforms: fav.platforms || []
+          };
+        });
       
       console.log('🧹 Cleaned favourites data:', cleanedFavourites.length, 'items');
       setFavourites(cleanedFavourites);
@@ -159,12 +173,40 @@ export default function FavouritesScreen() {
       <View style={styles.favouriteInfo}>
         <View style={styles.favouriteDetails}>
           <View style={styles.gameTitleRow}>
-            {item.game_image && (
+            {item.game_image ? (
               <Image 
                 source={{ uri: item.game_image }} 
                 style={styles.gameIcon}
                 resizeMode="cover"
+                onError={(error) => {
+                  console.log('❌ Image failed to load for', item.game_name, ':', item.game_image);
+                  if (item.game_name?.includes('Black Myth Wukong') || item.game_name?.includes('Marvel Spider-Man 2')) {
+                    console.log('🚨 PROBLEM GAME IMAGE ERROR:', {
+                      name: item.game_name,
+                      image: item.game_image,
+                      error: error
+                    });
+                  }
+                }}
+                onLoad={() => {
+                  console.log('✅ Image loaded for', item.game_name);
+                  if (item.game_name?.includes('Black Myth Wukong') || item.game_name?.includes('Marvel Spider-Man 2')) {
+                    console.log('🎉 PROBLEM GAME IMAGE SUCCESS:', {
+                      name: item.game_name,
+                      image: item.game_image
+                    });
+                  }
+                }}
               />
+            ) : (
+              <View style={[styles.gameIcon, { backgroundColor: themeColors.card, justifyContent: 'center', alignItems: 'center' }]}>
+                <Text style={{ color: themeColors.textSecondary, fontSize: 12 }}>No Image</Text>
+                {(item.game_name?.includes('Black Myth Wukong') || item.game_name?.includes('Marvel Spider-Man 2')) && (
+                  <Text style={{ color: themeColors.textSecondary, fontSize: 10, marginTop: 2 }}>
+                    {item.game_name}
+                  </Text>
+                )}
+              </View>
             )}
             <Text style={[styles.favouriteName, { color: themeColors.text }]}>{item.game_name}</Text>
           </View>

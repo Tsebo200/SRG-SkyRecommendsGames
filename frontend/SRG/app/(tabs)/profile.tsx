@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, ScrollView, Switch, Image, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { HybridAuthService } from '../../lib/hybrid-auth';
@@ -8,8 +8,8 @@ import { HybridFavouritesService } from '../../lib/favourites-hybrid';
 import { ColorThemeService, ColorTheme } from '../../lib/color-themes';
 import ColorThemeSelector from '../../components/ColorThemeSelector';
 import NetworkStatus from '../../components/NetworkStatus';
-import ColorPalettePreview from '../../components/ColorPalettePreview';
-import { useTheme, useThemeColors } from '../../lib/theme-context';
+import AvatarPicker from '../../components/AvatarPicker';
+import { useTheme, useThemeColors, useIsDarkTheme } from '../../lib/theme-context';
 
 export default function ProfileFirebaseScreen() {
   const [user, setUser] = useState<any>(null);
@@ -17,18 +17,35 @@ export default function ProfileFirebaseScreen() {
   const [signingOut, setSigningOut] = useState(false);
   const [showThemeSelector, setShowThemeSelector] = useState(false);
   const [showAccessibilitySelector, setShowAccessibilitySelector] = useState(false);
-  const [showColorPreview, setShowColorPreview] = useState(false);
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [accessibilityOptions, setAccessibilityOptions] = useState<any[]>([]);
+  const [userAvatar, setUserAvatar] = useState<string>('');
+  const [userAvatarSeed, setUserAvatarSeed] = useState<string>('');
   
   // Use theme context
   const { currentTheme, setTheme } = useTheme();
   const themeColors = useThemeColors();
+  const isDarkTheme = useIsDarkTheme();
 
   useEffect(() => {
     loadUserProfile();
+    loadUserAvatar();
     // Preload accessibility options
     setAccessibilityOptions(ColorThemeService.getAvailableAccessibilityThemes());
   }, []);
+
+  const loadUserAvatar = async () => {
+    try {
+      const savedAvatar = await AsyncStorage.getItem('user_avatar');
+      const savedSeed = await AsyncStorage.getItem('user_avatar_seed');
+      if (savedAvatar && savedSeed) {
+        setUserAvatar(savedAvatar);
+        setUserAvatarSeed(savedSeed);
+      }
+    } catch (error) {
+      console.error('❌ Error loading user avatar:', error);
+    }
+  };
 
   const loadUserProfile = async () => {
     try {
@@ -74,6 +91,29 @@ export default function ProfileFirebaseScreen() {
     } catch (error) {
       console.error('❌ Error changing accessibility theme:', error);
     }
+  };
+
+  const handleDarkModeToggle = async (isDark: boolean) => {
+    try {
+      const themeId = isDark ? 'dark' : 'light';
+      const success = await setTheme(themeId);
+      if (success) {
+        console.log('🌙 Dark mode toggled:', isDark ? 'ON' : 'OFF');
+      }
+    } catch (error) {
+      console.error('❌ Error toggling dark mode:', error);
+    }
+  };
+
+  const handleAvatarSelect = (avatarUrl: string, seed: string) => {
+    setUserAvatar(avatarUrl);
+    setUserAvatarSeed(seed);
+    setShowAvatarPicker(false);
+    console.log('🎨 Avatar selected:', seed);
+    
+    // Save avatar to AsyncStorage
+    AsyncStorage.setItem('user_avatar', avatarUrl);
+    AsyncStorage.setItem('user_avatar_seed', seed);
   };
 
   const handleSignOut = async () => {
@@ -168,11 +208,23 @@ export default function ProfileFirebaseScreen() {
 
         {user && (
           <View style={[styles.profileCard, { backgroundColor: themeColors.card }]}>
-            <View style={[styles.avatar, { backgroundColor: themeColors.primary }]}>
-              <Text style={[styles.avatarText, { color: themeColors.buttonText }]}>
-                {user.displayName?.charAt(0) || user.email?.charAt(0) || 'U'}
-              </Text>
-            </View>
+            <TouchableOpacity 
+              style={[styles.avatar, { backgroundColor: themeColors.primary }]}
+              onPress={() => setShowAvatarPicker(true)}
+              activeOpacity={0.8}
+            >
+              {userAvatar ? (
+                <Image 
+                  source={{ uri: userAvatar }} 
+                  style={styles.avatarImage}
+                  resizeMode="cover"
+                />
+              ) : (
+                <Text style={[styles.avatarText, { color: themeColors.buttonText }]}>
+                  {user.displayName?.charAt(0) || user.email?.charAt(0) || 'U'}
+                </Text>
+              )}
+            </TouchableOpacity>
             
             <View style={styles.userInfo}>
               <Text style={[styles.userName, { color: themeColors.text }]}>
@@ -221,6 +273,27 @@ export default function ProfileFirebaseScreen() {
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Appearance</Text>
           
+          {/* Dark Mode Toggle */}
+          <View style={[styles.menuItem, { borderBottomColor: themeColors.border }]}>
+            <View style={styles.menuItemContent}>
+              <View style={styles.darkModeContent}>
+                <Text style={[styles.menuText, { color: themeColors.text }]}>
+                  {isDarkTheme ? 'Dark Mode' : 'Light Mode'}
+                </Text>
+                <Text style={[styles.darkModeSubtext, { color: themeColors.textSecondary }]}>
+                  {isDarkTheme ? 'Easy on the eyes in low light' : 'Clean and bright interface'}
+                </Text>
+              </View>
+              <Switch
+                value={isDarkTheme}
+                onValueChange={handleDarkModeToggle}
+                trackColor={{ false: themeColors.border, true: themeColors.primary }}
+                thumbColor={isDarkTheme ? themeColors.buttonText : themeColors.background}
+                ios_backgroundColor={themeColors.border}
+              />
+            </View>
+          </View>
+          
           <TouchableOpacity 
             style={[styles.menuItem, { borderBottomColor: themeColors.border }]}
             onPress={() => setShowThemeSelector(!showThemeSelector)}
@@ -239,23 +312,6 @@ export default function ProfileFirebaseScreen() {
           </TouchableOpacity>
 
           {/* Colour Palette Preview */}
-          <TouchableOpacity 
-            style={[styles.menuItem, { borderBottomColor: themeColors.border }]}
-            onPress={() => setShowColorPreview(!showColorPreview)}
-          >
-            <View style={styles.menuItemContent}>
-              <Text style={[styles.menuText, { color: themeColors.text }]}>Colour Palette Preview</Text>
-              <Text style={[styles.menuArrow, { color: themeColors.textSecondary }]}>
-                {showColorPreview ? '▼' : '›'}
-              </Text>
-            </View>
-          </TouchableOpacity>
-
-          {showColorPreview && (
-            <View style={[styles.previewContainer, { backgroundColor: themeColors.background }]}>
-              <ColorPalettePreview />
-            </View>
-          )}
 
           {showThemeSelector && (
             <View style={[styles.themeSelectorContainer, { backgroundColor: themeColors.background }]}> 
@@ -352,6 +408,37 @@ export default function ProfileFirebaseScreen() {
 
         
       </ScrollView>
+
+      {/* Avatar Picker Modal */}
+      <Modal
+        visible={showAvatarPicker}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowAvatarPicker(false)}
+      >
+        <SafeAreaView style={[styles.modalContainer, { backgroundColor: themeColors.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: themeColors.border }]}>
+            <TouchableOpacity
+              onPress={() => setShowAvatarPicker(false)}
+              style={styles.closeButton}
+            >
+              <Text style={[styles.closeButtonText, { color: themeColors.primary }]}>
+                Cancel
+              </Text>
+            </TouchableOpacity>
+            <Text style={[styles.modalTitle, { color: themeColors.text }]}>
+              Choose Avatar
+            </Text>
+            <View style={styles.placeholder} />
+          </View>
+          
+          <AvatarPicker
+            onAvatarSelect={handleAvatarSelect}
+            currentAvatar={userAvatar}
+            currentSeed={userAvatarSeed}
+          />
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -457,17 +544,18 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     marginRight: 8,
   },
+  darkModeContent: {
+    flex: 1,
+  },
+  darkModeSubtext: {
+    fontSize: 12,
+    marginTop: 2,
+  },
   themeSelectorContainer: {
     marginTop: 16,
     backgroundColor: 'transparent',
     borderRadius: 12,
     padding: 16,
-  },
-  previewContainer: {
-    marginTop: 16,
-    borderRadius: 12,
-    padding: 16,
-    maxHeight: 400,
   },
   inlineChips: {
     flexDirection: 'row',
@@ -540,5 +628,36 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 30,
+  },
+  modalContainer: {
+    flex: 1,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+  },
+  closeButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  closeButtonText: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  placeholder: {
+    width: 60,
   },
 });

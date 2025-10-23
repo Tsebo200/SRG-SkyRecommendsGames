@@ -129,7 +129,7 @@ export default function RecommendationsScreen() {
       
       // Get AI-powered recommendations using GPT-3.5-turbo
       console.log('🔍 Calling AI recommendations API... (this may take 15-30 seconds)');
-      console.log('🤖 AI is analyzing your preferences and fetching game data...');
+      console.log('🤖 AI is analysing your preferences and fetching game data...');
       const aiRecommendations = await apiClient.getRecommendations(favouriteGameNames);
       console.log('🔍 Received AI recommendations:', aiRecommendations);
       
@@ -448,7 +448,7 @@ export default function RecommendationsScreen() {
   const renderLoading = () => (
     <View style={styles.loadingContainer}>
       <ActivityIndicator size="large" color={themeColors.primary} />
-      <Text style={[styles.loadingText, { color: themeColors.text }]}>🤖 AI is analyzing your preferences...</Text>
+      <Text style={[styles.loadingText, { color: themeColors.text }]}>🤖 AI is analysing your preferences...</Text>
       <Text style={[styles.loadingSubtext, { color: themeColors.textSecondary }]}>
         This may take 15-30 seconds while we fetch game data and generate personalized recommendations
       </Text>

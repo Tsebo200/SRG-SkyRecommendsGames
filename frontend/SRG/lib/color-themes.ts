@@ -89,9 +89,9 @@ export const ACCESSIBILITY_THEMES: AccessibilityTheme[] = [
       card: '#dfe8f1',            // Light blue-gray - card backgrounds
       button: '#2c7083',          // Teal blue - primary buttons
       buttonText: '#f1d9bd',       // Cream - button text
-      tabBar: '#dfe8f1',          // Light blue-gray - tab bar
-      tabBarActive: '#2c7083',    // Teal blue - active tab
-      tabBarInactive: '#87695f',  // Warm brown - inactive tabs
+      tabBar: '#f8f9fa',          // Light gray - tab bar (higher contrast)
+      tabBarActive: '#413d3e',     // Dark gray - active tab (dark gray)
+      tabBarInactive: '#dba879',   // Light brown - inactive tabs (light brown)
     },
     darkColors: {
       primary: '#7bb4bd',         // Light blue - main brand (lighter for dark mode)
@@ -137,9 +137,9 @@ export const ACCESSIBILITY_THEMES: AccessibilityTheme[] = [
       card: '#FFFFFF',
       button: '#007AFF',
       buttonText: '#FFFFFF',
-      tabBar: '#F2F2F7',
-      tabBarActive: '#007AFF',
-      tabBarInactive: '#8E8E93',
+      tabBar: '#B0B0B0',          // Light gray - tab bar background
+      tabBarActive: '#007AFF',     // Blue - active tab (primary color)
+      tabBarInactive: '#F8F9FA',   // Very light gray - inactive tabs
     },
     darkColors: {
       primary: '#0A84FF',
@@ -186,8 +186,8 @@ export const ACCESSIBILITY_THEMES: AccessibilityTheme[] = [
       button: '#000000',
       buttonText: '#FFFFFF',
       tabBar: '#FFFFFF',
-      tabBarActive: '#000000',
-      tabBarInactive: '#666666',
+      tabBarActive: '#000000',     // Black - active tab (maximum contrast)
+      tabBarInactive: '#CCCCCC',   // Light gray - inactive tabs (high contrast but distinct)
     },
     darkColors: {
       primary: '#FFFFFF',
@@ -233,9 +233,9 @@ export const ACCESSIBILITY_THEMES: AccessibilityTheme[] = [
       card: '#FFFFFF',
       button: '#0066CC',
       buttonText: '#FFFFFF',
-      tabBar: '#F8F9FA',
-      tabBarActive: '#0066CC',
-      tabBarInactive: '#6C757D',
+      tabBar: '#B0B0B0',          // Light gray - tab bar background
+      tabBarActive: '#0066CC',     // Blue - active tab (primary color)
+      tabBarInactive: '#F8F9FA',   // Very light gray - inactive tabs
     },
     darkColors: {
       primary: '#4A90E2',
@@ -281,9 +281,9 @@ export const ACCESSIBILITY_THEMES: AccessibilityTheme[] = [
       card: '#FFFFFF',
       button: '#8B5CF6',
       buttonText: '#FFFFFF',
-      tabBar: '#F8F9FA',
-      tabBarActive: '#8B5CF6',
-      tabBarInactive: '#6C757D',
+      tabBar: '#B0B0B0',          // Light gray - tab bar background
+      tabBarActive: '#8B5CF6',     // Purple - active tab (primary color)
+      tabBarInactive: '#F8F9FA',   // Very light gray - inactive tabs
     },
     darkColors: {
       primary: '#A78BFA',
@@ -329,9 +329,9 @@ export const ACCESSIBILITY_THEMES: AccessibilityTheme[] = [
       card: '#FFFFFF',
       button: '#DC2626',
       buttonText: '#FFFFFF',
-      tabBar: '#F8F9FA',
-      tabBarActive: '#DC2626',
-      tabBarInactive: '#6C757D',
+      tabBar: '#B0B0B0',          // Light gray - tab bar background
+      tabBarActive: '#DC2626',     // Red - active tab (primary color)
+      tabBarInactive: '#F8F9FA',   // Very light gray - inactive tabs
     },
     darkColors: {
       primary: '#EF4444',

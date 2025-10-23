@@ -553,6 +553,8 @@ func main() {
 			return
 		}
 		apiURL := "https://api.rawg.io/api/games?search=" + urlQueryEscape(query) + "&key=" + urlQueryEscape(cfg.RawgAPIKey)
+		fmt.Printf("🔍 RAWG API URL: %s\n", apiURL)
+		fmt.Printf("🔍 RAWG API Key configured: %t\n", cfg.RawgAPIKey != "")
 		resp, err := http.Get(apiURL)
 		if err != nil {
 			http.Error(w, "upstream error", http.StatusBadGateway)
@@ -731,7 +733,7 @@ func main() {
 				},
 				{
 					Role:    "user",
-					Content: fmt.Sprintf("My favourite games are: %s. Please recommend 5 similar games I might enjoy. Return only valid JSON array format with well-known game names.", favouriteGames),
+					Content: fmt.Sprintf("My favourite games are: %s. Please recommend 6 similar games I might enjoy. Return only valid JSON array format with well-known game names.", favouriteGames),
 				},
 			},
 			MaxTokens: 800,

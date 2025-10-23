@@ -44,36 +44,29 @@ export default function SearchScreen() {
       }
 
       // Sound feedback - use different sounds for add and remove
-      const soundFile = isFavourited 
-        ? require('../../assets/FavouriteSound.mp3') 
-        : require('../../assets/RemoveSound.mp3');
-      
-      console.log('🔊 Loading sound file:', isFavourited ? 'FavouriteSound.mp3' : 'RemoveSound.mp3');
-      
-      const { sound } = await Audio.Sound.createAsync(soundFile);
-      console.log('🔊 Sound object created successfully');
-      
-      // Set volume - make RemoveSound extremely loud to match FavouriteSound
-      if (!isFavourited) {
-        await sound.setVolumeAsync(3.0); // Extremely high volume for remove sound
-        console.log('🔊 Playing RemoveSound at 3.0x volume');
+      if (isFavourited) {
+        // Use FavouriteSound for adding
+        const { sound } = await Audio.Sound.createAsync(
+          require('../../assets/FavouriteSound.mp3')
+        );
+        await sound.playAsync();
+        
+        // Clean up sound after playing
+        setTimeout(() => {
+          sound.unloadAsync();
+        }, 1000);
       } else {
-        await sound.setVolumeAsync(1.0); // Normal volume for favorite sound
-        console.log('🔊 Playing FavouriteSound at 1.0x volume');
+        // Use RemoveSound for removing
+        const { sound } = await Audio.Sound.createAsync(
+          require('../../assets/RemoveSound.mp3')
+        );
+        await sound.playAsync();
+        
+        // Clean up sound after playing
+        setTimeout(() => {
+          sound.unloadAsync();
+        }, 2000); // Longer cleanup time for remove sound
       }
-      
-      await sound.playAsync();
-      console.log('🔊 Sound playback started');
-      
-      // Check if sound is actually playing
-      const status = await sound.getStatusAsync();
-      console.log('🔊 Sound status:', status);
-      
-      // Clean up sound after playing
-      setTimeout(() => {
-        sound.unloadAsync();
-        console.log('🔊 Sound unloaded');
-      }, 1000);
     } catch (error) {
       // If sound file doesn't exist, just provide haptic feedback
       console.log('Sound feedback not available, using haptic only');
@@ -92,6 +85,40 @@ export default function SearchScreen() {
             setError(null);
             try {
               const response = await apiClient.searchGames(searchQuery);
+              console.log('🔍 RAWG API response for query:', searchQuery);
+              console.log('🔍 Number of games found:', response.results.length);
+              
+              // Check for specific games that are having issues
+              const problemGames = ['Black Myth Wukong', 'Marvel Spider-Man 2'];
+              const workingGames = ['Sekiro', 'Marvel Wolverine'];
+              
+              response.results.forEach(game => {
+                if (problemGames.some(problemGame => game.name.includes(problemGame))) {
+                  console.log('❌ PROBLEM GAME FOUND:', {
+                    name: game.name,
+                    slug: game.slug,
+                    background_image: game.background_image,
+                    hasImage: !!game.background_image,
+                    imageLength: game.background_image?.length || 0
+                  });
+                }
+                if (workingGames.some(workingGame => game.name.includes(workingGame))) {
+                  console.log('✅ WORKING GAME FOUND:', {
+                    name: game.name,
+                    slug: game.slug,
+                    background_image: game.background_image,
+                    hasImage: !!game.background_image,
+                    imageLength: game.background_image?.length || 0
+                  });
+                }
+              });
+              
+              console.log('🔍 Sample game data:', response.results.slice(0, 2).map(game => ({
+                name: game.name,
+                slug: game.slug,
+                background_image: game.background_image,
+                hasImage: !!game.background_image
+              })));
               setGames(response.results);
             } catch (err) {
               setError('Failed to search games. Please try again.');
@@ -179,6 +206,22 @@ export default function SearchScreen() {
         await playFavoriteFeedback(false);
         Alert.alert('Removed', 'Game removed from favourites');
       } else {
+        console.log('🔍 Adding to favorites:', {
+          name: game.name,
+          slug: game.slug,
+          background_image: game.background_image,
+          hasImage: !!game.background_image
+        });
+        
+        // Check if this is one of the problem games
+        if (game.name.includes('Black Myth Wukong') || game.name.includes('Marvel Spider-Man 2')) {
+          console.log('🚨 ADDING PROBLEM GAME TO FAVORITES:', {
+            name: game.name,
+            image: game.background_image,
+            imageType: typeof game.background_image,
+            imageLength: game.background_image?.length || 0
+          });
+        }
         await HybridFavouritesService.addFavourite(game.id.toString(), game.name, game.slug, game.background_image);
         setFavourites(prev => new Set(prev).add(gameSlug));
         
@@ -256,14 +299,24 @@ export default function SearchScreen() {
         rightThreshold={100} // 30% of ~350px card width
         onSwipeableOpen={async (direction: string) => {
           if (direction === 'right') {
-            // Auto-favorite when swiped right
+            // Toggle favorite when swiped right
             const gameSlug = item.slug;
             const isFavourited = favourites.has(gameSlug);
+            
             if (!isFavourited) {
               // Add to favorites with feedback
               await HybridFavouritesService.addFavourite(item.id.toString(), item.name, item.slug, item.background_image);
               setFavourites(prev => new Set(prev).add(gameSlug));
               await playFavoriteFeedback(true);
+            } else {
+              // Remove from favorites with feedback
+              await HybridFavouritesService.removeFavourite(gameSlug);
+              setFavourites(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(gameSlug);
+                return newSet;
+              });
+              await playFavoriteFeedback(false);
             }
           }
         }}
