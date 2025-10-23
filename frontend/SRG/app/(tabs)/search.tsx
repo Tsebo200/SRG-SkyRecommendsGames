@@ -9,8 +9,10 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { apiClient, Game } from '../../lib/api';
 import { HybridFavouritesService } from '../../lib/favourites-hybrid';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -25,6 +27,17 @@ export default function SearchScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [favourites, setFavourites] = useState<Set<string>>(new Set());
+  const [swipeAnimations, setSwipeAnimations] = useState<Map<string, Animated.Value>>(new Map());
+
+  // Get or create animation value for a game
+  const getAnimationValue = (gameId: string) => {
+    if (!swipeAnimations.has(gameId)) {
+      const newAnimation = new Animated.Value(0);
+      setSwipeAnimations(prev => new Map(prev).set(gameId, newAnimation));
+      return newAnimation;
+    }
+    return swipeAnimations.get(gameId)!;
+  };
 
   // Debounced search function
   const debouncedSearch = useCallback(
@@ -131,6 +144,60 @@ export default function SearchScreen() {
     }
   };
 
+  // Handle swipe gesture
+  const handleSwipeGesture = (game: Game) => {
+    return (event: any) => {
+      const { translationX, state } = event.nativeEvent;
+      const gameId = game.id.toString();
+      const animationValue = getAnimationValue(gameId);
+      
+      if (state === State.ACTIVE) {
+        // Update animation during swipe
+        animationValue.setValue(translationX);
+      } else if (state === State.END) {
+        // Check if swipe was significant enough (swipe right > 50px)
+        if (translationX > 50) {
+          // Trigger favorite action
+          const gameSlug = game.slug;
+          const isFavourited = favourites.has(gameSlug);
+          
+          if (!isFavourited) {
+            // Add to favourites
+            toggleFavourite(game, { stopPropagation: () => {} });
+            
+            // Show visual feedback
+            Animated.sequence([
+              Animated.timing(animationValue, {
+                toValue: 100,
+                duration: 200,
+                useNativeDriver: true,
+              }),
+              Animated.timing(animationValue, {
+                toValue: 0,
+                duration: 200,
+                useNativeDriver: true,
+              }),
+            ]).start();
+          } else {
+            // Already favorited, just reset animation
+            Animated.timing(animationValue, {
+              toValue: 0,
+              duration: 200,
+              useNativeDriver: true,
+            }).start();
+          }
+        } else {
+          // Reset animation if swipe wasn't significant
+          Animated.timing(animationValue, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }).start();
+        }
+      }
+    };
+  };
+
   // Load favourites on mount
   useEffect(() => {
     const loadFavourites = async () => {
@@ -147,42 +214,70 @@ export default function SearchScreen() {
 
   const renderGame = ({ item }: { item: Game }) => {
     const isFavourited = favourites.has(item.slug);
+    const gameId = item.id.toString();
+    const animationValue = getAnimationValue(gameId);
     
     return (
-      <TouchableOpacity onPress={() => goToDetails(item)}>
-        <View style={[styles.gameCard, { backgroundColor: themeColors.card }]}>
-          <View style={styles.gameInfo}>
-            {item.background_image && (
-              <Image source={{ uri: item.background_image }} style={styles.gameImage} />
-            )}
-            <View style={styles.gameDetails}>
-              <Text style={[styles.gameName, { color: themeColors.text }]}>{item.name}</Text>
-              {item.genres && item.genres.length > 0 && (
-                <Text style={[styles.gameGenres, { color: themeColors.textSecondary }]}>
-                  {item.genres.slice(0, 3).map(g => g.name).join(', ')}
-                </Text>
+      <PanGestureHandler onGestureEvent={handleSwipeGesture(item)}>
+        <Animated.View style={[
+          styles.gameCard, 
+          { 
+            backgroundColor: themeColors.card,
+            transform: [{ translateX: animationValue }]
+          }
+        ]}>
+          <TouchableOpacity onPress={() => goToDetails(item)} style={styles.gameCardContent}>
+            <View style={styles.gameInfo}>
+              {item.background_image && (
+                <Image source={{ uri: item.background_image }} style={styles.gameImage} />
               )}
-              {item.platforms && item.platforms.length > 0 && (
-                <Text style={[styles.gamePlatforms, { color: themeColors.textSecondary }]}>
-                  {item.platforms.slice(0, 3).map(p => p.platform.name).join(', ')}
-                </Text>
-              )}
+              <View style={styles.gameDetails}>
+                <Text style={[styles.gameName, { color: themeColors.text }]}>{item.name}</Text>
+                {item.genres && item.genres.length > 0 && (
+                  <Text style={[styles.gameGenres, { color: themeColors.textSecondary }]}>
+                    {item.genres.slice(0, 3).map(g => g.name).join(', ')}
+                  </Text>
+                )}
+                {item.platforms && item.platforms.length > 0 && (
+                  <Text style={[styles.gamePlatforms, { color: themeColors.textSecondary }]}>
+                    {item.platforms.slice(0, 3).map(p => p.platform.name).join(', ')}
+                  </Text>
+                )}
+              </View>
             </View>
-          </View>
-          <TouchableOpacity
-            onPress={(e) => toggleFavourite(item, e)}
-            style={[styles.favouriteButton, isFavourited && styles.favouriteButtonActive]}
-            accessibilityRole="button"
-            accessibilityLabel={isFavourited ? 'Remove from favourites' : 'Add to favourites'}
-          >
-            <Ionicons 
-              name={isFavourited ? 'heart' : 'heart-outline'} 
-              size={20} 
-              color={isFavourited ? themeColors.error : themeColors.textSecondary} 
-            />
+            <TouchableOpacity
+              onPress={(e) => toggleFavourite(item, e)}
+              style={[styles.favouriteButton, isFavourited && styles.favouriteButtonActive]}
+              accessibilityRole="button"
+              accessibilityLabel={isFavourited ? 'Remove from favourites' : 'Add to favourites'}
+            >
+              <Ionicons 
+                name={isFavourited ? 'heart' : 'heart-outline'} 
+                size={20} 
+                color={isFavourited ? themeColors.error : themeColors.textSecondary} 
+              />
+            </TouchableOpacity>
           </TouchableOpacity>
-        </View>
-      </TouchableOpacity>
+          
+          {/* Swipe indicator */}
+          <Animated.View 
+            style={[
+              styles.swipeIndicator,
+              {
+                opacity: animationValue.interpolate({
+                  inputRange: [0, 50, 100],
+                  outputRange: [0, 0.5, 1],
+                  extrapolate: 'clamp',
+                }),
+                transform: [{ translateX: animationValue }]
+              }
+            ]}
+          >
+            <Ionicons name="heart" size={24} color="#87CEEB" />
+            <Text style={styles.swipeText}>Swipe to favorite</Text>
+          </Animated.View>
+        </Animated.View>
+      </PanGestureHandler>
     );
   };
 
@@ -348,5 +443,28 @@ const styles = StyleSheet.create({
   emptyText: {
     color: '#666',
     fontSize: 16,
+  },
+  gameCardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  swipeIndicator: {
+    position: 'absolute',
+    left: -80,
+    top: 0,
+    bottom: 0,
+    width: 80,
+    backgroundColor: 'rgba(135, 206, 235, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+    paddingHorizontal: 8,
+  },
+  swipeText: {
+    color: '#87CEEB',
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 4,
   },
 });
