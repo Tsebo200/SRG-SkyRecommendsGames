@@ -18,6 +18,8 @@ module.exports = function(api) {
   // Full config for development and production
   return {
     presets: ['babel-preset-expo'],
-    plugins: [],
+    plugins: [
+      'react-native-reanimated/plugin', // Must be last
+    ],
   };
 };
