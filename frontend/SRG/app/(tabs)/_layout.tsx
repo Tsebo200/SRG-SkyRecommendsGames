@@ -3,19 +3,22 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { Platform, StyleSheet } from 'react-native';
+import { useThemeColors } from '../../lib/theme-context';
 
 export default function TabLayout() {
+  const themeColors = useThemeColors();
+  
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: '#fff',
-        tabBarInactiveTintColor: 'rgba(255,255,255,0.6)',
+        tabBarActiveTintColor: themeColors.tabBarActive,
+        tabBarInactiveTintColor: themeColors.tabBarInactive,
         headerShown: false,
         tabBarStyle: {
           position: 'absolute',
           borderTopWidth: 0,
           elevation: 0,
-          backgroundColor: 'transparent',
+          backgroundColor: themeColors.tabBar,
           paddingTop: 10,
         },
         tabBarBackground: () => (
@@ -63,7 +66,14 @@ export default function TabLayout() {
         }}
       />
 
-      
+    <Tabs.Screen
+      name="profile"
+      options={{
+        title: 'Profile',
+        tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} />,
+        }}
+      />
+
       <Tabs.Screen
         name="steam-profile"
         options={{
@@ -71,13 +81,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color, size }) => <Ionicons name="game-controller" size={size} color={color} />,
         }}
       />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Profile',
-          tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} />,
-        }}
-      />
+
     </Tabs>
   );
 }

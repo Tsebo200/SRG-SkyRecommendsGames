@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { SteamAPIService, SteamGame, SteamPlayer } from '../../lib/steam-api';
+import { useThemeColors } from '../../lib/theme-context';
 
 interface GamingStats {
   player: SteamPlayer;
@@ -27,6 +28,7 @@ interface GamingStats {
 }
 
 export default function SteamProfileTab() {
+  const themeColors = useThemeColors();
   const [steamId, setSteamId] = useState('');
   const [loading, setLoading] = useState(false);
   const [stats, setStats] = useState<GamingStats | null>(null);
@@ -125,49 +127,50 @@ export default function SteamProfileTab() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Loading Steam profile...</Text>
+      <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
+        <View style={[styles.loadingContainer, { backgroundColor: themeColors.surface }]}>
+          <ActivityIndicator size="large" color={themeColors.primary} />
+          <Text style={[styles.loadingText, { color: themeColors.text }]}>Loading Steam profile...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Steam Profile Scanner</Text>
-        <Text style={styles.headerSubtitle}>Scan gaming hours, trophies & playtime</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
+      <View style={[styles.header, { backgroundColor: themeColors.surface }]}>
+        <Text style={[styles.headerTitle, { color: themeColors.text }]}>Steam Profile Scanner</Text>
+        <Text style={[styles.headerSubtitle, { color: themeColors.textSecondary }]}>Scan gaming hours, trophies & playtime</Text>
       </View>
 
       {!stats ? (
-        <View style={styles.inputContainer}>
-          <Text style={styles.inputLabel}>Enter Steam ID or Profile URL</Text>
+        <View style={[styles.inputContainer, { backgroundColor: themeColors.surface }]}>
+          <Text style={[styles.inputLabel, { color: themeColors.text }]}>Enter Steam ID or Profile URL</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { backgroundColor: themeColors.background, color: themeColors.text, borderColor: themeColors.border }]}
             placeholder="Steam ID, Steam URL, or Steam username"
+            placeholderTextColor={themeColors.textSecondary}
             value={steamId}
             onChangeText={setSteamId}
             autoCapitalize="none"
             autoCorrect={false}
           />
           <TouchableOpacity 
-            style={styles.scanButton} 
+            style={[styles.scanButton, { backgroundColor: themeColors.primary }]} 
             onPress={handleSteamIdSubmit}
             disabled={loading}
           >
-            <Ionicons name="search" size={20} color="#fff" />
-            <Text style={styles.scanButtonText}>Scan Profile</Text>
+            <Ionicons name="search" size={20} color={themeColors.buttonText} />
+            <Text style={[styles.scanButtonText, { color: themeColors.buttonText }]}>Scan Profile</Text>
           </TouchableOpacity>
           
-          <View style={styles.helpContainer}>
-            <Text style={styles.helpTitle}>Supported formats:</Text>
-            <Text style={styles.helpText}>• Steam ID: 76561198000000000</Text>
-            <Text style={styles.helpText}>• Steam URL: https://steamcommunity.com/id/username</Text>
-            <Text style={styles.helpText}>• Steam URL: https://steamcommunity.com/profiles/76561198000000000</Text>
-            <Text style={styles.helpText}>• Steam URL: https://steam.com/user/username</Text>
-            <Text style={styles.helpSubtext}>Note: Some profiles may be private and won't show gaming data</Text>
+          <View style={[styles.helpContainer, { backgroundColor: themeColors.background }]}>
+            <Text style={[styles.helpTitle, { color: themeColors.text }]}>Supported formats:</Text>
+            <Text style={[styles.helpText, { color: themeColors.textSecondary }]}>• Steam ID: 76561198000000000</Text>
+            <Text style={[styles.helpText, { color: themeColors.textSecondary }]}>• Steam URL: https://steamcommunity.com/id/username</Text>
+            <Text style={[styles.helpText, { color: themeColors.textSecondary }]}>• Steam URL: https://steamcommunity.com/profiles/76561198000000000</Text>
+            <Text style={[styles.helpText, { color: themeColors.textSecondary }]}>• Steam URL: https://steam.com/user/username</Text>
+            <Text style={[styles.helpSubtext, { color: themeColors.textSecondary }]}>Note: Some profiles may be private and won't show gaming data</Text>
           </View>
         </View>
       ) : (

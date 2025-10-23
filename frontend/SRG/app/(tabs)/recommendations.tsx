@@ -16,6 +16,7 @@ import { useRouter } from 'expo-router';
 import { apiClient, Game } from '../../lib/api';
 import { HybridFavouritesService } from '../../lib/favourites-hybrid';
 import { SteamAPIService } from '../../lib/steam-api';
+import { useThemeColors } from '../../lib/theme-context';
 
 interface RecommendationGame extends Game {
   similarity_score?: number;
@@ -41,6 +42,7 @@ interface SteamRecommendations {
 
 export default function RecommendationsScreen() {
   const router = useRouter();
+  const themeColors = useThemeColors();
   const [recommendations, setRecommendations] = useState<RecommendationGame[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -110,19 +112,95 @@ export default function RecommendationsScreen() {
 
       // Use gpt-3.5-turbo for AI-powered recommendations
       const favouriteGameNames = userFavourites.map(fav => fav.game_name).filter(name => name !== undefined) as string[];
-      console.log('🔍 Using gpt-3.5-turbo for recommendations with favourites:', favouriteGameNames);
+      console.log('🔍 Using gpt-3.5-turbo for AI recommendations with favourites:', favouriteGameNames);
       
-      // Get test recommendations (no OpenAI required)
-      console.log('🔍 Calling test recommendations API...');
-      const testRecommendations = await apiClient.getTestRecommendations(favouriteGameNames);
-      console.log('🔍 Received test recommendations:', testRecommendations);
+      // Get AI-powered recommendations using GPT-3.5-turbo
+      console.log('🔍 Calling AI recommendations API... (this may take 15-30 seconds)');
+      console.log('🤖 AI is analyzing your preferences and fetching game data...');
+      const aiRecommendations = await apiClient.getRecommendations(favouriteGameNames);
+      console.log('🔍 Received AI recommendations:', aiRecommendations);
       
-      // Use the test recommendations directly
-      setRecommendations(testRecommendations.recommendations);
+      // The AI response now comes as an array of game objects with images
+      console.log('🔍 Full AI response:', aiRecommendations);
+      console.log('🔍 AI recommendations with images:', aiRecommendations.recommendations);
+      console.log('🔍 Recommendations type:', typeof aiRecommendations.recommendations);
+      console.log('🔍 Is array?', Array.isArray(aiRecommendations.recommendations));
+      
+      // Handle different response formats
+      if (Array.isArray(aiRecommendations.recommendations)) {
+        console.log('✅ Using enhanced recommendations with images');
+        console.log('🔍 First recommendation data:', aiRecommendations.recommendations[0]);
+        console.log('🖼️ First recommendation image:', aiRecommendations.recommendations[0]?.background_image);
+        setRecommendations(aiRecommendations.recommendations);
+      } else if (typeof aiRecommendations.recommendations === 'string') {
+        console.log('⚠️ Received string response, parsing JSON...');
+        console.log('🔍 Raw string response:', aiRecommendations.recommendations);
+        
+        try {
+          // Clean up the response - remove any markdown formatting or extra text
+          let cleanResponse = aiRecommendations.recommendations.trim();
+          
+          // Remove markdown code blocks if present
+          if (cleanResponse.startsWith('```json')) {
+            cleanResponse = cleanResponse.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+          } else if (cleanResponse.startsWith('```')) {
+            cleanResponse = cleanResponse.replace(/^```\s*/, '').replace(/\s*```$/, '');
+          }
+          
+          // Remove any text before the JSON array
+          const jsonMatch = cleanResponse.match(/\[[\s\S]*\]/);
+          if (jsonMatch) {
+            cleanResponse = jsonMatch[0];
+          }
+          
+          // Remove any trailing text after the JSON array
+          const endMatch = cleanResponse.match(/^(\[[\s\S]*\]).*$/);
+          if (endMatch) {
+            cleanResponse = endMatch[1];
+          }
+          
+          console.log('🔍 Cleaned response:', cleanResponse);
+          
+          const parsedRecommendations = JSON.parse(cleanResponse);
+          if (Array.isArray(parsedRecommendations)) {
+            console.log('✅ Successfully parsed JSON recommendations');
+            setRecommendations(parsedRecommendations);
+          } else {
+            throw new Error('Parsed response is not an array');
+          }
+        } catch (parseError) {
+          console.error('Failed to parse string recommendations:', parseError);
+          console.log('🔍 Final cleaned response that failed:', aiRecommendations.recommendations);
+          
+          // Create a fallback recommendation from the raw text
+          const fallbackRecommendations = [{
+            name: "AI-Generated Recommendations",
+            description: aiRecommendations.recommendations,
+            similarity_reason: "Generated by GPT-3.5-turbo based on your favourites",
+            similarity_score: 0.9,
+            platforms: ["Multiple"],
+            estimated_playtime: "Varies",
+            rating: "AI Recommended"
+          }];
+          
+          setRecommendations(fallbackRecommendations);
+        }
+      } else {
+        console.error('Unexpected response format:', aiRecommendations);
+        setError('Failed to load recommendations. Please try again.');
+      }
       
     } catch (error) {
       console.error('Failed to generate recommendations:', error);
-      setError('Failed to load recommendations. Please try again.');
+      
+      // Provide more specific error messages
+      if (error.message?.includes('timeout')) {
+        setError('AI recommendations are taking longer than expected. Please try again - this usually works on the second attempt.');
+      } else if (error.message?.includes('Network Error')) {
+        setError('Network connection issue. Please check your internet connection and try again.');
+      } else {
+        setError('Failed to generate AI recommendations. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -136,7 +214,13 @@ export default function RecommendationsScreen() {
   };
 
   const handleGamePress = (game: RecommendationGame) => {
-    router.push(`/game/${game.slug}`);
+    // Pass the full game object with AI recommendation data
+    router.push({
+      pathname: '/game-details',
+      params: {
+        gameData: JSON.stringify(game)
+      }
+    });
   };
 
   const toggleFavourite = async (game: RecommendationGame) => {
@@ -165,55 +249,129 @@ export default function RecommendationsScreen() {
     }
   };
 
-  const renderGameItem = ({ item }: { item: RecommendationGame }) => (
-    <TouchableOpacity
-      style={styles.gameCard}
-      onPress={() => handleGamePress(item)}
-      activeOpacity={0.8}
-    >
-      <View style={styles.gameImageContainer}>
-        {item.background_image ? (
-          <Image source={{ uri: item.background_image }} style={styles.gameImage} />
-        ) : (
-          <View style={styles.placeholderImage}>
-            <Ionicons name="game-controller" size={40} color="#666" />
-          </View>
-        )}
-        <TouchableOpacity
-          style={styles.favouriteButton}
-          onPress={() => toggleFavourite(item)}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Ionicons
-            name={favourites.has(item.slug) ? "heart" : "heart-outline"}
-            size={24}
-            color={favourites.has(item.slug) ? "#ff6b6b" : "#fff"}
-          />
-        </TouchableOpacity>
-      </View>
-      
-      <View style={styles.gameInfo}>
-        <Text style={styles.gameName} numberOfLines={2}>
-          {item.name}
-        </Text>
-        
-        {item.genres && item.genres.length > 0 && (
-          <Text style={styles.gameGenres} numberOfLines={1}>
-            {item.genres.slice(0, 2).join(', ')}
+  const renderGameItem = ({ item }: { item: RecommendationGame }) => {
+    // Enhanced game item with better recommendation display
+    const getRecommendationBadge = (score: number) => {
+      if (score >= 0.9) return { text: 'Perfect Match', color: '#4CAF50' };
+      if (score >= 0.8) return { text: 'Great Match', color: '#8BC34A' };
+      if (score >= 0.7) return { text: 'Good Match', color: '#FFC107' };
+      return { text: 'Decent Match', color: '#FF9800' };
+    };
+
+    const badge = item.similarity_score ? getRecommendationBadge(item.similarity_score) : null;
+
+    return (
+      <TouchableOpacity
+        style={[styles.gameCard, { backgroundColor: themeColors.card }]}
+        onPress={() => handleGamePress(item)}
+        activeOpacity={0.8}
+      >
+        <View style={styles.gameImageContainer}>
+          {item.background_image ? (
+            <Image 
+              source={{ uri: item.background_image }} 
+              style={styles.gameImage}
+              resizeMode="cover"
+              onLoad={() => console.log('✅ Image loaded successfully:', item.background_image)}
+              onError={(error) => console.log('❌ Image failed to load:', item.background_image, error)}
+            />
+          ) : (
+            <View style={[styles.placeholderImage, { backgroundColor: themeColors.surface }]}>
+              <Ionicons name="game-controller" size={40} color={themeColors.textSecondary} />
+              <Text style={{ color: themeColors.textSecondary, fontSize: 10, marginTop: 4 }}>
+                {item.name || 'Game'}
+              </Text>
+              <Text style={{ color: themeColors.textSecondary, fontSize: 8, marginTop: 2, opacity: 0.7 }}>
+                No Image Available
+              </Text>
+            </View>
+          )}
+          
+          <TouchableOpacity
+            style={styles.favouriteButton}
+            onPress={() => toggleFavourite(item)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons
+              name={favourites.has(item.slug) ? "heart" : "heart-outline"}
+              size={24}
+              color={favourites.has(item.slug) ? "#ff6b6b" : "#fff"}
+            />
+          </TouchableOpacity>
+          
+          {badge && (
+            <View style={[styles.recommendationBadge, { backgroundColor: badge.color }]}>
+              <Text style={styles.badgeText}>{badge.text}</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.gameInfo}>
+          <Text style={[styles.gameName, { color: themeColors.text }]} numberOfLines={2}>
+            {item.name}
           </Text>
-        )}
-        
-        {item.similarity_score && (
-          <View style={styles.similarityContainer}>
-            <Ionicons name="trending-up" size={16} color="#4CAF50" />
-            <Text style={styles.similarityScore}>
-              {Math.round(item.similarity_score * 100)}% match
+
+          {item.genres && item.genres.length > 0 && (
+            <Text style={[styles.gameGenres, { color: themeColors.textSecondary }]} numberOfLines={1}>
+              {item.genres.slice(0, 2).join(', ')}
             </Text>
+          )}
+
+          {item.similarity_score && (
+            <View style={styles.similarityContainer}>
+              <Ionicons name="trending-up" size={16} color="#4CAF50" />
+              <Text style={styles.similarityScore}>
+                {Math.round(item.similarity_score * 100)}% match
+              </Text>
+            </View>
+          )}
+
+          {/* Enhanced recommendation details */}
+          {item.personalized_description && (
+            <Text style={[styles.gameDescription, { color: themeColors.textSecondary }]} numberOfLines={3}>
+              {item.personalized_description}
+            </Text>
+          )}
+
+          {item.similarity_reason && (
+            <Text style={[styles.similarityReason, { color: themeColors.primary }]} numberOfLines={2}>
+              {item.similarity_reason}
+            </Text>
+          )}
+
+          {/* AI-enhanced recommendation score */}
+          {item.recommendation_score && (
+            <View style={styles.aiScoreContainer}>
+              <Ionicons name="sparkles" size={14} color="#FFD700" />
+              <Text style={styles.aiScoreText}>
+                AI Score: {Math.round(item.recommendation_score * 100)}%
+              </Text>
+            </View>
+          )}
+
+          {/* Additional metadata */}
+          <View style={styles.gameMetadata}>
+            {item.platforms && item.platforms.length > 0 && (
+              <View style={styles.metadataItem}>
+                <Ionicons name="desktop" size={12} color={themeColors.textSecondary} />
+                <Text style={[styles.metadataText, { color: themeColors.textSecondary }]}>
+                  {item.platforms.slice(0, 2).join(', ')}
+                </Text>
+              </View>
+            )}
+            {item.estimated_playtime && (
+              <View style={styles.metadataItem}>
+                <Ionicons name="time" size={12} color={themeColors.textSecondary} />
+                <Text style={[styles.metadataText, { color: themeColors.textSecondary }]}>
+                  {item.estimated_playtime}
+                </Text>
+              </View>
+            )}
           </View>
-        )}
-      </View>
-    </TouchableOpacity>
-  );
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   const renderEmptyState = () => {
     console.log('🔍 Rendering empty state - recommendations:', recommendations.length, 'loading:', loading, 'error:', error);
@@ -350,7 +508,10 @@ export default function RecommendationsScreen() {
       {loading && recommendations.length === 0 ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Finding your perfect games...</Text>
+          <Text style={styles.loadingText}>🤖 AI is analyzing your preferences...</Text>
+          <Text style={[styles.loadingText, { fontSize: 14, opacity: 0.7, marginTop: 8 }]}>
+            This may take 15-30 seconds while we fetch game data and generate personalized recommendations
+          </Text>
         </View>
       ) : error ? (
         renderError()
@@ -360,7 +521,7 @@ export default function RecommendationsScreen() {
         <FlatList
           data={recommendations}
           renderItem={renderGameItem}
-          keyExtractor={(item) => item.slug}
+          keyExtractor={(item, index) => item.slug || `recommendation-${index}`}
           numColumns={2}
           columnWrapperStyle={styles.row}
           contentContainerStyle={styles.listContainer}
@@ -414,13 +575,21 @@ const styles = StyleSheet.create({
   gameCard: {
     width: '48%',
     backgroundColor: '#1a1a1a',
-    borderRadius: 12,
-    marginBottom: 16,
+    borderRadius: 16,
+    marginBottom: 20,
     overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   gameImageContainer: {
     position: 'relative',
-    height: 120,
+    height: 160,
   },
   gameImage: {
     width: '100%',
@@ -433,6 +602,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#333',
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 8,
   },
   favouriteButton: {
     position: 'absolute',
@@ -468,6 +638,57 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     marginLeft: 4,
+  },
+  // Enhanced recommendation styles
+  recommendationBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  gameDescription: {
+    fontSize: 12,
+    lineHeight: 16,
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  similarityReason: {
+    fontSize: 11,
+    fontStyle: 'italic',
+    marginTop: 2,
+    marginBottom: 4,
+  },
+  gameMetadata: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 4,
+  },
+  metadataItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  metadataText: {
+    fontSize: 10,
+  },
+  aiScoreContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    gap: 4,
+  },
+  aiScoreText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#FFD700',
   },
   emptyState: {
     flex: 1,

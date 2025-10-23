@@ -16,10 +16,12 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { apiClient, Game } from '../lib/api';
 import { GameQRData } from '../lib/qr-scanner';
 import { HybridFavouritesService } from '../lib/favourites-hybrid';
+import { useThemeColors } from '../lib/theme-context';
 
 const { width } = Dimensions.get('window');
 
 export default function GameDetailsScreen() {
+  const themeColors = useThemeColors();
   const params = useLocalSearchParams();
   const [game, setGame] = useState<Game | null>(null);
   const [qrData, setQrData] = useState<GameQRData | null>(null);
@@ -35,8 +37,14 @@ export default function GameDetailsScreen() {
     try {
       setLoading(true);
       
+      // Check if we have game data passed from recommendations
+      if (params.gameData) {
+        const gameData = JSON.parse(params.gameData as string) as Game;
+        setGame(gameData);
+        console.log('🎮 Loaded game data from recommendations:', gameData);
+      }
       // Check if we have QR data passed from scanner
-      if (params.qrData) {
+      else if (params.qrData) {
         const parsedQrData = JSON.parse(params.qrData as string) as GameQRData;
         setQrData(parsedQrData);
         
@@ -57,10 +65,11 @@ export default function GameDetailsScreen() {
         }
       }
       
-      // Check if game is in favourites
-      if (game) {
+      // Check if game is in favourites (after game is set)
+      const currentGame = game || (params.gameData ? JSON.parse(params.gameData as string) as Game : null);
+      if (currentGame) {
         const favourites = await HybridFavouritesService.getFavourites();
-        const isFav = favourites.some(fav => fav.game_slug === game.slug);
+        const isFav = favourites.some(fav => fav.game_slug === currentGame.slug);
         setIsFavourite(isFav);
       }
     } catch (error) {
@@ -116,10 +125,10 @@ export default function GameDetailsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Loading game details...</Text>
+          <ActivityIndicator size="large" color={themeColors.primary} />
+          <Text style={[styles.loadingText, { color: themeColors.text }]}>Loading game details...</Text>
         </View>
       </SafeAreaView>
     );
@@ -127,15 +136,15 @@ export default function GameDetailsScreen() {
 
   if (!game && !qrData) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
         <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle" size={64} color="#ff6b6b" />
-          <Text style={styles.errorTitle}>Game Not Found</Text>
-          <Text style={styles.errorText}>
+          <Ionicons name="alert-circle" size={64} color={themeColors.error} />
+          <Text style={[styles.errorTitle, { color: themeColors.text }]}>Game Not Found</Text>
+          <Text style={[styles.errorText, { color: themeColors.textSecondary }]}>
             We couldn't find details for this game. The QR code might be invalid or the game might not be in our database.
           </Text>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <Text style={styles.backButtonText}>Go Back</Text>
+          <TouchableOpacity style={[styles.backButton, { backgroundColor: themeColors.primary }]} onPress={() => router.back()}>
+            <Text style={[styles.backButtonText, { color: themeColors.buttonText }]}>Go Back</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -143,121 +152,229 @@ export default function GameDetailsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
       <ScrollView style={styles.scrollView}>
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { backgroundColor: themeColors.surface, borderBottomColor: themeColors.border }]}>
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
+            <Ionicons name="arrow-back" size={24} color={themeColors.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Game Details</Text>
+          <Text style={[styles.headerTitle, { color: themeColors.text }]}>Game Details</Text>
           <TouchableOpacity 
             style={styles.favouriteButton} 
             onPress={toggleFavourite}
             disabled={addingToFavourites}
           >
             {addingToFavourites ? (
-              <ActivityIndicator size="small" color="#fff" />
+              <ActivityIndicator size="small" color={themeColors.text} />
             ) : (
               <Ionicons 
                 name={isFavourite ? "heart" : "heart-outline"} 
                 size={24} 
-                color={isFavourite ? "#ff6b6b" : "#fff"} 
+                color={isFavourite ? themeColors.error : themeColors.text} 
               />
             )}
           </TouchableOpacity>
         </View>
 
         {/* Game Image */}
-        {game?.background_image && (
-          <Image source={{ uri: game.background_image }} style={styles.gameImage} />
-        )}
+        <View style={styles.imageContainer}>
+          {game?.background_image ? (
+            <Image 
+              source={{ uri: game.background_image }} 
+              style={styles.gameImage}
+              resizeMode="cover"
+              onError={() => console.log('Failed to load game image')}
+            />
+          ) : (
+            <View style={[styles.placeholderImage, { backgroundColor: themeColors.surface }]}>
+              <Ionicons name="game-controller" size={60} color={themeColors.textSecondary} />
+              <Text style={[styles.placeholderText, { color: themeColors.textSecondary }]}>
+                No Image Available
+              </Text>
+            </View>
+          )}
+        </View>
 
         {/* Game Info */}
         <View style={styles.content}>
-          <Text style={styles.gameTitle}>{game?.name || qrData?.name || 'Unknown Game'}</Text>
+          <Text style={[styles.gameTitle, { color: themeColors.text }]}>{game?.name || qrData?.name || 'Unknown Game'}</Text>
           
+          {/* AI Recommendation Data */}
+          {game?.personalized_description && (
+            <View style={[styles.aiSection, { backgroundColor: themeColors.surface, borderLeftColor: themeColors.primary }]}>
+              <View style={styles.aiHeader}>
+                <Ionicons name="sparkles" size={20} color="#FFD700" />
+                <Text style={[styles.aiTitle, { color: themeColors.primary }]}>AI Personalized Recommendation</Text>
+              </View>
+              <Text style={[styles.aiDescription, { color: themeColors.text }]}>{game.personalized_description}</Text>
+            </View>
+          )}
+
+          {/* AI Recommendation Score */}
+          {game?.recommendation_score && (
+            <View style={styles.aiScoreSection}>
+              <View style={styles.aiScoreHeader}>
+                <Ionicons name="star" size={18} color="#FFD700" />
+                <Text style={[styles.aiScoreLabel, { color: themeColors.text }]}>AI Match Score</Text>
+              </View>
+              <View style={styles.aiScoreContainer}>
+                <View style={[styles.aiScoreBar, { backgroundColor: themeColors.border }]}>
+                  <View 
+                    style={[
+                      styles.aiScoreFill, 
+                      { 
+                        width: `${game.recommendation_score * 100}%`,
+                        backgroundColor: game.recommendation_score > 0.8 ? '#4CAF50' : game.recommendation_score > 0.6 ? '#FF9800' : '#F44336'
+                      }
+                    ]} 
+                  />
+                </View>
+                <Text style={[styles.aiScoreValue, { color: themeColors.text }]}>
+                  {Math.round(game.recommendation_score * 100)}%
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* Similarity Reason */}
+          {game?.similarity_reason && (
+            <View style={[styles.similaritySection, { backgroundColor: themeColors.surface }]}>
+              <View style={styles.similarityHeader}>
+                <Ionicons name="link" size={18} color={themeColors.primary} />
+                <Text style={[styles.similarityLabel, { color: themeColors.text }]}>Why This Game Matches Your Taste</Text>
+              </View>
+              <Text style={[styles.similarityText, { color: themeColors.textSecondary }]}>{game.similarity_reason}</Text>
+            </View>
+          )}
+
+          {/* Estimated Playtime */}
+          {game?.estimated_playtime && (
+            <View style={styles.playtimeSection}>
+              <View style={styles.playtimeHeader}>
+                <Ionicons name="time" size={18} color={themeColors.primary} />
+                <Text style={[styles.playtimeLabel, { color: themeColors.text }]}>Estimated Playtime</Text>
+              </View>
+              <Text style={[styles.playtimeValue, { color: themeColors.textSecondary }]}>{game.estimated_playtime}</Text>
+            </View>
+          )}
+
+          {/* Enhanced Game Data from RAWG API */}
+          {(game?.rating || game?.released) && (
+            <View style={[styles.enhancedDataSection, { backgroundColor: themeColors.surface }]}>
+              <View style={styles.enhancedDataHeader}>
+                <Ionicons name="information-circle" size={20} color={themeColors.primary} />
+                <Text style={[styles.enhancedDataTitle, { color: themeColors.primary }]}>Game Information</Text>
+              </View>
+              
+              {game.rating && (
+                <View style={styles.infoRow}>
+                  <Ionicons name="star" size={20} color="#FFD700" />
+                  <Text style={[styles.infoLabel, { color: themeColors.textSecondary }]}>Community Rating:</Text>
+                  <Text style={[styles.infoValue, { color: themeColors.text }]}>{game.rating.toFixed(1)}/5</Text>
+                </View>
+              )}
+              
+              {game.released && (
+                <View style={styles.infoRow}>
+                  <Ionicons name="calendar" size={20} color={themeColors.primary} />
+                  <Text style={[styles.infoLabel, { color: themeColors.textSecondary }]}>Release Date:</Text>
+                  <Text style={[styles.infoValue, { color: themeColors.text }]}>{formatDate(game.released)}</Text>
+                </View>
+              )}
+            </View>
+          )}
+
           {/* SSG QR Data Display */}
           {qrData && (
-            <View style={styles.qrDataContainer}>
-              <Text style={styles.qrDataTitle}>📱 Scanned from SSG QR Code</Text>
+            <View style={[styles.qrDataContainer, { backgroundColor: themeColors.surface, borderLeftColor: themeColors.primary }]}>
+              <Text style={[styles.qrDataTitle, { color: themeColors.primary }]}>📱 Scanned from SSG QR Code</Text>
               
               {qrData.price && (
                 <View style={styles.infoRow}>
-                  <Ionicons name="pricetag" size={20} color="#007AFF" />
-                  <Text style={styles.infoLabel}>Price:</Text>
-                  <Text style={styles.infoValue}>{formatPrice(qrData.price, qrData.currency)}</Text>
+                  <Ionicons name="pricetag" size={20} color={themeColors.primary} />
+                  <Text style={[styles.infoLabel, { color: themeColors.textSecondary }]}>Price:</Text>
+                  <Text style={[styles.infoValue, { color: themeColors.text }]}>{formatPrice(qrData.price, qrData.currency)}</Text>
                 </View>
               )}
               
               {qrData.platform && (
                 <View style={styles.infoRow}>
-                  <Ionicons name="desktop" size={20} color="#007AFF" />
-                  <Text style={styles.infoLabel}>Platform:</Text>
-                  <Text style={styles.infoValue}>{qrData.platform}</Text>
+                  <Ionicons name="desktop" size={20} color={themeColors.primary} />
+                  <Text style={[styles.infoLabel, { color: themeColors.textSecondary }]}>Platform:</Text>
+                  <Text style={[styles.infoValue, { color: themeColors.text }]}>{qrData.platform}</Text>
                 </View>
               )}
               
               {qrData.developer && (
                 <View style={styles.infoRow}>
-                  <Ionicons name="code" size={20} color="#007AFF" />
-                  <Text style={styles.infoLabel}>Developer:</Text>
-                  <Text style={styles.infoValue}>{qrData.developer}</Text>
+                  <Ionicons name="code" size={20} color={themeColors.primary} />
+                  <Text style={[styles.infoLabel, { color: themeColors.textSecondary }]}>Developer:</Text>
+                  <Text style={[styles.infoValue, { color: themeColors.text }]}>{qrData.developer}</Text>
                 </View>
               )}
               
               {qrData.publisher && (
                 <View style={styles.infoRow}>
-                  <Ionicons name="business" size={20} color="#007AFF" />
-                  <Text style={styles.infoLabel}>Publisher:</Text>
-                  <Text style={styles.infoValue}>{qrData.publisher}</Text>
+                  <Ionicons name="business" size={20} color={themeColors.primary} />
+                  <Text style={[styles.infoLabel, { color: themeColors.textSecondary }]}>Publisher:</Text>
+                  <Text style={[styles.infoValue, { color: themeColors.text }]}>{qrData.publisher}</Text>
                 </View>
               )}
               
               {qrData.release_date && (
                 <View style={styles.infoRow}>
-                  <Ionicons name="calendar" size={20} color="#007AFF" />
-                  <Text style={styles.infoLabel}>Release Date:</Text>
-                  <Text style={styles.infoValue}>{formatDate(qrData.release_date)}</Text>
+                  <Ionicons name="calendar" size={20} color={themeColors.primary} />
+                  <Text style={[styles.infoLabel, { color: themeColors.textSecondary }]}>Release Date:</Text>
+                  <Text style={[styles.infoValue, { color: themeColors.text }]}>{formatDate(qrData.release_date)}</Text>
                 </View>
               )}
               
               {qrData.rating && (
                 <View style={styles.infoRow}>
-                  <Ionicons name="star" size={20} color="#FFD700" />
-                  <Text style={styles.infoLabel}>Rating:</Text>
-                  <Text style={styles.infoValue}>{qrData.rating}/10</Text>
+                  <Ionicons name="star" size={20} color={themeColors.accent} />
+                  <Text style={[styles.infoLabel, { color: themeColors.textSecondary }]}>Rating:</Text>
+                  <Text style={[styles.infoValue, { color: themeColors.text }]}>{qrData.rating}/10</Text>
                 </View>
               )}
               
               {qrData.age_rating && (
                 <View style={styles.infoRow}>
-                  <Ionicons name="shield" size={20} color="#007AFF" />
-                  <Text style={styles.infoLabel}>Age Rating:</Text>
-                  <Text style={styles.infoValue}>{qrData.age_rating}</Text>
+                  <Ionicons name="shield" size={20} color={themeColors.primary} />
+                  <Text style={[styles.infoLabel, { color: themeColors.textSecondary }]}>Age Rating:</Text>
+                  <Text style={[styles.infoValue, { color: themeColors.text }]}>{qrData.age_rating}</Text>
                 </View>
               )}
             </View>
           )}
 
           {/* Game Description */}
-          {qrData?.description && (
+          {(qrData?.description || game?.description) && (
             <View style={styles.descriptionContainer}>
-              <Text style={styles.descriptionTitle}>Description</Text>
-              <Text style={styles.descriptionText}>{qrData.description}</Text>
+              <Text style={[styles.descriptionTitle, { color: themeColors.text }]}>Description</Text>
+              <Text style={[styles.descriptionText, { color: themeColors.textSecondary }]}>
+                {qrData?.description || game?.description}
+              </Text>
             </View>
           )}
 
           {/* Game Genres */}
           {game?.genres && game.genres.length > 0 && (
             <View style={styles.genresContainer}>
-              <Text style={styles.genresTitle}>Genres</Text>
+              <Text style={[styles.genresTitle, { color: themeColors.text }]}>Genres</Text>
               <View style={styles.genresList}>
-                {game.genres.map((genre, index) => (
-                  <View key={index} style={styles.genreTag}>
-                    <Text style={styles.genreText}>{genre.name}</Text>
-                  </View>
-                ))}
+                {game.genres.map((genre, index) => {
+                  // Handle both AI recommendation format (string array) and database format (object array)
+                  const genreName = typeof genre === 'string' 
+                    ? genre 
+                    : genre.name || 'Unknown Genre';
+                  
+                  return (
+                    <View key={index} style={[styles.genreTag, { backgroundColor: themeColors.primary }]}>
+                      <Text style={[styles.genreText, { color: themeColors.buttonText }]}>{genreName}</Text>
+                    </View>
+                  );
+                })}
               </View>
             </View>
           )}
@@ -265,13 +382,20 @@ export default function GameDetailsScreen() {
           {/* Game Platforms */}
           {game?.platforms && game.platforms.length > 0 && (
             <View style={styles.platformsContainer}>
-              <Text style={styles.platformsTitle}>Available Platforms</Text>
+              <Text style={[styles.platformsTitle, { color: themeColors.text }]}>Available Platforms</Text>
               <View style={styles.platformsList}>
-                {game.platforms.map((platform, index) => (
-                  <View key={index} style={styles.platformTag}>
-                    <Text style={styles.platformText}>{platform.platform.name}</Text>
-                  </View>
-                ))}
+                {game.platforms.map((platform, index) => {
+                  // Handle both AI recommendation format (string array) and database format (object array)
+                  const platformName = typeof platform === 'string' 
+                    ? platform 
+                    : platform.platform?.name || platform.name || 'Unknown Platform';
+                  
+                  return (
+                    <View key={index} style={[styles.platformTag, { backgroundColor: themeColors.surface, borderColor: themeColors.border }]}>
+                      <Text style={[styles.platformText, { color: themeColors.text }]}>{platformName}</Text>
+                    </View>
+                  );
+                })}
               </View>
             </View>
           )}
@@ -279,12 +403,12 @@ export default function GameDetailsScreen() {
           {/* Store Links */}
           {game?.stores && game.stores.length > 0 && (
             <View style={styles.storesContainer}>
-              <Text style={styles.storesTitle}>Available Stores</Text>
+              <Text style={[styles.storesTitle, { color: themeColors.text }]}>Available Stores</Text>
               {game.stores.map((store, index) => (
-                <TouchableOpacity key={index} style={styles.storeButton}>
-                  <Ionicons name="storefront" size={20} color="#007AFF" />
-                  <Text style={styles.storeText}>{store.store.name}</Text>
-                  <Ionicons name="open" size={16} color="#007AFF" />
+                <TouchableOpacity key={index} style={[styles.storeButton, { backgroundColor: themeColors.surface }]}>
+                  <Ionicons name="storefront" size={20} color={themeColors.primary} />
+                  <Text style={[styles.storeText, { color: themeColors.text }]}>{store.store.name}</Text>
+                  <Ionicons name="open" size={16} color={themeColors.primary} />
                 </TouchableOpacity>
               ))}
             </View>
@@ -298,7 +422,6 @@ export default function GameDetailsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1a1a1a',
   },
   scrollView: {
     flex: 1,
@@ -308,9 +431,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 20,
-    backgroundColor: '#2a2a2a',
     borderBottomWidth: 1,
-    borderBottomColor: '#333',
   },
   backButton: {
     padding: 8,
@@ -318,15 +439,31 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#fff',
   },
   favouriteButton: {
     padding: 8,
+  },
+  imageContainer: {
+    width: width,
+    height: 200,
+    position: 'relative',
   },
   gameImage: {
     width: width,
     height: 200,
     resizeMode: 'cover',
+  },
+  placeholderImage: {
+    width: width,
+    height: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+  },
+  placeholderText: {
+    marginTop: 8,
+    fontSize: 16,
+    fontWeight: '500',
   },
   content: {
     padding: 20,
@@ -334,21 +471,17 @@ const styles = StyleSheet.create({
   gameTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#fff',
     marginBottom: 20,
   },
   qrDataContainer: {
-    backgroundColor: '#2a2a2a',
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
     borderLeftWidth: 4,
-    borderLeftColor: '#007AFF',
   },
   qrDataTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#007AFF',
     marginBottom: 12,
   },
   infoRow: {
@@ -358,14 +491,12 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 14,
-    color: '#ccc',
     marginLeft: 8,
     marginRight: 8,
     minWidth: 100,
   },
   infoValue: {
     fontSize: 14,
-    color: '#fff',
     flex: 1,
   },
   descriptionContainer: {
@@ -374,12 +505,10 @@ const styles = StyleSheet.create({
   descriptionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
     marginBottom: 8,
   },
   descriptionText: {
     fontSize: 16,
-    color: '#ccc',
     lineHeight: 24,
   },
   genresContainer: {
@@ -388,7 +517,6 @@ const styles = StyleSheet.create({
   genresTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
     marginBottom: 12,
   },
   genresList: {
@@ -396,7 +524,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   genreTag: {
-    backgroundColor: '#007AFF',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
@@ -404,7 +531,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   genreText: {
-    color: '#fff',
     fontSize: 14,
     fontWeight: '500',
   },
@@ -414,7 +540,6 @@ const styles = StyleSheet.create({
   platformsTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
     marginBottom: 12,
   },
   platformsList: {
@@ -422,15 +547,14 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   platformTag: {
-    backgroundColor: '#333',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
     marginRight: 8,
     marginBottom: 8,
+    borderWidth: 1,
   },
   platformText: {
-    color: '#fff',
     fontSize: 14,
     fontWeight: '500',
   },
@@ -440,20 +564,17 @@ const styles = StyleSheet.create({
   storesTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#fff',
     marginBottom: 12,
   },
   storeButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2a2a2a',
     padding: 12,
     borderRadius: 8,
     marginBottom: 8,
   },
   storeText: {
     flex: 1,
-    color: '#fff',
     fontSize: 16,
     marginLeft: 8,
   },
@@ -463,7 +584,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    color: '#fff',
     fontSize: 16,
     marginTop: 16,
   },
@@ -476,15 +596,122 @@ const styles = StyleSheet.create({
   errorTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#fff',
     marginTop: 16,
     marginBottom: 8,
   },
   errorText: {
     fontSize: 16,
-    color: '#ccc',
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 24,
+  },
+  // AI Enhancement Styles
+  aiSection: {
+    marginBottom: 20,
+    padding: 16,
+    borderRadius: 12,
+    borderLeftWidth: 4,
+  },
+  aiHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  aiTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  aiDescription: {
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  aiScoreSection: {
+    marginBottom: 20,
+    padding: 16,
+    borderRadius: 12,
+  },
+  aiScoreHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  aiScoreLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  aiScoreContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  aiScoreBar: {
+    flex: 1,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 12,
+  },
+  aiScoreFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  aiScoreValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    minWidth: 40,
+  },
+  similaritySection: {
+    marginBottom: 20,
+    padding: 16,
+    borderRadius: 12,
+  },
+  similarityHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  similarityLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  similarityText: {
+    fontSize: 15,
+    lineHeight: 22,
+    fontStyle: 'italic',
+  },
+  playtimeSection: {
+    marginBottom: 20,
+    padding: 16,
+    borderRadius: 12,
+  },
+  playtimeHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  playtimeLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  playtimeValue: {
+    fontSize: 15,
+    marginLeft: 26,
+  },
+  enhancedDataSection: {
+    marginBottom: 20,
+    padding: 16,
+    borderRadius: 12,
+  },
+  enhancedDataHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  enhancedDataTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
   },
 });

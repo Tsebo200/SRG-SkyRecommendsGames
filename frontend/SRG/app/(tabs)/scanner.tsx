@@ -5,10 +5,12 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { parseQRCodeData, handleQRScanResult, GameQRData, fetchSkyScansGameData } from '../../lib/qr-scanner';
 import { ScanHistoryService, ScanHistoryItem } from '../../lib/scan-history-improved';
+import { useThemeColors } from '../../lib/theme-context';
 
 // Use ScanHistoryItem from the service instead of local interface
 
 export default function ScannerScreen() {
+  const themeColors = useThemeColors();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [facing, setFacing] = useState<CameraType>('back');
@@ -270,7 +272,7 @@ export default function ScannerScreen() {
 
   const renderHistoryItem = ({ item }: { item: ScanHistoryItem }) => (
     <TouchableOpacity 
-      style={styles.historyItem}
+      style={[styles.historyItem, { backgroundColor: themeColors.card }]}
       onPress={() => {
         // Navigate to scan results with the saved data
         router.push({
@@ -293,22 +295,22 @@ export default function ScannerScreen() {
         {item.cover_art ? (
           <Image source={{ uri: item.cover_art }} style={styles.historyCoverArt} />
         ) : (
-          <View style={styles.historyPlaceholder}>
-            <Ionicons name="game-controller" size={24} color="#666" />
+          <View style={[styles.historyPlaceholder, { backgroundColor: themeColors.surface }]}>
+            <Ionicons name="game-controller" size={24} color={themeColors.textSecondary} />
           </View>
         )}
         
         <View style={styles.historyItemInfo}>
-          <Text style={styles.historyGameName} numberOfLines={2}>
+          <Text style={[styles.historyGameName, { color: themeColors.text }]} numberOfLines={2}>
             {item.game_name || item.scan_data?.gameName || item.scan_data?.name || 'Scanned Item'}
           </Text>
-          <Text style={styles.historyPlatform}>
+          <Text style={[styles.historyPlatform, { color: themeColors.primary }]}>
             {item.platform || item.scan_data?.platform || 'Unknown Platform'}
           </Text>
-          <Text style={styles.historyDate}>{formatDate(item.scan_date)}</Text>
+          <Text style={[styles.historyDate, { color: themeColors.textSecondary }]}>{formatDate(item.scan_date)}</Text>
         </View>
         
-        <Ionicons name="chevron-forward" size={20} color="#666" />
+        <Ionicons name="chevron-forward" size={20} color={themeColors.textSecondary} />
       </View>
     </TouchableOpacity>
   );
@@ -321,9 +323,9 @@ export default function ScannerScreen() {
 
   if (!permission) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.permissionContainer}>
-          <Text style={styles.permissionText}>Requesting camera permission...</Text>
+      <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
+        <View style={[styles.permissionContainer, { backgroundColor: themeColors.surface }]}>
+          <Text style={[styles.permissionText, { color: themeColors.text }]}>Requesting camera permission...</Text>
         </View>
       </SafeAreaView>
     );
@@ -331,15 +333,15 @@ export default function ScannerScreen() {
 
   if (!permission.granted) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.permissionContainer}>
-          <Ionicons name="camera-outline" size={64} color="#666" />
-          <Text style={styles.permissionTitle}>Camera Permission Required</Text>
-          <Text style={styles.permissionText}>
+      <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
+        <View style={[styles.permissionContainer, { backgroundColor: themeColors.surface }]}>
+          <Ionicons name="camera-outline" size={64} color={themeColors.textSecondary} />
+          <Text style={[styles.permissionTitle, { color: themeColors.text }]}>Camera Permission Required</Text>
+          <Text style={[styles.permissionText, { color: themeColors.textSecondary }]}>
             We need access to your camera to scan QR codes for games.
           </Text>
-          <TouchableOpacity style={styles.permissionButton} onPress={requestPermission}>
-            <Text style={styles.permissionButtonText}>Grant Permission</Text>
+          <TouchableOpacity style={[styles.permissionButton, { backgroundColor: themeColors.primary }]} onPress={requestPermission}>
+            <Text style={[styles.permissionButtonText, { color: themeColors.buttonText }]}>Grant Permission</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -347,20 +349,20 @@ export default function ScannerScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Scan Game QR Code</Text>
-        <Text style={styles.headerSubtitle}>Point your camera at a game QR code</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
+      <View style={[styles.header, { backgroundColor: themeColors.surface }]}>
+        <Text style={[styles.headerTitle, { color: themeColors.text }]}>Scan Game QR Code</Text>
+        <Text style={[styles.headerSubtitle, { color: themeColors.textSecondary }]}>Point your camera at a game QR code</Text>
       </View>
 
       {/* Tab Navigation */}
-      <View style={styles.tabContainer}>
+      <View style={[styles.tabContainer, { backgroundColor: themeColors.surface }]}>
         <TouchableOpacity
           style={[styles.tabButton, activeTab === 'camera' && styles.activeTab]}
           onPress={() => setActiveTab('camera')}
         >
-          <Ionicons name="camera" size={20} color={activeTab === 'camera' ? '#007AFF' : '#666'} />
-          <Text style={[styles.tabText, activeTab === 'camera' && styles.activeTabText]}>
+          <Ionicons name="camera" size={20} color={activeTab === 'camera' ? themeColors.primary : themeColors.textSecondary} />
+          <Text style={[styles.tabText, { color: activeTab === 'camera' ? themeColors.primary : themeColors.textSecondary }, activeTab === 'camera' && styles.activeTabText]}>
             Camera
           </Text>
         </TouchableOpacity>
@@ -372,8 +374,8 @@ export default function ScannerScreen() {
             loadScanHistory(); // Refresh history when switching to history tab
           }}
         >
-          <Ionicons name="time" size={20} color={activeTab === 'history' ? '#007AFF' : '#666'} />
-          <Text style={[styles.tabText, activeTab === 'history' && styles.activeTabText]}>
+          <Ionicons name="time" size={20} color={activeTab === 'history' ? themeColors.primary : themeColors.textSecondary} />
+          <Text style={[styles.tabText, { color: activeTab === 'history' ? themeColors.primary : themeColors.textSecondary }, activeTab === 'history' && styles.activeTabText]}>
             History ({scanHistory.length})
           </Text>
         </TouchableOpacity>
@@ -398,7 +400,7 @@ export default function ScannerScreen() {
         >
           <View style={styles.scannerOverlay}>
             <View style={styles.scannerFrame} />
-            <Text style={styles.scannerText}>
+            <Text style={[styles.scannerText, { color: themeColors.text }]}>
               {scanned ? 'Processing... Tap to scan again' : 'Position QR code within the frame'}
             </Text>
             {scanned && (
@@ -413,21 +415,21 @@ export default function ScannerScreen() {
                   setLastScannedUrl('');
                   console.log('🔄 Manual reset - ready for next scan');
                 }} 
-                style={styles.resetButton}
+                style={[styles.resetButton, { backgroundColor: themeColors.primary }]}
               >
-                <Text style={styles.resetButtonText}>Reset Scanner</Text>
+                <Text style={[styles.resetButtonText, { color: themeColors.buttonText }]}>Reset Scanner</Text>
               </TouchableOpacity>
             )}
             
             {/* Torch Toggle Button */}
             <TouchableOpacity 
               onPress={() => setTorchEnabled(!torchEnabled)} 
-              style={styles.torchButton}
+              style={[styles.torchButton, { backgroundColor: themeColors.surface }]}
             >
               <Ionicons 
                 name={torchEnabled ? "flash" : "flash-off"} 
                 size={24} 
-                color={torchEnabled ? "#FFD700" : "#fff"} 
+                color={torchEnabled ? themeColors.accent : themeColors.text} 
               />
             </TouchableOpacity>
           </View>
@@ -438,9 +440,9 @@ export default function ScannerScreen() {
 
       {/* History View */}
       {activeTab === 'history' && (
-        <View style={styles.historyContainer}>
-          <View style={styles.historyHeader}>
-            <Text style={styles.historyTitle}>Scan History</Text>
+        <View style={[styles.historyContainer, { backgroundColor: themeColors.background }]}>
+          <View style={[styles.historyHeader, { backgroundColor: themeColors.surface }]}>
+            <Text style={[styles.historyTitle, { color: themeColors.text }]}>Scan History</Text>
             <View style={styles.historyActions}>
               <TouchableOpacity 
                 onPress={() => {
@@ -454,25 +456,25 @@ export default function ScannerScreen() {
                   };
                   saveToHistory(testScan);
                 }} 
-                style={styles.testButton}
+                style={[styles.testButton, { backgroundColor: themeColors.primary }]}
               >
-                <Ionicons name="add" size={16} color="#007AFF" />
-                <Text style={styles.testButtonText}>Test</Text>
+                <Ionicons name="add" size={16} color={themeColors.buttonText} />
+                <Text style={[styles.testButtonText, { color: themeColors.buttonText }]}>Test</Text>
               </TouchableOpacity>
               {scanHistory.length > 0 && (
-                <TouchableOpacity onPress={clearHistory} style={styles.clearButton}>
-                  <Ionicons name="trash" size={16} color="#ff4444" />
-                  <Text style={styles.clearButtonText}>Clear</Text>
+                <TouchableOpacity onPress={clearHistory} style={[styles.clearButton, { backgroundColor: themeColors.error }]}>
+                  <Ionicons name="trash" size={16} color={themeColors.buttonText} />
+                  <Text style={[styles.clearButtonText, { color: themeColors.buttonText }]}>Clear</Text>
                 </TouchableOpacity>
               )}
             </View>
           </View>
           
           {scanHistory.length === 0 ? (
-            <View style={styles.emptyHistory}>
-              <Ionicons name="time-outline" size={64} color="#666" />
-              <Text style={styles.emptyHistoryTitle}>No Scans Yet</Text>
-              <Text style={styles.emptyHistoryText}>
+            <View style={[styles.emptyHistory, { backgroundColor: themeColors.background }]}>
+              <Ionicons name="time-outline" size={64} color={themeColors.textSecondary} />
+              <Text style={[styles.emptyHistoryTitle, { color: themeColors.text }]}>No Scans Yet</Text>
+              <Text style={[styles.emptyHistoryText, { color: themeColors.textSecondary }]}>
                 Scan some QR codes to see your history here
               </Text>
             </View>
@@ -490,16 +492,16 @@ export default function ScannerScreen() {
 
       {/* Controls - only show for camera tab */}
       {activeTab === 'camera' && (
-        <View style={styles.controls}>
-          <TouchableOpacity style={styles.controlButton} onPress={toggleCameraFacing}>
-            <Ionicons name="camera-reverse" size={24} color="#fff" />
-            <Text style={styles.controlButtonText}>Flip Camera</Text>
+        <View style={[styles.controls, { backgroundColor: themeColors.surface }]}>
+          <TouchableOpacity style={[styles.controlButton, { backgroundColor: themeColors.primary }]} onPress={toggleCameraFacing}>
+            <Ionicons name="camera-reverse" size={24} color={themeColors.buttonText} />
+            <Text style={[styles.controlButtonText, { color: themeColors.buttonText }]}>Flip Camera</Text>
           </TouchableOpacity>
 
           {scanned && (
-            <TouchableOpacity style={styles.scanAgainButton} onPress={resetScanner}>
-              <Ionicons name="scan" size={24} color="#fff" />
-              <Text style={styles.controlButtonText}>Scan Again</Text>
+            <TouchableOpacity style={[styles.scanAgainButton, { backgroundColor: themeColors.accent }]} onPress={resetScanner}>
+              <Ionicons name="scan" size={24} color={themeColors.buttonText} />
+              <Text style={[styles.controlButtonText, { color: themeColors.buttonText }]}>Scan Again</Text>
             </TouchableOpacity>
           )}
         </View>

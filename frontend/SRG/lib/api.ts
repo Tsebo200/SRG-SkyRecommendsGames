@@ -1,6 +1,8 @@
 import axios from 'axios';
+import { getBackendUrl, getBestBackendUrl } from './network-config';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8080';
+// Get the backend URL with automatic detection
+const API_BASE_URL = getBackendUrl();
 
 export interface Game {
   id: number;
@@ -12,11 +14,11 @@ export interface Game {
       id: number;
       name: string;
     };
-  }>;
+  }> | string[];
   genres?: Array<{
     id: number;
     name: string;
-  }>;
+  }> | string[];
   stores?: Array<{
     store: {
       id: number;
@@ -24,6 +26,14 @@ export interface Game {
     };
     url: string;
   }>;
+  // AI Recommendation fields
+  personalized_description?: string;
+  recommendation_score?: number;
+  similarity_reason?: string;
+  estimated_playtime?: string;
+  rating?: number;
+  released?: string;
+  description?: string;
 }
 
 export interface SearchResponse {
@@ -60,8 +70,51 @@ export interface SimilarGame {
 class ApiClient {
   private client = axios.create({
     baseURL: API_BASE_URL,
-    timeout: 10000,
+    timeout: 30000, // Increased to 30 seconds for AI recommendations
   });
+
+  constructor() {
+    // Add request interceptor for logging
+    this.client.interceptors.request.use(
+      (config) => {
+        console.log(`🌐 API Request: ${config.method?.toUpperCase()} ${config.url}`);
+        return config;
+      },
+      (error) => {
+        console.error('❌ API Request Error:', error);
+        return Promise.reject(error);
+      }
+    );
+
+    // Add response interceptor for error handling
+    this.client.interceptors.response.use(
+      (response) => {
+        console.log(`✅ API Response: ${response.status} ${response.config.url}`);
+        return response;
+      },
+      async (error) => {
+        console.error('❌ API Response Error:', error.message);
+        
+        // If it's a network error, try to find a working backend URL
+        if (error.code === 'NETWORK_ERROR' || error.message.includes('Network Error')) {
+          console.log('🔄 Network error detected, trying to find working backend...');
+          try {
+            const workingUrl = await getBestBackendUrl();
+            if (workingUrl && workingUrl !== API_BASE_URL) {
+              console.log(`🔄 Switching to working backend: ${workingUrl}`);
+              this.client.defaults.baseURL = workingUrl;
+              // Retry the original request
+              return this.client.request(error.config);
+            }
+          } catch (retryError) {
+            console.error('❌ Failed to find working backend:', retryError);
+          }
+        }
+        
+        return Promise.reject(error);
+      }
+    );
+  }
 
   async searchGames(query: string): Promise<SearchResponse> {
     const response = await this.client.get('/rawg/search', {
@@ -92,7 +145,7 @@ class ApiClient {
 
   // New method: Get recommendations using gpt-3.5-turbo
   async getRecommendations(favouriteGames: string[]): Promise<{
-    recommendations: string;
+    recommendations: any[]; // Now returns an array of game objects with images
     model: string;
     favourites: string;
   }> {
@@ -100,6 +153,7 @@ class ApiClient {
       params: {
         favourites: favouriteGames.join(', '),
       },
+      timeout: 45000, // 45 seconds for AI recommendations (longer than default)
     });
     return response.data;
   }

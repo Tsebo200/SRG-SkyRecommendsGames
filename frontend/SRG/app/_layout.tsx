@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
 import { FirebaseAuthService, AuthUser } from '../lib/firebase-auth';
 import { UserMappingService } from '../lib/user-mapping';
+import { ThemeProvider } from '../lib/theme-context';
 
 export default function RootLayout() {
   const router = useRouter();
@@ -132,7 +133,7 @@ export default function RootLayout() {
   }
 
   return (
-    <>
+    <ThemeProvider>
       <StatusBar style="light" />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
@@ -140,6 +141,6 @@ export default function RootLayout() {
         <Stack.Screen name="auth/signup-firebase" />
         <Stack.Screen name="game/[slug]" />
       </Stack>
-    </>
+    </ThemeProvider>
   );
 }

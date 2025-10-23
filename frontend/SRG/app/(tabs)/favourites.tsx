@@ -3,9 +3,11 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Alert, Activ
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { HybridFavouritesService, FavouriteGame } from '../../lib/favourites-hybrid';
+import { useThemeColors } from '../../lib/theme-context';
 
 export default function FavouritesScreen() {
   const router = useRouter();
+  const themeColors = useThemeColors();
   const [favourites, setFavourites] = useState<FavouriteGame[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -94,59 +96,83 @@ export default function FavouritesScreen() {
       pathname: `/game/${game.game_slug}`,
       params: {
         name: game.game_name || '',
-        image: '', // We don't have image in favourites yet
+        image: game.game_image || '', // Use stored image if available
         platforms: game.platforms?.join(', ') || '',
         genres: game.genres?.join(', ') || '',
-        stores: '{}',
+        stores: '{}', // We'll enhance this later if needed
+        slug: game.game_slug,
       },
     });
   };
 
   const renderFavourite = ({ item }: { item: FavouriteGame }) => (
     <TouchableOpacity 
-      style={styles.favouriteCard}
+      style={[styles.favouriteCard, { 
+        backgroundColor: themeColors.card,
+        borderColor: themeColors.border 
+      }]}
       onPress={() => goToGameDetails(item)}
     >
       <View style={styles.favouriteInfo}>
         <View style={styles.favouriteDetails}>
-          <Text style={styles.favouriteName}>{item.game_name}</Text>
+          <View style={styles.gameTitleRow}>
+            {item.game_image && (
+              <Image 
+                source={{ uri: item.game_image }} 
+                style={styles.gameIcon}
+                resizeMode="cover"
+              />
+            )}
+            <Text style={[styles.favouriteName, { color: themeColors.text }]}>{item.game_name}</Text>
+          </View>
           {item.genres && item.genres.length > 0 && (
-            <Text style={styles.favouriteGenres}>
-              {item.genres.slice(0, 2).join(', ')}
+            <Text style={[styles.favouriteGenres, { color: themeColors.textSecondary }]}>
+              {item.genres.slice(0, 3).join(', ')}
             </Text>
           )}
           {item.platforms && item.platforms.length > 0 && (
-            <Text style={styles.favouritePlatforms}>
-              {item.platforms.slice(0, 2).join(', ')}
+            <Text style={[styles.favouritePlatforms, { color: themeColors.textSecondary }]}>
+              {item.platforms.slice(0, 3).join(', ')}
             </Text>
           )}
         </View>
-        <TouchableOpacity
-          onPress={() => removeFavourite(item.game_id)}
-          style={[
-            styles.removeButton,
-            removingGameId === item.game_id && styles.removeButtonDisabled
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel="Remove from favourites"
-          disabled={removingGameId === item.game_id}
-        >
-          {removingGameId === item.game_id ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.removeButtonText}>Remove</Text>
-          )}
-        </TouchableOpacity>
+        <View style={styles.favouriteActions}>
+          <TouchableOpacity
+            onPress={() => goToGameDetails(item)}
+            style={[styles.viewButton, { backgroundColor: themeColors.primary }]}
+            accessibilityRole="button"
+            accessibilityLabel="View game details"
+          >
+            <Text style={[styles.viewButtonText, { color: themeColors.buttonText }]}>View</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => removeFavourite(item.game_id)}
+            style={[
+              styles.removeButton,
+              { backgroundColor: themeColors.error },
+              removingGameId === item.game_id && styles.removeButtonDisabled
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="Remove from favourites"
+            disabled={removingGameId === item.game_id}
+          >
+            {removingGameId === item.game_id ? (
+              <ActivityIndicator size="small" color={themeColors.buttonText} />
+            ) : (
+              <Text style={[styles.removeButtonText, { color: themeColors.buttonText }]}>Remove</Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
     </TouchableOpacity>
   );
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3b82f6" />
-          <Text style={styles.loadingText}>Loading favourites...</Text>
+          <ActivityIndicator size="large" color={themeColors.primary} />
+          <Text style={[styles.loadingText, { color: themeColors.textSecondary }]}>Loading favourites...</Text>
         </View>
       </SafeAreaView>
     );
@@ -154,11 +180,11 @@ export default function FavouritesScreen() {
 
   if (error) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity onPress={loadFavourites} style={styles.retryButton}>
-            <Text style={styles.retryButtonText}>Try Again</Text>
+          <Text style={[styles.errorText, { color: themeColors.error }]}>{error}</Text>
+          <TouchableOpacity onPress={loadFavourites} style={[styles.retryButton, { backgroundColor: themeColors.primary }]}>
+            <Text style={[styles.retryButtonText, { color: themeColors.buttonText }]}>Try Again</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -166,10 +192,10 @@ export default function FavouritesScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Favourites</Text>
-        <Text style={styles.subtitle}>
+    <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
+      <View style={[styles.header, { borderBottomColor: themeColors.border }]}>
+        <Text style={[styles.title, { color: themeColors.text }]}>Favourites</Text>
+        <Text style={[styles.subtitle, { color: themeColors.textSecondary }]}>
           {favourites.length === 0 
             ? 'No favourite games yet' 
             : `${favourites.length} favourite${favourites.length === 1 ? '' : 's'}`
@@ -179,8 +205,8 @@ export default function FavouritesScreen() {
 
       {favourites.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyTitle}>No Favourites Yet</Text>
-          <Text style={styles.emptySubtitle}>
+          <Text style={[styles.emptyTitle, { color: themeColors.text }]}>No Favourites Yet</Text>
+          <Text style={[styles.emptySubtitle, { color: themeColors.textSecondary }]}>
             Games you favourite will appear here. Start by searching for games and tapping the heart icon!
           </Text>
         </View>
@@ -201,21 +227,17 @@ export default function FavouritesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
   },
   header: {
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.1)',
   },
   title: {
-    color: '#fff',
     fontSize: 24,
     fontWeight: '700',
     marginBottom: 4,
   },
   subtitle: {
-    color: '#a0a0a0',
     fontSize: 14,
   },
   loadingContainer: {
@@ -224,7 +246,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    color: '#fff',
     marginTop: 12,
     fontSize: 16,
   },
@@ -235,19 +256,16 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   errorText: {
-    color: '#ff6b6b',
     fontSize: 16,
     textAlign: 'center',
     marginBottom: 16,
   },
   retryButton: {
-    backgroundColor: '#3b82f6',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
   },
   retryButtonText: {
-    color: '#fff',
     fontWeight: '600',
   },
   emptyContainer: {
@@ -257,14 +275,12 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   emptyTitle: {
-    color: '#fff',
     fontSize: 20,
     fontWeight: '600',
     marginBottom: 8,
     textAlign: 'center',
   },
   emptySubtitle: {
-    color: '#a0a0a0',
     fontSize: 14,
     textAlign: 'center',
     lineHeight: 20,
@@ -276,8 +292,6 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   favouriteCard: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderColor: 'rgba(255,255,255,0.15)',
     borderWidth: 1,
     borderRadius: 12,
     marginBottom: 12,
@@ -290,34 +304,53 @@ const styles = StyleSheet.create({
   },
   favouriteDetails: {
     flex: 1,
+    marginRight: 12,
   },
-  favouriteName: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+  gameTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 4,
   },
+  gameIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 6,
+    marginRight: 8,
+  },
+  favouriteName: {
+    fontSize: 16,
+    fontWeight: '600',
+    flex: 1,
+  },
   favouriteGenres: {
-    color: '#a0a0a0',
     fontSize: 14,
     marginBottom: 2,
   },
   favouritePlatforms: {
-    color: '#808080',
     fontSize: 12,
   },
+  favouriteActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  viewButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  viewButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
   removeButton: {
-    backgroundColor: '#ff6b6b',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
   },
   removeButtonDisabled: {
-    backgroundColor: '#6b7280',
     opacity: 0.6,
   },
   removeButtonText: {
-    color: '#fff',
     fontSize: 12,
     fontWeight: '600',
   },

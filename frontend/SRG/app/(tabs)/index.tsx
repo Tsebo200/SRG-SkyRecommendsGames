@@ -1,16 +1,19 @@
 import { View, Text, StyleSheet } from 'react-native';
+import { useThemeColors } from '../../lib/theme-context';
 
 export default function HomeScreen() {
+  const themeColors = useThemeColors();
+  
   return (
-    <View style={styles.container}>
-      <View style={styles.welcomeCard}>
-        <Text style={styles.title}>Sky Recommends Games</Text>
-        <Text style={styles.subtitle}>AI-Powered Game Recommendations</Text>
-        <Text style={styles.description}>
+    <View style={[styles.container, { backgroundColor: themeColors.background }]}>
+      <View style={[styles.welcomeCard, { backgroundColor: themeColors.surface, borderColor: themeColors.border }]}>
+        <Text style={[styles.title, { color: themeColors.text }]}>Sky Recommends Games</Text>
+        <Text style={[styles.subtitle, { color: themeColors.textSecondary }]}>AI-Powered Game Recommendations</Text>
+        <Text style={[styles.description, { color: themeColors.textSecondary }]}>
           Discover your next favourite game with personalised recommendations based on your gaming profile.
         </Text>
 
-        <Text style={styles.navigationHint}>
+        <Text style={[styles.navigationHint, { color: themeColors.textSecondary }]}>
           Use the tabs below to navigate between sections
         </Text>
       </View>

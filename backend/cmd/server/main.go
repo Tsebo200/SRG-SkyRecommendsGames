@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -726,14 +727,14 @@ func main() {
 			Messages: []openai.ChatCompletionMessage{
 				{
 					Role:    "system",
-					Content: "You are a game recommendation AI. Based on the user's favourite games, suggest 5 similar games they might enjoy. For each game, provide: name, brief description, and why it's similar to their favourites. Format as JSON array with fields: name, description, similarity_reason.",
+					Content: "You are a game recommendation AI. Based on the user's favourite games, suggest 5 similar games they might enjoy. CRITICAL: You must return ONLY a valid JSON array. No explanations, no markdown, no additional text. Start with [ and end with ]. Each object must have exactly these fields: name (string), description (string), similarity_reason (string). Use well-known, popular game names. Example: [{\"name\":\"The Witcher 3: Wild Hunt\",\"description\":\"An epic open-world RPG\",\"similarity_reason\":\"Similar fantasy RPG gameplay\"}]",
 				},
 				{
 					Role:    "user",
-					Content: fmt.Sprintf("My favourite games are: %s. Please recommend 5 similar games I might enjoy.", favouriteGames),
+					Content: fmt.Sprintf("My favourite games are: %s. Please recommend 5 similar games I might enjoy. Return only valid JSON array format with well-known game names.", favouriteGames),
 				},
 			},
-			MaxTokens: 500,
+			MaxTokens: 800,
 		})
 
 		if err != nil {
@@ -741,11 +742,86 @@ func main() {
 			return
 		}
 
-		// Return the gpt-3.5-turbo generated recommendations
+		// Parse the AI recommendations
+		var aiRecommendations []map[string]interface{}
+		aiResponse := completionResp.Choices[0].Message.Content
+
+		// Clean up the AI response
+		cleanResponse := strings.TrimSpace(aiResponse)
+
+		// Remove markdown formatting if present
+		if strings.HasPrefix(cleanResponse, "```json") {
+			cleanResponse = strings.TrimPrefix(cleanResponse, "```json")
+			cleanResponse = strings.TrimSuffix(cleanResponse, "```")
+		} else if strings.HasPrefix(cleanResponse, "```") {
+			cleanResponse = strings.TrimPrefix(cleanResponse, "```")
+			cleanResponse = strings.TrimSuffix(cleanResponse, "```")
+		}
+
+		// Extract JSON array if there's extra text
+		if jsonStart := strings.Index(cleanResponse, "["); jsonStart != -1 {
+			if jsonEnd := strings.LastIndex(cleanResponse, "]"); jsonEnd != -1 && jsonEnd > jsonStart {
+				cleanResponse = cleanResponse[jsonStart : jsonEnd+1]
+			}
+		}
+
+		if err := json.Unmarshal([]byte(cleanResponse), &aiRecommendations); err != nil {
+			// If parsing fails, create fallback recommendations
+			aiRecommendations = []map[string]interface{}{
+				{
+					"name":              "AI Recommendation Error",
+					"description":       "Failed to parse AI response: " + aiResponse,
+					"similarity_reason": "Please try again",
+				},
+			}
+		}
+
+		// Enhance recommendations with actual game data from RAWG API and AI translation
+		enhancedRecommendations := make([]map[string]interface{}, 0)
+		for _, rec := range aiRecommendations {
+			gameName, ok := rec["name"].(string)
+			if !ok {
+				continue
+			}
+
+			// Search for the game in RAWG API to get real data
+			fmt.Printf("🔍 Searching RAWG API for game: %s\n", gameName)
+			gameData, err := searchGameInRAWG(gameName, cfg.RawgAPIKey)
+			if err != nil {
+				// If we can't find the game, use the AI data as fallback
+				fmt.Printf("❌ RAWG API search failed for %s: %v\n", gameName, err)
+				rec["background_image"] = ""
+				rec["slug"] = strings.ToLower(strings.ReplaceAll(gameName, " ", "-"))
+				rec["genres"] = []string{}
+				rec["platforms"] = []string{}
+			} else {
+				fmt.Printf("✅ RAWG API found game %s with image: %s\n", gameName, gameData["background_image"])
+				// Enhance with real game data
+				rec["background_image"] = gameData["background_image"]
+				rec["slug"] = gameData["slug"]
+				rec["genres"] = gameData["genres"]
+				rec["platforms"] = gameData["platforms"]
+				rec["rating"] = gameData["rating"]
+				rec["released"] = gameData["released"]
+
+				// Use AI to translate and enhance the RAWG data
+				enhancedData, err := enhanceGameDataWithAI(rec, favouriteGames, cfg.OpenAIKey)
+				if err == nil {
+					// Merge AI-enhanced data
+					for key, value := range enhancedData {
+						rec[key] = value
+					}
+				}
+			}
+
+			enhancedRecommendations = append(enhancedRecommendations, rec)
+		}
+
+		// Return the enhanced recommendations
 		w.Header().Set("Content-Type", "application/json")
 		response := map[string]interface{}{
-			"recommendations": completionResp.Choices[0].Message.Content,
-			"model":           "gpt-3.5-turbo",
+			"recommendations": enhancedRecommendations,
+			"model":           "gpt-3.5-turbo-enhanced",
 			"favourites":      favouriteGames,
 		}
 
@@ -793,6 +869,139 @@ func main() {
 	if err := http.ListenAndServe(":"+cfg.Port, r); err != nil {
 		log.Fatal(err)
 	}
+}
+
+// searchGameInRAWG searches for a game in the RAWG API and returns game data
+func searchGameInRAWG(gameName, rawgKey string) (map[string]interface{}, error) {
+	// Use the RAWG API to search for the game
+	rawgURL := fmt.Sprintf("https://api.rawg.io/api/games?search=%s&key=%s", url.QueryEscape(gameName), rawgKey)
+	fmt.Printf("🔍 RAWG API URL: %s\n", rawgURL)
+
+	resp, err := http.Get(rawgURL)
+	if err != nil {
+		fmt.Printf("❌ RAWG API request failed: %v\n", err)
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		fmt.Printf("❌ RAWG API returned status %d\n", resp.StatusCode)
+		return nil, fmt.Errorf("RAWG API returned status %d", resp.StatusCode)
+	}
+
+	var searchResult struct {
+		Results []struct {
+			ID              int     `json:"id"`
+			Slug            string  `json:"slug"`
+			Name            string  `json:"name"`
+			BackgroundImage string  `json:"background_image"`
+			Rating          float64 `json:"rating"`
+			Released        string  `json:"released"`
+			Genres          []struct {
+				Name string `json:"name"`
+			} `json:"genres"`
+			Platforms []struct {
+				Platform struct {
+					Name string `json:"name"`
+				} `json:"platform"`
+			} `json:"platforms"`
+		} `json:"results"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&searchResult); err != nil {
+		return nil, err
+	}
+
+	if len(searchResult.Results) == 0 {
+		fmt.Printf("❌ No results found for game: %s\n", gameName)
+		return nil, fmt.Errorf("game not found")
+	}
+
+	fmt.Printf("✅ Found %d results for game: %s\n", len(searchResult.Results), gameName)
+
+	// Get the first (most relevant) result
+	game := searchResult.Results[0]
+	fmt.Printf("🎮 Selected game: %s (ID: %d)\n", game.Name, game.ID)
+	fmt.Printf("🖼️ Background image: %s\n", game.BackgroundImage)
+
+	// Extract genres
+	genres := make([]string, len(game.Genres))
+	for i, genre := range game.Genres {
+		genres[i] = genre.Name
+	}
+
+	// Extract platforms
+	platforms := make([]string, len(game.Platforms))
+	for i, platform := range game.Platforms {
+		platforms[i] = platform.Platform.Name
+	}
+
+	return map[string]interface{}{
+		"background_image": game.BackgroundImage,
+		"slug":             game.Slug,
+		"genres":           genres,
+		"platforms":        platforms,
+		"rating":           game.Rating,
+		"released":         game.Released,
+	}, nil
+}
+
+// enhanceGameDataWithAI uses GPT-3.5-turbo to translate and enhance RAWG API data
+func enhanceGameDataWithAI(gameData map[string]interface{}, userFavourites, openAIKey string) (map[string]interface{}, error) {
+	client := openai.NewClient(openAIKey)
+
+	// Prepare the game data for AI analysis
+	gameName := gameData["name"].(string)
+	genres := gameData["genres"].([]string)
+	platforms := gameData["platforms"].([]string)
+	rating := gameData["rating"].(float64)
+	released := gameData["released"].(string)
+
+	// Create a prompt for AI to enhance the data
+	prompt := fmt.Sprintf(`
+Based on the user's favourite games (%s), enhance this game recommendation with personalized insights:
+
+Game: %s
+Genres: %s
+Platforms: %s
+Rating: %.1f/5
+Released: %s
+
+Please provide:
+1. A personalized description (2-3 sentences) explaining why this game matches their preferences
+2. A similarity reason (1 sentence) connecting it to their favourite games
+3. An estimated playtime based on the game type and user preferences
+4. A personalized recommendation score (0.0-1.0) based on how well it matches their taste
+
+Return as JSON with fields: personalized_description, similarity_reason, estimated_playtime, recommendation_score
+`, userFavourites, gameName, strings.Join(genres, ", "), strings.Join(platforms, ", "), rating, released)
+
+	completionResp, err := client.CreateChatCompletion(context.Background(), openai.ChatCompletionRequest{
+		Model: "gpt-3.5-turbo",
+		Messages: []openai.ChatCompletionMessage{
+			{
+				Role:    "system",
+				Content: "You are a game recommendation expert. Analyze game data and user preferences to provide personalized insights. Return ONLY valid JSON with the requested fields.",
+			},
+			{
+				Role:    "user",
+				Content: prompt,
+			},
+		},
+		MaxTokens: 300,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Parse the AI response
+	var aiEnhancement map[string]interface{}
+	if err := json.Unmarshal([]byte(completionResp.Choices[0].Message.Content), &aiEnhancement); err != nil {
+		return nil, err
+	}
+
+	return aiEnhancement, nil
 }
 
 func urlQueryEscape(s string) string {

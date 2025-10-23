@@ -5,8 +5,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../lib/supabase';
 import { HybridFavouritesService } from '../../lib/favourites-hybrid';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useThemeColors } from '../../lib/theme-context';
 
 export default function GameDetailsScreen() {
+  const themeColors = useThemeColors();
   const router = useRouter();
   const params = useLocalSearchParams();
   const [liked, setLiked] = useState<boolean | null>(null);
@@ -73,9 +75,9 @@ export default function GameDetailsScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={[styles.container, { backgroundColor: themeColors.background }]} contentContainerStyle={styles.content}>
       <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-        <Text style={styles.backText}>← Back</Text>
+        <Text style={[styles.backText, { color: themeColors.textSecondary }]}>← Back</Text>
       </TouchableOpacity>
 
       {image && (
@@ -83,10 +85,10 @@ export default function GameDetailsScreen() {
       )}
 
       <View style={styles.titleRow}>
-        <Text style={styles.title}>{name}</Text>
+        <Text style={[styles.title, { color: themeColors.text }]}>{name}</Text>
         <TouchableOpacity
           onPress={toggleFavourite}
-          style={[styles.favouriteButton, isFavourited && styles.favouriteButtonActive]}
+          style={[styles.favouriteButton, { backgroundColor: themeColors.surface }, isFavourited && { backgroundColor: themeColors.error + '20' }]}
           disabled={favouriteLoading}
           accessibilityRole="button"
           accessibilityLabel={isFavourited ? 'Remove from favourites' : 'Add to favourites'}
@@ -94,38 +96,38 @@ export default function GameDetailsScreen() {
           <Ionicons 
             name={isFavourited ? 'heart' : 'heart-outline'} 
             size={24} 
-            color={isFavourited ? '#ff6b6b' : '#a0a0a0'} 
+            color={isFavourited ? themeColors.error : themeColors.textSecondary} 
           />
         </TouchableOpacity>
       </View>
 
       {!!genres && (
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Genres</Text>
-          <Text style={styles.sectionValue}>{genres}</Text>
+          <Text style={[styles.sectionLabel, { color: themeColors.textSecondary }]}>Genres</Text>
+          <Text style={[styles.sectionValue, { color: themeColors.text }]}>{genres}</Text>
         </View>
       )}
 
       {!!platforms && (
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Platforms</Text>
-          <Text style={styles.sectionValue}>{platforms}</Text>
+          <Text style={[styles.sectionLabel, { color: themeColors.textSecondary }]}>Platforms</Text>
+          <Text style={[styles.sectionValue, { color: themeColors.text }]}>{platforms}</Text>
         </View>
       )}
 
       {storeEntries.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Store Links</Text>
+          <Text style={[styles.sectionLabel, { color: themeColors.textSecondary }]}>Store Links</Text>
           <View style={styles.storeList}>
             {storeEntries.map(([storeName, url]) => (
               <TouchableOpacity
                 key={storeName}
                 onPress={() => Linking.openURL(url)}
-                style={styles.storeButton}
+                style={[styles.storeButton, { backgroundColor: themeColors.surface, borderColor: themeColors.border }]}
                 accessibilityRole="button"
                 accessibilityLabel={`Open ${storeName} store link`}
               >
-                <Text style={styles.storeButtonText}>{storeName}</Text>
+                <Text style={[styles.storeButtonText, { color: themeColors.text }]}>{storeName}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -133,30 +135,30 @@ export default function GameDetailsScreen() {
       )}
 
       <SafeAreaView style={styles.section}>
-        <Text style={styles.sectionLabel}>Your Feedback</Text>
+        <Text style={[styles.sectionLabel, { color: themeColors.textSecondary }]}>Your Feedback</Text>
         <View style={styles.feedbackRow}>
           <TouchableOpacity
             onPress={() => setLiked(true)}
-            style={[styles.voteButton, liked === true && styles.voteActivePositive]}
+            style={[styles.voteButton, { backgroundColor: themeColors.surface, borderColor: themeColors.border }, liked === true && { backgroundColor: themeColors.success + '20', borderColor: themeColors.success }]}
             accessibilityRole="button"
             accessibilityLabel="Like this game"
           >
-            <Text style={styles.voteText}>👍 Like</Text>
+            <Text style={[styles.voteText, { color: themeColors.text }]}>👍 Like</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => setLiked(false)}
-            style={[styles.voteButton, liked === false && styles.voteActiveNegative]}
+            style={[styles.voteButton, { backgroundColor: themeColors.surface, borderColor: themeColors.border }, liked === false && { backgroundColor: themeColors.error + '20', borderColor: themeColors.error }]}
             accessibilityRole="button"
             accessibilityLabel="Dislike this game"
           >
-            <Text style={styles.voteText}>👎 Dislike</Text>
+            <Text style={[styles.voteText, { color: themeColors.text }]}>👎 Dislike</Text>
           </TouchableOpacity>
         </View>
 
         <TextInput
-          style={styles.commentInput}
+          style={[styles.commentInput, { backgroundColor: themeColors.surface, borderColor: themeColors.border, color: themeColors.text }]}
           placeholder="Share your thoughts (optional)"
-          placeholderTextColor="#6b6b6b"
+          placeholderTextColor={themeColors.textSecondary}
           multiline
           value={comment}
           onChangeText={setComment}
@@ -187,10 +189,10 @@ export default function GameDetailsScreen() {
               setSubmitting(false);
             }
           }}
-          style={[styles.submitButton, submitting && { opacity: 0.6 }]}
+          style={[styles.submitButton, { backgroundColor: themeColors.primary }, submitting && { opacity: 0.6 }]}
           disabled={submitting}
         >
-          <Text style={styles.submitText}>{submitting ? 'Submitting...' : 'Submit Feedback'}</Text>
+          <Text style={[styles.submitText, { color: themeColors.buttonText }]}>{submitting ? 'Submitting...' : 'Submit Feedback'}</Text>
         </TouchableOpacity>
       </SafeAreaView>
     </ScrollView>
@@ -200,7 +202,6 @@ export default function GameDetailsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0a0a0a',
   },
   content: {
     padding: 16,
@@ -209,7 +210,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   backText: {
-    color: '#a0a0a0',
     fontSize: 16,
   },
   image: {
@@ -225,7 +225,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   title: {
-    color: '#fff',
     fontSize: 24,
     fontWeight: '700',
     flex: 1,
@@ -234,21 +233,15 @@ const styles = StyleSheet.create({
   favouriteButton: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-  },
-  favouriteButtonActive: {
-    backgroundColor: 'rgba(255,107,107,0.2)',
   },
   section: {
     marginBottom: 16,
   },
   sectionLabel: {
-    color: '#a0a0a0',
     fontSize: 13,
     marginBottom: 6,
   },
   sectionValue: {
-    color: '#fff',
     fontSize: 16,
     lineHeight: 22,
   },
@@ -258,8 +251,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   storeButton: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderColor: 'rgba(255,255,255,0.15)',
     borderWidth: 1,
     paddingVertical: 8,
     paddingHorizontal: 12,
@@ -268,7 +259,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   storeButtonText: {
-    color: '#fff',
     fontSize: 14,
   },
   feedbackRow: {
@@ -277,23 +267,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   voteButton: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    borderColor: 'rgba(255,255,255,0.15)',
     borderWidth: 1,
     paddingVertical: 10,
     paddingHorizontal: 14,
     borderRadius: 10,
   },
-  voteActivePositive: {
-    backgroundColor: 'rgba(52,199,89,0.18)',
-    borderColor: 'rgba(48,209,88,0.6)',
-  },
-  voteActiveNegative: {
-    backgroundColor: 'rgba(255,69,58,0.18)',
-    borderColor: 'rgba(255,69,58,0.6)',
-  },
   voteText: {
-    color: '#fff',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -301,21 +280,16 @@ const styles = StyleSheet.create({
     minHeight: 96,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.15)',
-    backgroundColor: 'rgba(255,255,255,0.06)',
     padding: 12,
-    color: '#fff',
     textAlignVertical: 'top',
     marginBottom: 12,
   },
   submitButton: {
-    backgroundColor: '#3b82f6',
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: 'center',
   },
   submitText: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: '700',
   },

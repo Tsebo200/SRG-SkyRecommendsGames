@@ -11,7 +11,10 @@
     "test": "jest --config jest.config.simple.js",
     "test:watch": "jest --config jest.config.simple.js --watch",
     "test:coverage": "jest --config jest.config.simple.js --coverage",
-    "test:full": "jest"
+    "test:full": "jest",
+    "update-ip": "bash scripts/update-ip.sh",
+    "network-test": "node -e \"console.log('Testing network...'); require('./lib/network-config').findWorkingBackendUrl().then(url => console.log('Working URL:', url)).catch(err => console.error('Error:', err))\"",
+    "reset-theme": "node scripts/reset-to-nature-theme.js"
   },
   "dependencies": {
     "@babel/preset-env": "^7.28.3",
