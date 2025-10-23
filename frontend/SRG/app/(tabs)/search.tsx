@@ -12,7 +12,7 @@ import {
   Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { PanGestureHandler, State } from 'react-native-gesture-handler';
+import { PanGestureHandler, State, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { apiClient, Game } from '../../lib/api';
 import { HybridFavouritesService } from '../../lib/favourites-hybrid';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -282,9 +282,10 @@ export default function SearchScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
-          {/* <View style={styles.container}> */}
-        <View style={[styles.searchCard, { backgroundColor: themeColors.surface, borderColor: themeColors.border }]}>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
+            {/* <View style={styles.container}> */}
+          <View style={[styles.searchCard, { backgroundColor: themeColors.surface, borderColor: themeColors.border }]}>
           <TextInput
             style={[styles.searchInput, { color: themeColors.text }]}
             placeholder="Search for games..."
@@ -337,6 +338,7 @@ export default function SearchScreen() {
       />
     {/* </View> */}
     </SafeAreaView>
+    </GestureHandlerRootView>
   );
 }
 
