@@ -13,8 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
-import Reanimated, { SharedValue, useAnimatedStyle } from 'react-native-reanimated';
+import Swipeable from 'react-native-gesture-handler/Swipeable';
 import { apiClient, Game } from '../../lib/api';
 import { HybridFavouritesService } from '../../lib/favourites-hybrid';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -153,16 +152,16 @@ export default function SearchScreen() {
   const renderGame = ({ item }: { item: Game }) => {
     const isFavourited = favourites.has(item.slug);
     
-    // Render left action (favorite action) using Reanimated
-    const renderLeftActions = (progress: SharedValue<number>, translation: SharedValue<number>) => {
-      const animatedStyle = useAnimatedStyle(() => {
-        return {
-          transform: [{ translateX: translation.value }],
-        };
+    // Render left action (favorite action)
+    const renderLeftActions = (progress: Animated.AnimatedAddition<number>, dragX: Animated.AnimatedAddition<number>) => {
+      const trans = dragX.interpolate({
+        inputRange: [0, 50, 100, 101],
+        outputRange: [-20, 0, 0, 1],
+        extrapolate: 'clamp',
       });
       
       return (
-        <Reanimated.View style={[styles.leftAction, animatedStyle]}>
+        <View style={styles.leftAction}>
           <TouchableOpacity
             style={[styles.actionButton, { backgroundColor: '#87CEEB' }]}
             onPress={() => toggleFavourite(item, { stopPropagation: () => {} })}
@@ -172,12 +171,12 @@ export default function SearchScreen() {
               {isFavourited ? 'Remove' : 'Favorite'}
             </Text>
           </TouchableOpacity>
-        </Reanimated.View>
+        </View>
       );
     };
     
     return (
-      <ReanimatedSwipeable
+      <Swipeable
         renderLeftActions={renderLeftActions}
         leftThreshold={100} // 30% of ~350px card width
         onSwipeableOpen={(direction: string) => {
@@ -223,7 +222,7 @@ export default function SearchScreen() {
             />
           </TouchableOpacity>
         </TouchableOpacity>
-      </ReanimatedSwipeable>
+      </Swipeable>
     );
   };
 
