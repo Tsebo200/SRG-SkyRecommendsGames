@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -27,16 +27,21 @@ export default function SearchScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [favourites, setFavourites] = useState<Set<string>>(new Set());
-  const [swipeAnimations, setSwipeAnimations] = useState<Map<string, Animated.Value>>(new Map());
+  // Create animation values for all games using useMemo
+  const gameAnimations = useMemo(() => {
+    const animations = new Map<string, Animated.Value>();
+    games.forEach(game => {
+      const gameId = game.id.toString();
+      if (!animations.has(gameId)) {
+        animations.set(gameId, new Animated.Value(0));
+      }
+    });
+    return animations;
+  }, [games]);
 
-  // Get or create animation value for a game
+  // Get animation value for a game
   const getAnimationValue = (gameId: string) => {
-    if (!swipeAnimations.has(gameId)) {
-      const newAnimation = new Animated.Value(0);
-      setSwipeAnimations(prev => new Map(prev).set(gameId, newAnimation));
-      return newAnimation;
-    }
-    return swipeAnimations.get(gameId)!;
+    return gameAnimations.get(gameId) || new Animated.Value(0);
   };
 
   // Debounced search function
