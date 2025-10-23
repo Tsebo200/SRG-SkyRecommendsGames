@@ -166,7 +166,6 @@ export default function SearchScreen() {
             style={[styles.actionButton, { backgroundColor: '#87CEEB' }]}
             onPress={() => toggleFavourite(item, { stopPropagation: () => {} })}
           >
-            <Ionicons name="heart" size={24} color="white" />
             <Text style={styles.actionText}>
               {isFavourited ? 'Remove' : 'Favorite'}
             </Text>
@@ -441,6 +440,5 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 14,
     fontWeight: '600',
-    marginLeft: 8,
   },
 });
