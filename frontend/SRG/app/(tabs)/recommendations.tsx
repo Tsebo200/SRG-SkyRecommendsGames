@@ -419,106 +419,20 @@ export default function RecommendationsScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]} edges={['top', 'left', 'right']}>
-      <ScrollView 
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.header}>
-          <Text style={[styles.headerTitle, { color: themeColors.text }]}>Recommendations</Text>
-          <TouchableOpacity onPress={generateRecommendations} disabled={loading}>
-            <Ionicons 
-              name="refresh" 
-              size={24} 
-              color={loading ? themeColors.textSecondary : themeColors.primary} 
-            />
-          </TouchableOpacity>
-        </View>
-
-        {/* Steam Recommendations Section - Optional */}
-        {steamProfile ? (
-        <View style={styles.steamSection}>
-          <View style={styles.steamHeader}>
-            <View style={styles.steamTitleContainer}>
-              <Ionicons name="logo-steam" size={20} color="#007AFF" />
-              <Text style={styles.steamTitle}>Steam-Based Recommendations</Text>
-            </View>
-            <TouchableOpacity 
-              onPress={() => generateSteamRecommendations(steamProfile)} 
-              disabled={steamLoading}
-            >
-              {steamLoading ? (
-                <ActivityIndicator size="small" color="#007AFF" />
-              ) : (
-                <Ionicons name="refresh" size={16} color="#007AFF" />
-              )}
-            </TouchableOpacity>
-          </View>
-          
-          {steamRecommendations ? (
-            <View style={styles.steamRecommendations}>
-              {steamRecommendations.recommendations.map((rec, index) => (
-                <View key={index} style={styles.steamRecommendationItem}>
-                  <View style={styles.steamRecHeader}>
-                    <Text style={styles.steamRecGameName}>{rec.gameName}</Text>
-                    <View style={styles.steamConfidenceBadge}>
-                      <Text style={styles.steamConfidenceText}>{rec.confidence}/10</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.steamRecReason}>{rec.reason}</Text>
-                  <View style={styles.steamRecMeta}>
-                    <Text style={styles.steamRecGenre}>{rec.genre}</Text>
-                    <Text style={styles.steamRecPlaytime}>{rec.estimatedPlaytime}</Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-          ) : (
-            <View style={styles.steamEmptyState}>
-              <Text style={styles.steamEmptyText}>
-                Tap refresh to get AI-powered recommendations based on your Steam profile
-              </Text>
-            </View>
-          )}
-        </View>
-      ) : (
-        <View style={styles.optionalSteamSection}>
-          <View style={styles.optionalSteamHeader}>
-            <Ionicons name="logo-steam" size={20} color="#666" />
-            <Text style={styles.optionalSteamTitle}>Steam Integration (Optional)</Text>
-          </View>
-          <Text style={styles.optionalSteamText}>
-            Connect your Steam profile for AI-powered recommendations based on your gaming history
-          </Text>
-          <TouchableOpacity 
-            style={styles.optionalSteamButton}
-            onPress={() => router.push('/(tabs)/steam-profile')}
-          >
-            <Text style={styles.optionalSteamButtonText}>Connect Steam</Text>
-            <Ionicons name="arrow-forward" size={16} color="#007AFF" />
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Favourites-Based Recommendations Section */}
-      <View style={styles.favouritesSection}>
-        <View style={styles.favouritesHeader}>
-          <Ionicons name="heart" size={20} color="#ff6b6b" />
-          <Text style={styles.favouritesTitle}>Based on Your Favourites</Text>
-        </View>
-        <Text style={styles.favouritesSubtitle}>
-          Add games to your favourites by searching or scanning QR codes to get personalised recommendations
-        </Text>
+      <View style={styles.header}>
+        <Text style={[styles.headerTitle, { color: themeColors.text }]}>Recommendations</Text>
+        <TouchableOpacity onPress={generateRecommendations} disabled={loading}>
+          <Ionicons 
+            name="refresh" 
+            size={24} 
+            color={loading ? themeColors.textSecondary : themeColors.primary} 
+          />
+        </TouchableOpacity>
       </View>
 
-      {loading && recommendations.length === 0 ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>🤖 AI is analyzing your preferences...</Text>
-          <Text style={[styles.loadingText, { fontSize: 14, opacity: 0.7, marginTop: 8 }]}>
-            This may take 15-30 seconds while we fetch game data and generate personalized recommendations
-          </Text>
-        </View>
+      {/* Loading State */}
+      {loading ? (
+        renderLoading()
       ) : error ? (
         renderError()
       ) : recommendations.length === 0 ? (
@@ -535,9 +449,59 @@ export default function RecommendationsScreen() {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
           showsVerticalScrollIndicator={false}
+          ListHeaderComponent={() => (
+            <View>
+              {/* Steam Recommendations Section - Optional */}
+              {steamProfile ? (
+                <View style={styles.steamSection}>
+                  <View style={styles.steamHeader}>
+                    <View style={styles.steamTitleContainer}>
+                      <Ionicons name="logo-steam" size={20} color="#007AFF" />
+                      <Text style={styles.steamTitle}>Steam-Based Recommendations</Text>
+                    </View>
+                    <TouchableOpacity 
+                      onPress={() => generateSteamRecommendations(steamProfile)} 
+                      disabled={steamLoading}
+                    >
+                      {steamLoading ? (
+                        <ActivityIndicator size="small" color="#007AFF" />
+                      ) : (
+                        <Ionicons name="refresh" size={16} color="#007AFF" />
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                  
+                  {steamRecommendations ? (
+                    <View style={styles.steamRecommendations}>
+                      {steamRecommendations.recommendations.map((rec, index) => (
+                        <View key={index} style={styles.steamRecommendationItem}>
+                          <View style={styles.steamRecHeader}>
+                            <Text style={styles.steamRecGameName}>{rec.gameName}</Text>
+                            <View style={styles.steamConfidenceBadge}>
+                              <Text style={styles.steamConfidenceText}>{rec.confidence}/10</Text>
+                            </View>
+                          </View>
+                          <Text style={styles.steamRecReason}>{rec.reason}</Text>
+                          <View style={styles.steamRecMeta}>
+                            <Text style={styles.steamRecGenre}>{rec.genre}</Text>
+                            <Text style={styles.steamRecPlaytime}>{rec.estimatedPlaytime}</Text>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                  ) : (
+                    <View style={styles.steamEmptyState}>
+                      <Text style={styles.steamEmptyText}>
+                        Tap refresh to get AI-powered recommendations based on your Steam profile
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              ) : null}
+            </View>
+          )}
         />
       )}
-      </ScrollView>
     </SafeAreaView>
   );
 }
