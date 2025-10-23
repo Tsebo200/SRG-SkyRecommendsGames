@@ -246,6 +246,12 @@ export default function RecommendationsScreen() {
   const toggleFavourite = async (game: RecommendationGame) => {
     try {
       const isFavourite = favourites.has(game.slug);
+      const gameId = game.id?.toString() || game.slug || 'unknown';
+      
+      console.log('🔍 Toggling favourite for game:', game.name);
+      console.log('🔍 Game ID being used:', gameId);
+      console.log('🔍 Game slug:', game.slug);
+      console.log('🔍 Is currently favourite:', isFavourite);
       
       if (isFavourite) {
         await HybridFavouritesService.removeFavourite(game.slug);
@@ -256,7 +262,7 @@ export default function RecommendationsScreen() {
         });
       } else {
         await HybridFavouritesService.addFavourite(
-          game.id.toString(),
+          gameId,
           game.name,
           game.slug,
           game.background_image

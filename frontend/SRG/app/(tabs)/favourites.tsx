@@ -48,9 +48,14 @@ export default function FavouritesScreen() {
 
   const removeFavourite = async (gameId: string) => {
     try {
+      console.log('🔍 Attempting to remove favourite with gameId:', gameId);
+      console.log('🔍 Available favourites:', favourites.map(fav => ({ game_id: fav.game_id, game_slug: fav.game_slug, game_name: fav.game_name })));
+      
       // Find the game slug from the favourites list
       const favourite = favourites.find(fav => fav.game_id === gameId);
       if (!favourite || !favourite.game_slug) {
+        console.error('❌ Game not found in favourites. Looking for gameId:', gameId);
+        console.error('❌ Available gameIds:', favourites.map(fav => fav.game_id));
         Alert.alert('Error', 'Game not found in favourites');
         return;
       }
