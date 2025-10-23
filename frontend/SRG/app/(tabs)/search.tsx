@@ -44,24 +44,30 @@ export default function SearchScreen() {
       }
 
       // Sound feedback - use different sounds for add and remove
-      const { sound } = await Audio.Sound.createAsync(
-        isFavourited 
-          ? require('../../assets/FavouriteSound.mp3') 
-          : require('../../assets/RemoveSound.mp3')
-      );
+      const soundFile = isFavourited 
+        ? require('../../assets/FavouriteSound.mp3') 
+        : require('../../assets/RemoveSound.mp3');
       
-      // Set volume - make RemoveSound louder to match FavouriteSound
+      console.log('🔊 Loading sound file:', isFavourited ? 'FavouriteSound.mp3' : 'RemoveSound.mp3');
+      
+      const { sound } = await Audio.Sound.createAsync(soundFile);
+      
+      // Set volume - make RemoveSound much louder to match FavouriteSound
       if (!isFavourited) {
-        await sound.setVolumeAsync(1.2); // Increase volume for remove sound
+        await sound.setVolumeAsync(2.0); // Much higher volume for remove sound
+        console.log('🔊 Playing RemoveSound at 2.0x volume');
       } else {
         await sound.setVolumeAsync(1.0); // Normal volume for favorite sound
+        console.log('🔊 Playing FavouriteSound at 1.0x volume');
       }
       
       await sound.playAsync();
+      console.log('🔊 Sound playback started');
       
       // Clean up sound after playing
       setTimeout(() => {
         sound.unloadAsync();
+        console.log('🔊 Sound unloaded');
       }, 1000);
     } catch (error) {
       // If sound file doesn't exist, just provide haptic feedback
