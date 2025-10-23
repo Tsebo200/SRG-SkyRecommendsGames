@@ -66,6 +66,14 @@ export default function RecommendationsScreen() {
     checkForSteamProfile();
   }, []);
 
+  // Monitor recommendations count
+  useEffect(() => {
+    console.log('📊 Recommendations updated - count:', recommendations.length);
+    if (recommendations.length > 0) {
+      console.log('🎮 Recommendation names:', recommendations.map(r => r.name));
+    }
+  }, [recommendations]);
+
   const checkForSteamProfile = async () => {
     // Check if user has a Steam profile stored (you could use AsyncStorage or your user preferences)
     // For now, we'll assume they need to scan their Steam profile first
@@ -134,6 +142,7 @@ export default function RecommendationsScreen() {
       // Handle different response formats
       if (Array.isArray(aiRecommendations.recommendations)) {
         console.log('✅ Using enhanced recommendations with images');
+        console.log('🔍 Number of recommendations received:', aiRecommendations.recommendations.length);
         console.log('🔍 First recommendation data:', aiRecommendations.recommendations[0]);
         console.log('🖼️ First recommendation image:', aiRecommendations.recommendations[0]?.background_image);
         setRecommendations(aiRecommendations.recommendations);
@@ -169,6 +178,7 @@ export default function RecommendationsScreen() {
           const parsedRecommendations = JSON.parse(cleanResponse);
           if (Array.isArray(parsedRecommendations)) {
             console.log('✅ Successfully parsed JSON recommendations');
+            console.log('🔍 Number of parsed recommendations:', parsedRecommendations.length);
             setRecommendations(parsedRecommendations);
           } else {
             throw new Error('Parsed response is not an array');
@@ -194,6 +204,11 @@ export default function RecommendationsScreen() {
         console.error('Unexpected response format:', aiRecommendations);
         setError('Failed to load recommendations. Please try again.');
       }
+      
+      // Log the final count after state update
+      setTimeout(() => {
+        console.log('🎯 Final recommendations count after state update:', recommendations.length);
+      }, 100);
       
     } catch (error) {
       console.error('Failed to generate recommendations:', error);
@@ -476,6 +491,7 @@ export default function RecommendationsScreen() {
         renderEmptyState()
       ) : (
         <FlatList
+          key={isGridView ? 'grid' : 'list'}
           data={recommendations}
           renderItem={renderGameItem}
           keyExtractor={(item, index) => item.slug || `recommendation-${index}`}
