@@ -479,13 +479,16 @@ export default function ScannerScreen() {
               </Text>
             </View>
           ) : (
-            <FlatList
-              data={scanHistory}
-              renderItem={renderHistoryItem}
-              keyExtractor={(item) => item.id}
-              style={styles.historyList}
-              showsVerticalScrollIndicator={false}
-            />
+            <View style={styles.historyListContainer}>
+              <FlatList
+                data={scanHistory}
+                renderItem={renderHistoryItem}
+                keyExtractor={(item) => item.id}
+                style={styles.historyList}
+                showsVerticalScrollIndicator={false}
+                nestedScrollEnabled={true}
+              />
+            </View>
           )}
         </View>
       )}
@@ -748,6 +751,9 @@ const styles = StyleSheet.create({
     height: 50,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  historyListContainer: {
+    flex: 1,
   },
   historyList: {
     flex: 1,
