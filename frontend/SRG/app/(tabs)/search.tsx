@@ -155,8 +155,12 @@ export default function SearchScreen() {
         animationValue.setValue(event.translationX);
       })
       .onEnd((event) => {
-        // Check if swipe was significant enough (swipe right > 50px)
-        if (event.translationX > 50) {
+        // Calculate 30% of screen width (assuming game card takes most of screen width)
+        const screenWidth = 350; // Approximate game card width
+        const threshold = screenWidth * 0.3; // 30% of card width
+        
+        // Check if swipe was significant enough (swipe right > 30% of card width)
+        if (event.translationX > threshold) {
           // Trigger favorite action
           const gameSlug = game.slug;
           const isFavourited = favourites.has(gameSlug);
@@ -168,7 +172,7 @@ export default function SearchScreen() {
             // Show visual feedback
             Animated.sequence([
               Animated.timing(animationValue, {
-                toValue: 100,
+                toValue: threshold,
                 duration: 200,
                 useNativeDriver: true,
               }),
@@ -265,7 +269,7 @@ export default function SearchScreen() {
               styles.swipeIndicator,
               {
                 opacity: animationValue.interpolate({
-                  inputRange: [0, 50, 100],
+                  inputRange: [0, 105, 210], // 0, 30%, 60% of 350px card width
                   outputRange: [0, 0.5, 1],
                   extrapolate: 'clamp',
                 }),
@@ -274,7 +278,7 @@ export default function SearchScreen() {
             ]}
           >
             <Ionicons name="heart" size={24} color="#87CEEB" />
-            <Text style={styles.swipeText}>Swipe to favorite</Text>
+            <Text style={styles.swipeText}>Swipe 30% to favorite</Text>
           </Animated.View>
         </Animated.View>
       </GestureDetector>
