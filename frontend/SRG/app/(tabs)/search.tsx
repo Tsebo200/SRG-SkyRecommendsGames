@@ -49,6 +49,14 @@ export default function SearchScreen() {
           ? require('../../assets/FavouriteSound.mp3') 
           : require('../../assets/RemoveSound.mp3')
       );
+      
+      // Set volume - make RemoveSound louder to match FavouriteSound
+      if (!isFavourited) {
+        await sound.setVolumeAsync(1.2); // Increase volume for remove sound
+      } else {
+        await sound.setVolumeAsync(1.0); // Normal volume for favorite sound
+      }
+      
       await sound.playAsync();
       
       // Clean up sound after playing
