@@ -37,7 +37,17 @@ export default function FavouritesScreen() {
       // Then load the favourites
       const data = await HybridFavouritesService.getFavourites();
       console.log('✅ Favourites loaded (deduplicated):', data.length, 'items');
-      setFavourites(data);
+      
+      // Clean up any corrupted data
+      const cleanedFavourites = data.map(fav => ({
+        ...fav,
+        game_id: typeof fav.game_id === 'string' ? fav.game_id : String(fav.game_id),
+        game_slug: typeof fav.game_slug === 'string' ? fav.game_slug : String(fav.game_slug || ''),
+        game_name: typeof fav.game_name === 'string' ? fav.game_name : String(fav.game_name || 'Unknown Game')
+      }));
+      
+      console.log('🧹 Cleaned favourites data:', cleanedFavourites.length, 'items');
+      setFavourites(cleanedFavourites);
     } catch (err: any) {
       setError(err.message || 'Failed to load favourites');
       console.error('Favourites error:', err);
@@ -51,11 +61,18 @@ export default function FavouritesScreen() {
       console.log('🔍 Attempting to remove favourite with gameId:', gameId);
       console.log('🔍 Available favourites:', favourites.map(fav => ({ game_id: fav.game_id, game_slug: fav.game_slug, game_name: fav.game_name })));
       
+      // Clean up corrupted data - ensure all game_ids are strings
+      const cleanedFavourites = favourites.map(fav => ({
+        ...fav,
+        game_id: typeof fav.game_id === 'string' ? fav.game_id : String(fav.game_id)
+      }));
+      
       // Find the game slug from the favourites list
-      const favourite = favourites.find(fav => fav.game_id === gameId);
+      const favourite = cleanedFavourites.find(fav => fav.game_id === gameId);
       if (!favourite || !favourite.game_slug) {
         console.error('❌ Game not found in favourites. Looking for gameId:', gameId);
-        console.error('❌ Available gameIds:', favourites.map(fav => fav.game_id));
+        console.error('❌ Available gameIds:', cleanedFavourites.map(fav => fav.game_id));
+        console.error('❌ Raw favourites data:', favourites);
         Alert.alert('Error', 'Game not found in favourites');
         return;
       }

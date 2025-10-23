@@ -377,19 +377,29 @@ export class HybridFavouritesService {
       // Load current favourites
       const localFavourites = await this.loadFromLocalStorage();
       
-      // Deduplicate by game_slug
-      const deduplicated = localFavourites.reduce((acc: LocalFavourite[], current) => {
-        const exists = acc.some(fav => fav.game_slug === current.game_slug);
-        if (!exists) {
-          acc.push(current);
+      // Clean up corrupted data and deduplicate
+      const cleanedAndDeduplicated = localFavourites.reduce((acc: LocalFavourite[], current) => {
+        // Ensure all fields are strings
+        const cleaned: LocalFavourite = {
+          game_id: typeof current.game_id === 'string' ? current.game_id : String(current.game_id || ''),
+          game_name: typeof current.game_name === 'string' ? current.game_name : String(current.game_name || 'Unknown Game'),
+          game_slug: typeof current.game_slug === 'string' ? current.game_slug : String(current.game_slug || ''),
+          game_image: typeof current.game_image === 'string' ? current.game_image : String(current.game_image || ''),
+          added_at: typeof current.added_at === 'string' ? current.added_at : new Date().toISOString()
+        };
+        
+        // Check if this game already exists (deduplicate by game_slug)
+        const exists = acc.some(fav => fav.game_slug === cleaned.game_slug);
+        if (!exists && cleaned.game_slug && cleaned.game_slug !== '') {
+          acc.push(cleaned);
         }
         return acc;
       }, []);
 
-      // Save deduplicated favourites
-      await this.saveToLocalStorage(deduplicated);
+      // Save cleaned and deduplicated favourites
+      await this.saveToLocalStorage(cleanedAndDeduplicated);
       
-      console.log(`✅ Removed ${localFavourites.length - deduplicated.length} duplicates`);
+      console.log(`✅ Cleaned and removed ${localFavourites.length - cleanedAndDeduplicated.length} duplicates/corrupted entries`);
     } catch (error) {
       console.error('❌ Failed to remove duplicates:', error);
     }
