@@ -12,7 +12,7 @@ import {
   Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { PanGestureHandler, State, GestureHandlerRootView } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { apiClient, Game } from '../../lib/api';
 import { HybridFavouritesService } from '../../lib/favourites-hybrid';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -144,19 +144,19 @@ export default function SearchScreen() {
     }
   };
 
-  // Handle swipe gesture
-  const handleSwipeGesture = (game: Game) => {
-    return (event: any) => {
-      const { translationX, state } = event.nativeEvent;
-      const gameId = game.id.toString();
-      const animationValue = getAnimationValue(gameId);
-      
-      if (state === State.ACTIVE) {
+  // Create swipe gesture using modern API
+  const createSwipeGesture = (game: Game) => {
+    const gameId = game.id.toString();
+    const animationValue = getAnimationValue(gameId);
+    
+    return Gesture.Pan()
+      .onUpdate((event) => {
         // Update animation during swipe
-        animationValue.setValue(translationX);
-      } else if (state === State.END) {
+        animationValue.setValue(event.translationX);
+      })
+      .onEnd((event) => {
         // Check if swipe was significant enough (swipe right > 50px)
-        if (translationX > 50) {
+        if (event.translationX > 50) {
           // Trigger favorite action
           const gameSlug = game.slug;
           const isFavourited = favourites.has(gameSlug);
@@ -194,8 +194,7 @@ export default function SearchScreen() {
             useNativeDriver: true,
           }).start();
         }
-      }
-    };
+      });
   };
 
   // Load favourites on mount
@@ -216,9 +215,10 @@ export default function SearchScreen() {
     const isFavourited = favourites.has(item.slug);
     const gameId = item.id.toString();
     const animationValue = getAnimationValue(gameId);
+    const swipeGesture = createSwipeGesture(item);
     
     return (
-      <PanGestureHandler onGestureEvent={handleSwipeGesture(item)}>
+      <GestureDetector gesture={swipeGesture}>
         <Animated.View style={[
           styles.gameCard, 
           { 
@@ -277,7 +277,7 @@ export default function SearchScreen() {
             <Text style={styles.swipeText}>Swipe to favorite</Text>
           </Animated.View>
         </Animated.View>
-      </PanGestureHandler>
+      </GestureDetector>
     );
   };
 
