@@ -12,7 +12,8 @@ import {
   Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import Swipeable from 'react-native-gesture-handler/Swipeable';
 import { apiClient, Game } from '../../lib/api';
 import { HybridFavouritesService } from '../../lib/favourites-hybrid';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -27,22 +28,6 @@ export default function SearchScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [favourites, setFavourites] = useState<Set<string>>(new Set());
-  // Create animation values for all games using useMemo
-  const gameAnimations = useMemo(() => {
-    const animations = new Map<string, Animated.Value>();
-    games.forEach(game => {
-      const gameId = game.id.toString();
-      if (!animations.has(gameId)) {
-        animations.set(gameId, new Animated.Value(0));
-      }
-    });
-    return animations;
-  }, [games]);
-
-  // Get animation value for a game
-  const getAnimationValue = (gameId: string) => {
-    return gameAnimations.get(gameId) || new Animated.Value(0);
-  };
 
   // Debounced search function
   const debouncedSearch = useCallback(
@@ -149,62 +134,6 @@ export default function SearchScreen() {
     }
   };
 
-  // Create swipe gesture using modern API
-  const createSwipeGesture = (game: Game) => {
-    const gameId = game.id.toString();
-    const animationValue = getAnimationValue(gameId);
-    
-    return Gesture.Pan()
-      .onUpdate((event) => {
-        // Update animation during swipe
-        animationValue.setValue(event.translationX);
-      })
-      .onEnd((event) => {
-        // Calculate 30% of screen width (assuming game card takes most of screen width)
-        const screenWidth = 350; // Approximate game card width
-        const threshold = screenWidth * 0.3; // 30% of card width
-        
-        // Check if swipe was significant enough (swipe right > 30% of card width)
-        if (event.translationX > threshold) {
-          // Trigger favorite action
-          const gameSlug = game.slug;
-          const isFavourited = favourites.has(gameSlug);
-          
-          if (!isFavourited) {
-            // Add to favourites
-            toggleFavourite(game, { stopPropagation: () => {} });
-            
-            // Show visual feedback
-            Animated.sequence([
-              Animated.timing(animationValue, {
-                toValue: threshold,
-                duration: 200,
-                useNativeDriver: true,
-              }),
-              Animated.timing(animationValue, {
-                toValue: 0,
-                duration: 200,
-                useNativeDriver: true,
-              }),
-            ]).start();
-          } else {
-            // Already favorited, just reset animation
-            Animated.timing(animationValue, {
-              toValue: 0,
-              duration: 200,
-              useNativeDriver: true,
-            }).start();
-          }
-        } else {
-          // Reset animation if swipe wasn't significant
-          Animated.timing(animationValue, {
-            toValue: 0,
-            duration: 200,
-            useNativeDriver: true,
-          }).start();
-        }
-      });
-  };
 
   // Load favourites on mount
   useEffect(() => {
@@ -222,71 +151,78 @@ export default function SearchScreen() {
 
   const renderGame = ({ item }: { item: Game }) => {
     const isFavourited = favourites.has(item.slug);
-    const gameId = item.id.toString();
-    const animationValue = getAnimationValue(gameId);
-    const swipeGesture = createSwipeGesture(item);
+    
+    // Render left action (favorite action)
+    const renderLeftActions = (progress: Animated.AnimatedAddition<number>, dragX: Animated.AnimatedAddition<number>) => {
+      const trans = dragX.interpolate({
+        inputRange: [0, 50, 100, 101],
+        outputRange: [-20, 0, 0, 1],
+        extrapolate: 'clamp',
+      });
+      
+      return (
+        <View style={styles.leftAction}>
+          <TouchableOpacity
+            style={[styles.actionButton, { backgroundColor: '#87CEEB' }]}
+            onPress={() => toggleFavourite(item, { stopPropagation: () => {} })}
+          >
+            <Ionicons name="heart" size={24} color="white" />
+            <Text style={styles.actionText}>
+              {isFavourited ? 'Remove' : 'Favorite'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      );
+    };
     
     return (
-      <GestureDetector gesture={swipeGesture}>
-        <Animated.View style={[
-          styles.gameCard, 
-          { 
-            backgroundColor: themeColors.card,
-            transform: [{ translateX: animationValue }]
+      <Swipeable
+        renderLeftActions={renderLeftActions}
+        leftThreshold={100} // 30% of ~350px card width
+        onSwipeableOpen={(direction: string) => {
+          if (direction === 'left') {
+            // Auto-favorite when swiped left
+            const gameSlug = item.slug;
+            const isFavourited = favourites.has(gameSlug);
+            if (!isFavourited) {
+              toggleFavourite(item, { stopPropagation: () => {} });
+            }
           }
-        ]}>
-          <TouchableOpacity onPress={() => goToDetails(item)} style={styles.gameCardContent}>
-            <View style={styles.gameInfo}>
-              {item.background_image && (
-                <Image source={{ uri: item.background_image }} style={styles.gameImage} />
+        }}
+      >
+        <TouchableOpacity onPress={() => goToDetails(item)} style={[styles.gameCard, { backgroundColor: themeColors.card }]}>
+          <View style={styles.gameInfo}>
+            {item.background_image && (
+              <Image source={{ uri: item.background_image }} style={styles.gameImage} />
+            )}
+            <View style={styles.gameDetails}>
+              <Text style={[styles.gameName, { color: themeColors.text }]}>{item.name}</Text>
+              {item.genres && item.genres.length > 0 && (
+                <Text style={[styles.gameGenres, { color: themeColors.textSecondary }]}>
+                  {item.genres.slice(0, 3).map(g => g.name).join(', ')}
+                </Text>
               )}
-              <View style={styles.gameDetails}>
-                <Text style={[styles.gameName, { color: themeColors.text }]}>{item.name}</Text>
-                {item.genres && item.genres.length > 0 && (
-                  <Text style={[styles.gameGenres, { color: themeColors.textSecondary }]}>
-                    {item.genres.slice(0, 3).map(g => g.name).join(', ')}
-                  </Text>
-                )}
-                {item.platforms && item.platforms.length > 0 && (
-                  <Text style={[styles.gamePlatforms, { color: themeColors.textSecondary }]}>
-                    {item.platforms.slice(0, 3).map(p => p.platform.name).join(', ')}
-                  </Text>
-                )}
-              </View>
+              {item.platforms && item.platforms.length > 0 && (
+                <Text style={[styles.gamePlatforms, { color: themeColors.textSecondary }]}>
+                  {item.platforms.slice(0, 3).map(p => p.platform.name).join(', ')}
+                </Text>
+              )}
             </View>
-            <TouchableOpacity
-              onPress={(e) => toggleFavourite(item, e)}
-              style={[styles.favouriteButton, isFavourited && styles.favouriteButtonActive]}
-              accessibilityRole="button"
-              accessibilityLabel={isFavourited ? 'Remove from favourites' : 'Add to favourites'}
-            >
-              <Ionicons 
-                name={isFavourited ? 'heart' : 'heart-outline'} 
-                size={20} 
-                color={isFavourited ? themeColors.error : themeColors.textSecondary} 
-              />
-            </TouchableOpacity>
-          </TouchableOpacity>
-          
-          {/* Swipe indicator */}
-          <Animated.View 
-            style={[
-              styles.swipeIndicator,
-              {
-                opacity: animationValue.interpolate({
-                  inputRange: [0, 105, 210], // 0, 30%, 60% of 350px card width
-                  outputRange: [0, 0.5, 1],
-                  extrapolate: 'clamp',
-                }),
-                transform: [{ translateX: animationValue }]
-              }
-            ]}
+          </View>
+          <TouchableOpacity
+            onPress={(e) => toggleFavourite(item, e)}
+            style={[styles.favouriteButton, isFavourited && styles.favouriteButtonActive]}
+            accessibilityRole="button"
+            accessibilityLabel={isFavourited ? 'Remove from favourites' : 'Add to favourites'}
           >
-            <Ionicons name="heart" size={24} color="#87CEEB" />
-            <Text style={styles.swipeText}>Swipe 30% to favorite</Text>
-          </Animated.View>
-        </Animated.View>
-      </GestureDetector>
+            <Ionicons 
+              name={isFavourited ? 'heart' : 'heart-outline'} 
+              size={20} 
+              color={isFavourited ? themeColors.error : themeColors.textSecondary} 
+            />
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Swipeable>
     );
   };
 
@@ -477,5 +413,27 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     marginLeft: 4,
+  },
+  leftAction: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingRight: 20,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderRadius: 8,
+    minWidth: 100,
+  },
+  actionText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 8,
   },
 });
