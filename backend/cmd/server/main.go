@@ -363,6 +363,64 @@ func main() {
 		json.NewEncoder(w).Encode(recommendations)
 	})
 
+	// Steam Pattern Recommendations endpoint
+	r.Post("/steam/pattern-recommendations", func(w http.ResponseWriter, r *http.Request) {
+		var analysisRequest struct {
+			SteamId       string `json:"steamId"`
+			PlayerName    string `json:"playerName"`
+			TotalGames    int    `json:"totalGames"`
+			TotalPlaytime int    `json:"totalPlaytime"`
+			TopGames      []struct {
+				Name           string `json:"name"`
+				Playtime       int    `json:"playtime"`
+				RecentPlaytime int    `json:"recentPlaytime"`
+			} `json:"topGames"`
+			RecentGames []struct {
+				Name           string `json:"name"`
+				Playtime       int    `json:"playtime"`
+				RecentPlaytime int    `json:"recentPlaytime"`
+			} `json:"recentGames"`
+		}
+
+		if err := json.NewDecoder(r.Body).Decode(&analysisRequest); err != nil {
+			http.Error(w, "Invalid request body", http.StatusBadRequest)
+			return
+		}
+
+		// Generate pattern-based recommendations
+		recommendations := generatePatternBasedRecommendations(analysisRequest, cfg.OpenAIKey)
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(recommendations)
+	})
+
+	// Steam AI Analysis endpoint
+	r.Post("/steam/ai-analysis", func(w http.ResponseWriter, r *http.Request) {
+		var analysisRequest struct {
+			SteamId       string `json:"steamId"`
+			PlayerName    string `json:"playerName"`
+			TotalGames    int    `json:"totalGames"`
+			TotalPlaytime int    `json:"totalPlaytime"`
+			Games         []struct {
+				Name           string `json:"name"`
+				Playtime       int    `json:"playtime"`
+				RecentPlaytime int    `json:"recentPlaytime"`
+				Appid          int    `json:"appid"`
+			} `json:"games"`
+		}
+
+		if err := json.NewDecoder(r.Body).Decode(&analysisRequest); err != nil {
+			http.Error(w, "Invalid request body", http.StatusBadRequest)
+			return
+		}
+
+		// Generate comprehensive AI analysis
+		analysis := generateComprehensiveSteamAnalysis(analysisRequest, cfg.OpenAIKey)
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(analysis)
+	})
+
 	// PlayStation API endpoints
 	r.Get("/playstation/profile/{psnId}", func(w http.ResponseWriter, r *http.Request) {
 		psnId := chi.URLParam(r, "psnId")
@@ -1220,6 +1278,435 @@ Format as JSON with this structure:
 			"playStyle":       "Based on your gaming patterns",
 			"gamingLevel":     gamingLevel,
 			"interests":       preferredGenres,
+		},
+	}
+}
+
+// generateComprehensiveSteamAnalysis creates detailed AI analysis of all Steam games
+func generateComprehensiveSteamAnalysis(analysisRequest struct {
+	SteamId       string `json:"steamId"`
+	PlayerName    string `json:"playerName"`
+	TotalGames    int    `json:"totalGames"`
+	TotalPlaytime int    `json:"totalPlaytime"`
+	Games         []struct {
+		Name           string `json:"name"`
+		Playtime       int    `json:"playtime"`
+		RecentPlaytime int    `json:"recentPlaytime"`
+		Appid          int    `json:"appid"`
+	} `json:"games"`
+}, openAIKey string) map[string]interface{} {
+	// Analyze gaming patterns
+	var totalPlaytime float64
+	var recentPlaytime float64
+	gameGenres := make(map[string]int)
+	playtimeDistribution := make(map[string]int)
+	var topGames []string
+	var recentGames []string
+
+	// Sort games by playtime for analysis
+	for _, game := range analysisRequest.Games {
+		totalPlaytime += float64(game.Playtime)
+		recentPlaytime += float64(game.RecentPlaytime)
+
+		// Categorize by playtime
+		if game.Playtime > 1000 {
+			playtimeDistribution["Heavy"]++
+		} else if game.Playtime > 100 {
+			playtimeDistribution["Moderate"]++
+		} else if game.Playtime > 10 {
+			playtimeDistribution["Light"]++
+		} else {
+			playtimeDistribution["Minimal"]++
+		}
+
+		// Extract genres from game names
+		nameLower := strings.ToLower(game.Name)
+		if strings.Contains(nameLower, "strategy") || strings.Contains(nameLower, "rts") || strings.Contains(nameLower, "tactical") {
+			gameGenres["Strategy"]++
+		}
+		if strings.Contains(nameLower, "rpg") || strings.Contains(nameLower, "role") || strings.Contains(nameLower, "adventure") {
+			gameGenres["RPG/Adventure"]++
+		}
+		if strings.Contains(nameLower, "shooter") || strings.Contains(nameLower, "fps") || strings.Contains(nameLower, "tps") {
+			gameGenres["Shooter"]++
+		}
+		if strings.Contains(nameLower, "puzzle") || strings.Contains(nameLower, "indie") || strings.Contains(nameLower, "casual") {
+			gameGenres["Puzzle/Indie"]++
+		}
+		if strings.Contains(nameLower, "racing") || strings.Contains(nameLower, "car") || strings.Contains(nameLower, "driving") {
+			gameGenres["Racing"]++
+		}
+		if strings.Contains(nameLower, "simulation") || strings.Contains(nameLower, "sim") || strings.Contains(nameLower, "management") {
+			gameGenres["Simulation"]++
+		}
+		if strings.Contains(nameLower, "action") || strings.Contains(nameLower, "platformer") || strings.Contains(nameLower, "beat") {
+			gameGenres["Action"]++
+		}
+		if strings.Contains(nameLower, "sports") || strings.Contains(nameLower, "football") || strings.Contains(nameLower, "basketball") {
+			gameGenres["Sports"]++
+		}
+
+		// Get top games by playtime
+		if len(topGames) < 10 && game.Playtime > 0 {
+			topGames = append(topGames, game.Name)
+		}
+
+		// Get recent games
+		if len(recentGames) < 5 && game.RecentPlaytime > 0 {
+			recentGames = append(recentGames, game.Name)
+		}
+	}
+
+	// Determine gaming characteristics
+	var gamingLevel string
+	var playStyle string
+	var genrePreferences string
+
+	avgPlaytime := totalPlaytime / float64(analysisRequest.TotalGames)
+	if totalPlaytime > 5000 {
+		gamingLevel = "Hardcore Gamer - Extensive gaming experience with deep engagement"
+	} else if totalPlaytime > 2000 {
+		gamingLevel = "Enthusiast - Regular gaming with diverse interests"
+	} else if totalPlaytime > 500 {
+		gamingLevel = "Regular Gamer - Consistent gaming habits with moderate playtime"
+	} else {
+		gamingLevel = "Casual Gamer - Light gaming with selective play"
+	}
+
+	// Analyze play style
+	if playtimeDistribution["Heavy"] > playtimeDistribution["Moderate"] {
+		playStyle = "Deep Diver - Prefers to invest significant time in fewer games"
+	} else if playtimeDistribution["Moderate"] > playtimeDistribution["Light"] {
+		playStyle = "Balanced Player - Mixes deep and casual gaming experiences"
+	} else {
+		playStyle = "Explorer - Enjoys trying many different games"
+	}
+
+	// Find preferred genres
+	var preferredGenres []string
+	maxCount := 0
+	for genre, count := range gameGenres {
+		if count > maxCount {
+			maxCount = count
+			preferredGenres = []string{genre}
+		} else if count == maxCount {
+			preferredGenres = append(preferredGenres, genre)
+		}
+	}
+
+	genrePreferences = strings.Join(preferredGenres, ", ")
+
+	// Create comprehensive analysis prompt
+	topGamesStr := strings.Join(topGames[:min(5, len(topGames))], ", ")
+	recentGamesStr := strings.Join(recentGames[:min(3, len(recentGames))], ", ")
+
+	prompt := fmt.Sprintf(`Analyze this comprehensive Steam gaming profile and provide detailed insights:
+
+Player: %s
+Total Games: %d
+Total Playtime: %.1f hours
+Average Playtime per Game: %.1f hours
+Recent Activity: %.1f hours in last 2 weeks
+
+Top Games: %s
+Recent Games: %s
+Genre Distribution: %v
+Playtime Distribution: %v
+
+Provide a comprehensive analysis including:
+1. Detailed gaming profile assessment
+2. Genre preferences analysis
+3. Play style characteristics
+4. Gaming level assessment
+5. Detailed insights about gaming patterns
+6. Specific game recommendations with match scores
+
+Format as JSON:
+{
+  "gamingProfile": "Detailed assessment of their gaming profile",
+  "genrePreferences": "Analysis of genre preferences and patterns",
+  "playStyle": "Detailed play style analysis",
+  "gamingLevel": "Comprehensive gaming level assessment",
+  "insights": "Detailed insights about their gaming patterns and preferences",
+  "recommendations": [
+    {
+      "name": "Game Name",
+      "reason": "Detailed reason for recommendation",
+      "score": 9
+    }
+  ]
+}`, analysisRequest.PlayerName, analysisRequest.TotalGames, totalPlaytime/60, avgPlaytime/60, recentPlaytime/60, topGamesStr, recentGamesStr, gameGenres, playtimeDistribution)
+
+	// Call OpenAI API for comprehensive analysis
+	client := &http.Client{Timeout: 60 * time.Second}
+	requestBody := map[string]interface{}{
+		"model": "gpt-3.5-turbo",
+		"messages": []map[string]interface{}{
+			{
+				"role":    "system",
+				"content": "You are an expert gaming analyst who provides comprehensive insights into Steam gaming profiles. Always respond with valid JSON.",
+			},
+			{
+				"role":    "user",
+				"content": prompt,
+			},
+		},
+		"max_tokens":  2000,
+		"temperature": 0.7,
+	}
+
+	jsonBody, _ := json.Marshal(requestBody)
+	req, err := http.NewRequest("POST", "https://api.openai.com/v1/chat/completions", bytes.NewBuffer(jsonBody))
+	if err != nil {
+		return map[string]interface{}{
+			"error": "Failed to create OpenAI request",
+		}
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+openAIKey)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return map[string]interface{}{
+			"error": "Failed to call OpenAI API",
+		}
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return map[string]interface{}{
+			"error": "Failed to read OpenAI response",
+		}
+	}
+
+	var openAIResponse map[string]interface{}
+	if err := json.Unmarshal(body, &openAIResponse); err != nil {
+		return map[string]interface{}{
+			"error": "Failed to parse OpenAI response",
+		}
+	}
+
+	// Extract the content from OpenAI response
+	if choices, ok := openAIResponse["choices"].([]interface{}); ok && len(choices) > 0 {
+		if choice, ok := choices[0].(map[string]interface{}); ok {
+			if message, ok := choice["message"].(map[string]interface{}); ok {
+				if content, ok := message["content"].(string); ok {
+					// Try to parse the JSON response from OpenAI
+					var analysis map[string]interface{}
+					if err := json.Unmarshal([]byte(content), &analysis); err == nil {
+						return analysis
+					}
+				}
+			}
+		}
+	}
+
+	// Fallback: return basic analysis
+	return map[string]interface{}{
+		"gamingProfile":    gamingLevel,
+		"genrePreferences": fmt.Sprintf("Primary interests in: %s", genrePreferences),
+		"playStyle":        playStyle,
+		"gamingLevel":      gamingLevel,
+		"insights":         fmt.Sprintf("Player has %d games with %.1f total hours. Shows preference for %s games with %s play style.", analysisRequest.TotalGames, totalPlaytime/60, genrePreferences, playStyle),
+		"recommendations": []map[string]interface{}{
+			{
+				"name":   "Based on comprehensive analysis",
+				"reason": "AI analysis of complete Steam library",
+				"score":  8,
+			},
+		},
+	}
+}
+
+// generatePatternBasedRecommendations creates focused game recommendations based on playtime patterns
+func generatePatternBasedRecommendations(analysisRequest struct {
+	SteamId       string `json:"steamId"`
+	PlayerName    string `json:"playerName"`
+	TotalGames    int    `json:"totalGames"`
+	TotalPlaytime int    `json:"totalPlaytime"`
+	TopGames      []struct {
+		Name           string `json:"name"`
+		Playtime       int    `json:"playtime"`
+		RecentPlaytime int    `json:"recentPlaytime"`
+	} `json:"topGames"`
+	RecentGames []struct {
+		Name           string `json:"name"`
+		Playtime       int    `json:"playtime"`
+		RecentPlaytime int    `json:"recentPlaytime"`
+	} `json:"recentGames"`
+}, openAIKey string) map[string]interface{} {
+	// Analyze gaming patterns
+	var totalPlaytime float64
+	var recentPlaytime float64
+	var avgPlaytimePerGame float64
+
+	// Calculate total and recent playtime
+	for _, game := range analysisRequest.TopGames {
+		totalPlaytime += float64(game.Playtime)
+		recentPlaytime += float64(game.RecentPlaytime)
+	}
+
+	avgPlaytimePerGame = totalPlaytime / float64(analysisRequest.TotalGames)
+
+	// Determine gaming patterns
+	var gamingPattern string
+	var playtimePreference string
+
+	if avgPlaytimePerGame > 100 {
+		gamingPattern = "Deep Diver - Prefers games with extensive playtime"
+		playtimePreference = "Long-form gaming experiences"
+	} else if avgPlaytimePerGame > 20 {
+		gamingPattern = "Balanced Player - Mixes short and long gaming sessions"
+		playtimePreference = "Moderate gaming sessions"
+	} else {
+		gamingPattern = "Casual Explorer - Prefers quick gaming sessions"
+		playtimePreference = "Short gaming sessions"
+	}
+
+	// Analyze top games for genre preferences
+	topGamesStr := ""
+	for i, game := range analysisRequest.TopGames {
+		if i < 5 {
+			topGamesStr += fmt.Sprintf("%s (%d hours), ", game.Name, game.Playtime/60)
+		}
+	}
+
+	recentGamesStr := ""
+	for i, game := range analysisRequest.RecentGames {
+		if i < 3 {
+			recentGamesStr += fmt.Sprintf("%s (%d hours), ", game.Name, game.RecentPlaytime/60)
+		}
+	}
+
+	// Create focused recommendation prompt
+	prompt := fmt.Sprintf(`Based on this Steam gaming profile, recommend 5 games that match their playtime patterns and preferences:
+
+Player: %s
+Total Games: %d
+Total Playtime: %.1f hours
+Average Playtime per Game: %.1f hours
+Gaming Pattern: %s
+Playtime Preference: %s
+
+Top Played Games: %s
+Recent Games: %s
+
+Focus on:
+1. Games that match their playtime patterns (short vs long sessions)
+2. Games similar to their most played games
+3. Games that fit their gaming style and time investment
+4. Consider their recent gaming activity
+
+For each recommendation, provide:
+- Game name
+- Brief reason why it matches their patterns
+- Confidence level (1-10)
+- Genre
+- Estimated playtime
+
+Format as JSON:
+{
+  "recommendations": [
+    {
+      "gameName": "Game Name",
+      "reason": "Why it matches their gaming patterns",
+      "confidence": 8,
+      "genre": "Genre",
+      "estimatedPlaytime": "20-40 hours"
+    }
+  ],
+  "gamingProfile": {
+    "preferredGenres": ["based on their top games"],
+    "playStyle": "%s",
+    "gamingLevel": "based on total playtime",
+    "interests": ["derived from their most played games"]
+  }
+}`, analysisRequest.PlayerName, analysisRequest.TotalGames, totalPlaytime/60, avgPlaytimePerGame/60, gamingPattern, playtimePreference, topGamesStr, recentGamesStr, gamingPattern)
+
+	// Call OpenAI API for focused recommendations
+	client := &http.Client{Timeout: 30 * time.Second}
+	requestBody := map[string]interface{}{
+		"model": "gpt-3.5-turbo",
+		"messages": []map[string]interface{}{
+			{
+				"role":    "system",
+				"content": "You are a gaming expert who analyzes Steam playtime patterns and recommends games that match a player's gaming style. Always respond with valid JSON.",
+			},
+			{
+				"role":    "user",
+				"content": prompt,
+			},
+		},
+		"max_tokens":  1000,
+		"temperature": 0.7,
+	}
+
+	jsonBody, _ := json.Marshal(requestBody)
+	req, err := http.NewRequest("POST", "https://api.openai.com/v1/chat/completions", bytes.NewBuffer(jsonBody))
+	if err != nil {
+		return map[string]interface{}{
+			"error": "Failed to create OpenAI request",
+		}
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+openAIKey)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return map[string]interface{}{
+			"error": "Failed to call OpenAI API",
+		}
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return map[string]interface{}{
+			"error": "Failed to read OpenAI response",
+		}
+	}
+
+	var openAIResponse map[string]interface{}
+	if err := json.Unmarshal(body, &openAIResponse); err != nil {
+		return map[string]interface{}{
+			"error": "Failed to parse OpenAI response",
+		}
+	}
+
+	// Extract the content from OpenAI response
+	if choices, ok := openAIResponse["choices"].([]interface{}); ok && len(choices) > 0 {
+		if choice, ok := choices[0].(map[string]interface{}); ok {
+			if message, ok := choice["message"].(map[string]interface{}); ok {
+				if content, ok := message["content"].(string); ok {
+					// Try to parse the JSON response from OpenAI
+					var recommendations map[string]interface{}
+					if err := json.Unmarshal([]byte(content), &recommendations); err == nil {
+						return recommendations
+					}
+				}
+			}
+		}
+	}
+
+	// Fallback: return basic pattern-based recommendations
+	return map[string]interface{}{
+		"recommendations": []map[string]interface{}{
+			{
+				"gameName":          "Based on your gaming patterns",
+				"reason":            fmt.Sprintf("Matches your %s gaming style", gamingPattern),
+				"confidence":        7,
+				"genre":             "Based on your top games",
+				"estimatedPlaytime": fmt.Sprintf("%.0f-%.0f hours", avgPlaytimePerGame/60, avgPlaytimePerGame/30),
+			},
+		},
+		"gamingProfile": map[string]interface{}{
+			"preferredGenres": []string{"Based on your top games"},
+			"playStyle":       gamingPattern,
+			"gamingLevel":     fmt.Sprintf("Based on %.1f total hours", totalPlaytime/60),
+			"interests":       []string{"Derived from your most played games"},
 		},
 	}
 }

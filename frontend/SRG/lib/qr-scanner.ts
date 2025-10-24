@@ -89,8 +89,9 @@ export function parseQRCodeData(qrData: string): QRScanResult {
     // Not JSON, try other formats
     
     // Check if it's a SkyScansGames API URL
-    if (qrData.includes('localhost:8000/api/games/') || qrData.includes('localhost:3000/') || 
-        qrData.includes('10.0.0.14:8000/api/games/') || qrData.includes('10.0.0.14:3000/')) {
+    if (qrData.includes('localhost:8000/api/games/') || qrData.includes('localhost:3000/') || qrData.includes('localhost:3001/') ||
+        qrData.includes('10.0.0.14:8000/api/games/') || qrData.includes('10.0.0.14:3000/') || qrData.includes('10.0.0.14:3001/') ||
+        qrData.includes('10.0.0.8:8000/api/games/') || qrData.includes('10.0.0.8:3000/') || qrData.includes('10.0.0.8:3001/')) {
       return {
         type: 'url',
         data: qrData,
@@ -166,10 +167,15 @@ export async function handleQRScanResult(result: QRScanResult): Promise<void> {
       } else if (result.type === 'url') {
         // Handle SkyScansGames API URLs
         const url = result.data as string;
-        if (url.includes('localhost:8000/api/games/') || url.includes('localhost:3000/') || 
-            url.includes('10.0.0.14:8000/api/games/') || url.includes('10.0.0.14:3000/')) {
+        if (url.includes('localhost:8000/api/games/') || url.includes('localhost:3000/') || url.includes('localhost:3001/') ||
+            url.includes('10.0.0.14:8000/api/games/') || url.includes('10.0.0.14:3000/') || url.includes('10.0.0.14:3001/') ||
+            url.includes('10.0.0.8:8000/api/games/') || url.includes('10.0.0.8:3000/') || url.includes('10.0.0.8:3001/')) {
           // Convert localhost to IP address for phone access
-          const networkUrl = url.replace('localhost', '10.0.0.14');
+          let networkUrl = url.replace('localhost', '10.0.0.8');
+          // Also handle the case where it might already have an IP
+          if (url.includes('10.0.0.14')) {
+            networkUrl = url.replace('10.0.0.14', '10.0.0.8');
+          }
           
           // Fetch game data from SkyScansGames API
           try {

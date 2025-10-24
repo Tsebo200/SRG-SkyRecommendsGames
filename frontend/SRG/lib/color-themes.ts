@@ -185,9 +185,9 @@ export const ACCESSIBILITY_THEMES: AccessibilityTheme[] = [
       card: '#FFFFFF',
       button: '#000000',
       buttonText: '#FFFFFF',
-      tabBar: '#FFFFFF',
-      tabBarActive: '#000000',     // Black - active tab (maximum contrast)
-      tabBarInactive: '#CCCCCC',   // Light gray - inactive tabs (high contrast but distinct)
+      tabBar: '#DDDDDD', // Light gray background for better contrast
+      tabBarActive: '#FFFFFF',     // White - active tab (maximum contrast)
+      tabBarInactive: '#000000',   // Black - inactive tabs (maximum contrast)
     },
     darkColors: {
       primary: '#FFFFFF',
@@ -247,7 +247,7 @@ export const ACCESSIBILITY_THEMES: AccessibilityTheme[] = [
       accent: '#FF6B35',
       success: '#28A745',
       warning: '#FFC107',
-      error: '#DC3545',
+      error: '#4A90E2', // Blue to match theme
       border: '#333333',
       card: '#1A1A1A',
       button: '#4A90E2',
@@ -295,7 +295,7 @@ export const ACCESSIBILITY_THEMES: AccessibilityTheme[] = [
       accent: '#F59E0B',
       success: '#10B981',
       warning: '#F59E0B',
-      error: '#EF4444',
+      error: '#A78BFA', // Purple to match theme
       border: '#333333',
       card: '#1A1A1A',
       button: '#A78BFA',
@@ -358,14 +358,60 @@ export const ACCESSIBILITY_THEMES: AccessibilityTheme[] = [
       tritanomaly: true,
     },
   },
+  {
+    id: 'steam-theme',
+    name: 'Steam Gaming',
+    description: 'Steam-inspired gaming interface with blue accents',
+    lightColors: {
+      primary: '#007AFF',           // Steam blue - main brand color
+      secondary: '#5E5CE6',         // Purple - secondary actions
+      background: '#f5f5f5',        // Light gray - main background (Steam style)
+      surface: '#ffffff',           // White - cards/surfaces
+      text: '#333333',              // Dark gray - primary text
+      textSecondary: '#666666',     // Medium gray - secondary text
+      accent: '#007AFF',            // Steam blue - accents/highlights
+      success: '#01a161',           // Green - success states
+      warning: '#dba879',           // Golden brown - warnings
+      error: '#ff6b6b',             // Red - errors
+      border: '#e0e0e0',            // Light gray - borders
+      card: '#ffffff',              // White - card backgrounds
+      button: '#007AFF',             // Steam blue - primary buttons
+      buttonText: '#ffffff',        // White - button text
+      tabBar: '#f8f9fa',            // Light gray - tab bar background
+      tabBarActive: '#007AFF',       // Steam blue - active tab
+      tabBarInactive: '#999999',     // Gray - inactive tabs
+    },
+    darkColors: {
+      primary: '#007AFF',           // Steam blue - main brand
+      secondary: '#5E5CE6',         // Purple - secondary actions
+      background: '#1a1a1a',        // Dark gray - main background
+      surface: '#2a2a2a',           // Darker gray - cards/surfaces
+      text: '#ffffff',               // White - primary text
+      textSecondary: '#cccccc',      // Light gray - secondary text
+      accent: '#007AFF',             // Steam blue - accents/highlights
+      success: '#01a161',            // Green - success states
+      warning: '#dba879',            // Golden brown - warnings
+      error: '#ff6b6b',              // Red - errors
+      border: '#404040',             // Dark gray - borders
+      card: '#2a2a2a',               // Dark gray - card backgrounds
+      button: '#007AFF',             // Steam blue - primary buttons
+      buttonText: '#ffffff',        // White - button text
+      tabBar: '#1a1a1a',             // Dark gray - tab bar
+      tabBarActive: '#007AFF',       // Steam blue - active tab
+      tabBarInactive: '#666666',     // Medium gray - inactive tabs
+    },
+    accessibility: {
+      protanomaly: false,
+      deuteranomaly: false,
+      tritanomaly: false,
+    },
+  },
 ];
 
 // Legacy support - convert to new structure
 export const COLOR_THEMES: ColorTheme[] = [
   {
     id: 'light',
-    name: 'Nature Light',
-    description: 'Nature-inspired light interface',
     name: 'Light Theme',
     description: 'Clean and bright interface',
     colors: ACCESSIBILITY_THEMES[0].lightColors,
@@ -379,8 +425,6 @@ export const COLOR_THEMES: ColorTheme[] = [
   },
   {
     id: 'dark',
-    name: 'Nature Dark',
-    description: 'Nature-inspired dark interface',
     name: 'Dark Theme',
     description: 'Easy on the eyes in low light',
     colors: ACCESSIBILITY_THEMES[0].darkColors,
@@ -399,7 +443,6 @@ export class ColorThemeService {
   private static readonly ACCESSIBILITY_THEME_KEY = 'selected_accessibility_theme';
   private static currentThemeMode: ThemeMode = THEME_MODES[1]; // Default to dark
   private static currentAccessibilityTheme: AccessibilityTheme = ACCESSIBILITY_THEMES[0]; // Default to custom-nature
-  private static currentAccessibilityTheme: AccessibilityTheme = ACCESSIBILITY_THEMES[0]; // Default to standard
 
   /**
    * Get all available theme modes (Light/Dark)
@@ -534,7 +577,6 @@ export class ColorThemeService {
       await AsyncStorage.removeItem(this.ACCESSIBILITY_THEME_KEY);
       this.currentThemeMode = THEME_MODES[1]; // Dark mode
       this.currentAccessibilityTheme = ACCESSIBILITY_THEMES[0]; // Custom Nature Palette
-      this.currentAccessibilityTheme = ACCESSIBILITY_THEMES[0]; // Standard
       console.log('✅ Reset to default theme settings');
       return true;
     } catch (error) {

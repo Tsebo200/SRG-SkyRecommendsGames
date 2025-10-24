@@ -35,6 +35,8 @@ export default function SteamProfileTab() {
   const [steamApi] = useState(new SteamAPIService('4E45453FFB33641E29B4C44FF691D29E'));
   const [recommendations, setRecommendations] = useState<any>(null);
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
+  const [aiAnalysis, setAiAnalysis] = useState<any>(null);
+  const [loadingAiAnalysis, setLoadingAiAnalysis] = useState(false);
 
   const handleSteamIdSubmit = async () => {
     if (!steamId.trim()) {
@@ -94,15 +96,115 @@ export default function SteamProfileTab() {
 
     setLoadingRecommendations(true);
     try {
-      console.log('🔄 Generating AI recommendations...');
-             const recs = await steamApi.getPersonalisedRecommendations(stats.player.steamid);
+      console.log('🔄 Generating AI recommendations based on gaming patterns...');
+      
+      // Get all games from Steam library for analysis
+      const allGames = await steamApi.getOwnedGames(stats.player.steamid);
+      console.log('📊 Analyzing', allGames.length, 'games for recommendations');
+      
+      // Analyze gaming patterns
+      const analysisData = {
+        steamId: stats.player.steamid,
+        playerName: stats.player.personaname,
+        totalGames: allGames.length,
+        totalPlaytime: allGames.reduce((sum, game) => sum + (game.playtime_forever || 0), 0),
+        topGames: allGames
+          .filter(game => game.playtime_forever > 0)
+          .sort((a, b) => b.playtime_forever - a.playtime_forever)
+          .slice(0, 10)
+          .map(game => ({
+            name: game.name,
+            playtime: game.playtime_forever,
+            recentPlaytime: game.playtime_2weeks || 0
+          })),
+        recentGames: allGames
+          .filter(game => (game.playtime_2weeks || 0) > 0)
+          .sort((a, b) => (b.playtime_2weeks || 0) - (a.playtime_2weeks || 0))
+          .slice(0, 5)
+          .map(game => ({
+            name: game.name,
+            playtime: game.playtime_forever,
+            recentPlaytime: game.playtime_2weeks || 0
+          }))
+      };
+
+      // Call backend for pattern-based recommendations
+      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8080'}/steam/pattern-recommendations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(analysisData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Recommendations failed: ${response.status}`);
+      }
+
+      const recs = await response.json();
       setRecommendations(recs);
       console.log('✅ AI recommendations generated successfully');
+      console.log('🎯 Recommendations:', recs);
     } catch (error) {
       console.error('Error generating recommendations:', error);
-      Alert.alert('Error', 'Failed to generate recommendations. Please try again.');
+      console.error('Error details:', error.message);
+      Alert.alert('Error', `Failed to generate recommendations: ${error.message}`);
     } finally {
       setLoadingRecommendations(false);
+    }
+  };
+
+  const generateComprehensiveAiAnalysis = async () => {
+    if (!stats || !stats.player) {
+      Alert.alert('Error', 'No Steam profile loaded');
+      return;
+    }
+
+    setLoadingAiAnalysis(true);
+    try {
+      console.log('🤖 Generating comprehensive AI analysis of all Steam games...');
+      
+      // Get all games from the user's Steam library
+      const allGames = await steamApi.getOwnedGames(stats.player.steamid);
+      console.log('📊 Analyzing', allGames.length, 'games in Steam library');
+      
+      // Create comprehensive analysis data
+      const analysisData = {
+        steamId: stats.player.steamid,
+        playerName: stats.player.personaname,
+        totalGames: allGames.length,
+        totalPlaytime: allGames.reduce((sum, game) => sum + (game.playtime_forever || 0), 0),
+        games: allGames.map(game => ({
+          name: game.name,
+          playtime: game.playtime_forever,
+          recentPlaytime: game.playtime_2weeks,
+          appid: game.appid
+        }))
+      };
+
+      // Call backend AI analysis endpoint
+      const response = await fetch(`${process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8080'}/steam/ai-analysis`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(analysisData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`AI analysis failed: ${response.status}`);
+      }
+
+      const analysis = await response.json();
+      setAiAnalysis(analysis);
+      console.log('✅ Comprehensive AI analysis completed');
+      console.log('📊 AI Analysis result:', analysis);
+    } catch (error) {
+      console.error('Error generating AI analysis:', error);
+      console.error('Error details:', error.message);
+      Alert.alert('Error', `Failed to generate AI analysis: ${error.message}`);
+    } finally {
+      setLoadingAiAnalysis(false);
     }
   };
 
@@ -174,7 +276,12 @@ export default function SteamProfileTab() {
           </View>
         </View>
       ) : (
-        <ScrollView style={styles.statsContainer}>
+        <ScrollView 
+          style={styles.statsContainer}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={true}
+          bounces={true}
+        >
           {/* Player Info */}
           <View style={styles.playerCard}>
             <Image source={{ uri: stats.player.avatarfull }} style={styles.playerAvatar} />
@@ -328,6 +435,105 @@ export default function SteamProfileTab() {
             </View>
           )}
 
+          {/* Comprehensive AI Analysis - Only show if there are games */}
+          {stats.hasGames && (
+            <View style={styles.aiAnalysisCard}>
+              <View style={styles.aiAnalysisHeader}>
+                <View style={styles.aiAnalysisTitleContainer}>
+                  <Ionicons name="analytics" size={20} color="#007AFF" />
+                  <Text style={styles.cardTitle}>Comprehensive AI Analysis</Text>
+                </View>
+                <TouchableOpacity 
+                  style={styles.generateButton}
+                  onPress={generateComprehensiveAiAnalysis}
+                  disabled={loadingAiAnalysis}
+                >
+                  {loadingAiAnalysis ? (
+                    <ActivityIndicator size="small" color="#007AFF" />
+                  ) : (
+                    <Ionicons name="scan" size={16} color="#007AFF" />
+                  )}
+                </TouchableOpacity>
+              </View>
+              
+              {loadingAiAnalysis ? (
+                <View style={styles.aiAnalysisLoading}>
+                  <ActivityIndicator size="large" color="#007AFF" />
+                  <Text style={styles.aiAnalysisLoadingText}>
+                    🤖 AI is analyzing all {stats.totalGames} games in your Steam library...
+                  </Text>
+                  <Text style={styles.aiAnalysisLoadingSubtext}>
+                    This may take 30-60 seconds for comprehensive analysis
+                  </Text>
+                </View>
+              ) : aiAnalysis ? (
+                <View style={styles.aiAnalysisContainer}>
+                  {/* Gaming Profile Analysis */}
+                  <View style={styles.analysisSection}>
+                    <Text style={styles.analysisSectionTitle}>🎮 Gaming Profile</Text>
+                    <Text style={styles.analysisText}>{aiAnalysis.gamingProfile}</Text>
+                  </View>
+
+                  {/* Genre Preferences */}
+                  {aiAnalysis.genrePreferences && (
+                    <View style={styles.analysisSection}>
+                      <Text style={styles.analysisSectionTitle}>🎯 Genre Preferences</Text>
+                      <Text style={styles.analysisText}>{aiAnalysis.genrePreferences}</Text>
+                    </View>
+                  )}
+
+                  {/* Play Style Analysis */}
+                  {aiAnalysis.playStyle && (
+                    <View style={styles.analysisSection}>
+                      <Text style={styles.analysisSectionTitle}>⚡ Play Style</Text>
+                      <Text style={styles.analysisText}>{aiAnalysis.playStyle}</Text>
+                    </View>
+                  )}
+
+                  {/* Gaming Level */}
+                  {aiAnalysis.gamingLevel && (
+                    <View style={styles.analysisSection}>
+                      <Text style={styles.analysisSectionTitle}>🏆 Gaming Level</Text>
+                      <Text style={styles.analysisText}>{aiAnalysis.gamingLevel}</Text>
+                    </View>
+                  )}
+
+                  {/* Detailed Insights */}
+                  {aiAnalysis.insights && (
+                    <View style={styles.analysisSection}>
+                      <Text style={styles.analysisSectionTitle}>💡 Detailed Insights</Text>
+                      <Text style={styles.analysisText}>{aiAnalysis.insights}</Text>
+                    </View>
+                  )}
+
+                  {/* Recommendations */}
+                  {aiAnalysis.recommendations && aiAnalysis.recommendations.length > 0 && (
+                    <View style={styles.analysisSection}>
+                      <Text style={styles.analysisSectionTitle}>🎯 AI Recommendations</Text>
+                      {aiAnalysis.recommendations.map((rec: any, index: number) => (
+                        <View key={index} style={styles.aiRecommendationItem}>
+                          <Text style={styles.aiRecommendationName}>{rec.name}</Text>
+                          <Text style={styles.aiRecommendationReason}>{rec.reason}</Text>
+                          <Text style={styles.aiRecommendationScore}>Match Score: {rec.score}/10</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              ) : (
+                <View style={styles.aiAnalysisEmpty}>
+                  <Ionicons name="analytics-outline" size={32} color="#999" />
+                  <Text style={styles.aiAnalysisEmptyText}>
+                    Get comprehensive AI analysis of all your Steam games
+                  </Text>
+                  <Text style={styles.aiAnalysisEmptySubtext}>
+                    Analyzes your entire game library to provide detailed insights about your gaming preferences
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+
           <TouchableOpacity 
             style={styles.newScanButton} 
             onPress={() => setStats(null)}
@@ -435,6 +641,10 @@ const styles = StyleSheet.create({
   statsContainer: {
     flex: 1,
     padding: 16,
+  },
+  scrollContent: {
+    paddingBottom: 40,
+    flexGrow: 1,
   },
   playerCard: {
     backgroundColor: '#fff',
@@ -560,6 +770,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#007AFF',
     marginTop: 16,
+    marginBottom: 40,
   },
   newScanButtonText: {
     color: '#007AFF',
@@ -714,5 +925,107 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 8,
     lineHeight: 20,
+  },
+  // AI Analysis Styles
+  aiAnalysisCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  aiAnalysisHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  aiAnalysisTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  aiAnalysisLoading: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  aiAnalysisLoadingText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  aiAnalysisLoadingSubtext: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  aiAnalysisContainer: {
+    gap: 16,
+  },
+  analysisSection: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    padding: 12,
+  },
+  analysisSectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  analysisText: {
+    fontSize: 13,
+    color: '#666',
+    lineHeight: 18,
+  },
+  aiRecommendationItem: {
+    backgroundColor: '#fff',
+    borderRadius: 6,
+    padding: 10,
+    marginBottom: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#007AFF',
+  },
+  aiRecommendationName: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  aiRecommendationReason: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 4,
+    lineHeight: 16,
+  },
+  aiRecommendationScore: {
+    fontSize: 11,
+    color: '#007AFF',
+    fontWeight: '500',
+  },
+  aiAnalysisEmpty: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  aiAnalysisEmptyText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  aiAnalysisEmptySubtext: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+    textAlign: 'center',
+    lineHeight: 16,
   },
 });

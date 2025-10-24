@@ -2,7 +2,7 @@ import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
-import { Platform, StyleSheet } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { useThemeColors } from '../../lib/theme-context';
 
 export default function TabLayout() {
@@ -21,13 +21,26 @@ export default function TabLayout() {
           backgroundColor: themeColors.tabBar,
           paddingTop: 10,
         },
-        tabBarBackground: () => (
-          <BlurView
-            tint="dark"
-            intensity={Platform.OS === 'ios' ? 80 : 100}
-            style={StyleSheet.absoluteFillObject}
-          />
-        ),
+        tabBarBackground: () => {
+          // For High Contrast theme, use solid background instead of blur
+          if (themeColors.tabBar === '#DDDDDD') {
+            return (
+              <View 
+                style={[
+                  StyleSheet.absoluteFillObject,
+                  { backgroundColor: themeColors.tabBar }
+                ]} 
+              />
+            );
+          }
+          return (
+            <BlurView
+              tint="dark"
+              intensity={Platform.OS === 'ios' ? 80 : 100}
+              style={StyleSheet.absoluteFillObject}
+            />
+          );
+        },
       }}
     >
       <Tabs.Screen

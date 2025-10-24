@@ -42,6 +42,7 @@
 | 29 | Avatar Picker Implementation | Medium | ✅ Fixed | ~15 minutes |
 | 30 | Tab Bar Color Accessibility | High | ✅ Fixed | ~10 minutes |
 | 31 | Color Palette Preview Removal | Low | ✅ Fixed | ~5 minutes |
+| 32 | QR Scanner Network Request Failed | High | ✅ Fixed | ~10 minutes |
 
 ---
 
@@ -2086,6 +2087,48 @@ custom-nature: {
 - Unused components should be removed promptly
 - Code cleanup maintains project health
 
+---
+
+### Error #32: QR Scanner Network Request Failed
+**Error Code**: `Network request failed`  
+**Error Message**: `❌ Error fetching SkyScansGames data: [TypeError: Network request failed]`  
+**Timestamp**: 24th October 2025 18:30:00  
+**Severity**: High  
+
+**Root Cause**: The QR scanner was trying to connect to a SkyScansGames API server that wasn't running. The API is actually the `sqlite-api-server.js` which serves game data from the SQLite database.
+
+**Error Details**:
+- QR scanner looking for SkyScansGames API on ports 8000, 3000, and 3001
+- SQLite API server not running on port 3001
+- Network IP addresses outdated (10.0.0.14 vs current 10.0.0.8)
+- Mobile device unable to access localhost URLs
+
+**Resolution Steps**:
+1. Started the SQLite API server (`node sqlite-api-server.js`) on port 3001
+2. Updated QR scanner to support port 3001 (where SQLite API runs)
+3. Updated IP addresses from 10.0.0.14 to 10.0.0.8 (current network IP)
+4. Added support for both old and new IP addresses in URL detection
+5. Enhanced URL conversion logic to handle multiple IP scenarios
+6. Tested API accessibility from network IP (10.0.0.8:3001)
+
+**Code Changes**:
+```typescript
+// Updated qr-scanner.ts
++ qrData.includes('localhost:3001/') ||
++ qrData.includes('10.0.0.8:3000/') || qrData.includes('10.0.0.8:3001/')) {
++ let networkUrl = url.replace('localhost', '10.0.0.8');
++ if (url.includes('10.0.0.14')) {
++   networkUrl = url.replace('10.0.0.14', '10.0.0.8');
++ }
+```
+
+**Key Learning Points**:
+- API servers must be running for mobile app connectivity
+- Network IP addresses can change and need regular updates
+- Multiple port support improves compatibility
+- Localhost URLs don't work for mobile devices on different networks
+- SQLite API server provides game data for QR scanning functionality
+
 **Prevention Strategies**:
 - Regular user feedback collection
 - Periodic code cleanup and refactoring
@@ -2102,9 +2145,9 @@ custom-nature: {
 | 30 | Tab Bar Color Accessibility | High | ✅ Fixed | ~10 minutes |
 | 31 | Color Palette Preview Removal | Low | ✅ Fixed | ~5 minutes |
 
-**Total Errors Resolved**: 31  
+**Total Errors Resolved**: 32  
 **Overall Resolution Success Rate**: 100%  
-**Total Resolution Time**: ~8 hours 45 minutes  
+**Total Resolution Time**: ~8 hours 55 minutes  
 
 ## 🎯 Key Learning Points (Updated)
 

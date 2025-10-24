@@ -65,7 +65,7 @@ export interface SteamGameStats {
 export class SteamAPIService {
   private apiKey: string;
   private baseUrl = 'https://api.steampowered.com';
-  private backendUrl = 'http://10.0.0.14:8080'; // Use IP address for phone access
+  private backendUrl = 'http://localhost:8080'; // Use localhost for development
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
@@ -87,7 +87,7 @@ export class SteamAPIService {
         headers: {
           'Content-Type': 'application/json',
         },
-        timeout: 10000, // 10 second timeout
+        timeout: 5000, // 5 second timeout
       });
       
       if (!response.ok) {
@@ -112,7 +112,7 @@ export class SteamAPIService {
           headers: {
             'Content-Type': 'application/json',
           },
-          timeout: 10000,
+          timeout: 5000,
         });
         
         if (!response.ok) {
@@ -170,7 +170,7 @@ export class SteamAPIService {
         headers: {
           'Content-Type': 'application/json',
         },
-        timeout: 15000, // 15 second timeout for games (larger response)
+        timeout: 8000, // 8 second timeout for games (larger response)
       });
       
       if (!response.ok) {
@@ -195,7 +195,7 @@ export class SteamAPIService {
           headers: {
             'Content-Type': 'application/json',
           },
-          timeout: 15000,
+          timeout: 8000,
         });
         
         if (!response.ok) {
@@ -314,7 +314,7 @@ export class SteamAPIService {
         headers: {
           'Content-Type': 'application/json',
         },
-        timeout: 15000,
+        timeout: 8000,
       });
       
       if (!response.ok) {
