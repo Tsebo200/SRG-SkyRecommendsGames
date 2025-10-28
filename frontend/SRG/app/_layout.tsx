@@ -5,6 +5,7 @@ import { View, Text, ActivityIndicator } from 'react-native';
 import { FirebaseAuthService, AuthUser } from '../lib/firebase-auth';
 import { UserMappingService } from '../lib/user-mapping';
 import { ThemeProvider } from '../lib/theme-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function RootLayout() {
   const router = useRouter();
@@ -12,6 +13,7 @@ export default function RootLayout() {
   const [initializing, setInitializing] = useState(true);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [showLoading, setShowLoading] = useState(true);
+  const [hasSeenOnboarding, setHasSeenOnboarding] = useState<boolean | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -57,6 +59,16 @@ export default function RootLayout() {
       }
     });
 
+    // Load onboarding flag
+    (async () => {
+      try {
+        const v = await AsyncStorage.getItem('hasSeenOnboarding');
+        if (mounted) setHasSeenOnboarding(v === 'true');
+      } catch {
+        if (mounted) setHasSeenOnboarding(false);
+      }
+    })();
+
     return () => {
       mounted = false;
       clearTimeout(loadingTimer);
@@ -74,30 +86,46 @@ export default function RootLayout() {
     });
 
     const inAuthGroup = segments[0] === 'auth';
+    const onOnboarding = segments[0] === 'onboarding';
     
     // Add a small delay to ensure smooth transitions
     const navigationTimer = setTimeout(() => {
-      if (!user) {
-        // User is not signed in, redirect to auth
-        if (!inAuthGroup) {
-          console.log('🔄 Redirecting to sign in');
-          router.replace('/auth/signin-firebase');
+      (async () => {
+        // Always get the latest flag to avoid stale state loops
+        try {
+          const v = await AsyncStorage.getItem('hasSeenOnboarding');
+          const latestSeen = v === 'true';
+          if (hasSeenOnboarding !== latestSeen) setHasSeenOnboarding(latestSeen);
+
+          // Onboarding takes precedence if not completed
+          if (!latestSeen && !onOnboarding) {
+            console.log('🔄 Redirecting to onboarding');
+            router.replace('/onboarding');
+            return;
+          }
+
+          if (!user) {
+            if (!inAuthGroup && !onOnboarding) {
+              console.log('🔄 Redirecting to sign in');
+              router.replace('/auth/signin-firebase');
+            }
+          } else if (inAuthGroup) {
+            console.log('🔄 Redirecting to main app');
+            router.replace('/(tabs)/');
+          }
+        } catch {
+          // If storage fails, default to showing onboarding once
+          if (!onOnboarding) router.replace('/onboarding');
         }
-      } else {
-        // User is signed in, redirect to main app
-        if (inAuthGroup) {
-          console.log('🔄 Redirecting to main app');
-          router.replace('/(tabs)/');
-        }
-      }
+      })();
     }, 100); // Small delay to prevent flashing
 
     return () => clearTimeout(navigationTimer);
-  }, [segments, initializing, user, router]);
+  }, [segments, initializing, user, router, hasSeenOnboarding]);
 
   // Show loading screen while checking initial auth state OR during navigation transitions
-  const shouldShowLoading = showLoading || initializing || 
-    (user === null && !segments.includes('auth')) ||
+  const shouldShowLoading = showLoading || initializing || hasSeenOnboarding === null ||
+    (user === null && !segments.includes('auth') && segments[0] !== 'onboarding') ||
     (user && segments.includes('auth'));
 
   if (shouldShowLoading) {
@@ -140,6 +168,7 @@ export default function RootLayout() {
         <Stack.Screen name="auth/signin-firebase" />
         <Stack.Screen name="auth/signup-firebase" />
         <Stack.Screen name="game/[slug]" />
+        <Stack.Screen name="onboarding" />
       </Stack>
     </ThemeProvider>
   );

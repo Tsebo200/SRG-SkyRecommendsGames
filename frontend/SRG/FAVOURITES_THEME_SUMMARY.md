@@ -109,3 +109,6 @@ Your favourites tab now features:
 **Ready to see your enhanced favourites in action? Add some games to favourites and tap on them to see the detailed view with your Nature Palette theme!** 🚀
 
 
+
+
+

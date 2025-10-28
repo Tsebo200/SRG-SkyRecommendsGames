@@ -781,20 +781,21 @@ func main() {
 
 		client := openai.NewClient(cfg.OpenAIKey)
 
-		// Use gpt-3.5-turbo to generate personalized recommendations
+		// Use gpt-3.5-turbo to generate personalized recommendations with optimized prompt
 		completionResp, err := client.CreateChatCompletion(r.Context(), openai.ChatCompletionRequest{
 			Model: "gpt-3.5-turbo",
 			Messages: []openai.ChatCompletionMessage{
 				{
 					Role:    "system",
-					Content: "You are a game recommendation AI. Based on the user's favourite games, suggest 6 similar games they might enjoy. CRITICAL: You must return ONLY a valid JSON array. No explanations, no markdown, no additional text. Start with [ and end with ]. Each object must have exactly these fields: name (string), description (string), similarity_reason (string). Use well-known, popular game names. Example: [{\"name\":\"The Witcher 3: Wild Hunt\",\"description\":\"An epic open-world RPG\",\"similarity_reason\":\"Similar fantasy RPG gameplay\"}]",
+					Content: "You are a game recommendation AI. Return ONLY a valid JSON array with 6 games. Each object needs: name, description, similarity_reason. Use popular game names only. Example: [{\"name\":\"The Witcher 3\",\"description\":\"Epic RPG\",\"similarity_reason\":\"Similar fantasy gameplay\"}]",
 				},
 				{
 					Role:    "user",
-					Content: fmt.Sprintf("My favourite games are: %s. Please recommend 6 similar games I might enjoy. Return only valid JSON array format with well-known game names.", favouriteGames),
+					Content: fmt.Sprintf("Favourite games: %s. Recommend 6 similar games. JSON only.", favouriteGames),
 				},
 			},
-			MaxTokens: 800,
+			MaxTokens:   600, // Reduced for faster response
+			Temperature: 0.3, // Lower temperature for more consistent, faster responses
 		})
 
 		if err != nil {
@@ -838,18 +839,51 @@ func main() {
 
 		// Enhance recommendations with actual game data from RAWG API and AI translation
 		enhancedRecommendations := make([]map[string]interface{}, 0)
-		for _, rec := range aiRecommendations {
-			gameName, ok := rec["name"].(string)
-			if !ok {
+
+		// Use concurrent goroutines to speed up RAWG API calls
+		type gameResult struct {
+			index int
+			data  map[string]interface{}
+			err   error
+		}
+
+		gameChan := make(chan gameResult, len(aiRecommendations))
+
+		// Launch concurrent searches for all games
+		for i, rec := range aiRecommendations {
+			go func(index int, recommendation map[string]interface{}) {
+				gameName, ok := recommendation["name"].(string)
+				if !ok {
+					gameChan <- gameResult{index: index, data: nil, err: fmt.Errorf("invalid game name")}
+					return
+				}
+
+				fmt.Printf("🔍 Searching RAWG API for game: %s\n", gameName)
+				gameData, err := searchGameInRAWG(gameName, cfg.RawgAPIKey)
+				gameChan <- gameResult{index: index, data: gameData, err: err}
+			}(i, rec)
+		}
+
+		// Collect results in order
+		results := make([]gameResult, len(aiRecommendations))
+		for i := 0; i < len(aiRecommendations); i++ {
+			results[i] = <-gameChan
+		}
+
+		// Process results
+		for _, result := range results {
+			if result.err != nil {
+				fmt.Printf("❌ Failed to get data for game at index %d: %v\n", result.index, result.err)
 				continue
 			}
 
-			// Search for the game in RAWG API to get real data
-			fmt.Printf("🔍 Searching RAWG API for game: %s\n", gameName)
-			gameData, err := searchGameInRAWG(gameName, cfg.RawgAPIKey)
-			if err != nil {
+			rec := aiRecommendations[result.index]
+			gameData := result.data
+			gameName, _ := rec["name"].(string)
+
+			if gameData == nil {
 				// If we can't find the game, use the AI data as fallback
-				fmt.Printf("❌ RAWG API search failed for %s: %v\n", gameName, err)
+				fmt.Printf("❌ RAWG API search failed for %s\n", gameName)
 				rec["background_image"] = ""
 				rec["slug"] = strings.ToLower(strings.ReplaceAll(gameName, " ", "-"))
 				rec["genres"] = []string{}
@@ -937,7 +971,12 @@ func searchGameInRAWG(gameName, rawgKey string) (map[string]interface{}, error) 
 	rawgURL := fmt.Sprintf("https://api.rawg.io/api/games?search=%s&key=%s", url.QueryEscape(gameName), rawgKey)
 	fmt.Printf("🔍 RAWG API URL: %s\n", rawgURL)
 
-	resp, err := http.Get(rawgURL)
+	// Create HTTP client with timeout
+	client := &http.Client{
+		Timeout: 10 * time.Second, // 10 second timeout for RAWG API calls
+	}
+
+	resp, err := client.Get(rawgURL)
 	if err != nil {
 		fmt.Printf("❌ RAWG API request failed: %v\n", err)
 		return nil, err

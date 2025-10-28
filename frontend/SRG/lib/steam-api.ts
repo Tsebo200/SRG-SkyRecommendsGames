@@ -3,6 +3,8 @@
  * Fetches user gaming data including hours played, achievements, and game library
  */
 
+import { getBackendUrl } from './network-config';
+
 export interface SteamGame {
   appid: number;
   name: string;
@@ -65,7 +67,7 @@ export interface SteamGameStats {
 export class SteamAPIService {
   private apiKey: string;
   private baseUrl = 'https://api.steampowered.com';
-  private backendUrl = 'http://localhost:8080'; // Use localhost for development
+  private backendUrl = getBackendUrl(); // Use network configuration for automatic IP detection
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;

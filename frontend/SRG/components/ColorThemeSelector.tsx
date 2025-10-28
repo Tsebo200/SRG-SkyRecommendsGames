@@ -111,7 +111,9 @@ export default function ColorThemeSelector({ onThemeChange }: ColorThemeSelector
             onPress={() => handleThemeSelect(theme)}
           >
             <View style={styles.themeHeader}>
-              <Text style={[styles.themeName, { color: themeColors.text }]}>{theme.name}</Text>
+              <Text style={[styles.themeName, { color: themeColors.text }]}>
+                {`${(theme.name.split('(')[0] || theme.name).trim()} (${theme.isDark ? 'Dark Mode' : 'Light Mode'})`}
+              </Text>
               {selectedTheme?.id === theme.id && (
                 <Text style={[styles.selectedIndicator, { color: themeColors.primary }]}>✓</Text>
               )}

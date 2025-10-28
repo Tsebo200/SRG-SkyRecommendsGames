@@ -122,3 +122,6 @@ Your game details screen now features:
 **Ready to see your themed game details in action? Search for a game and tap on it to see your beautiful Nature Palette colors!** 🚀
 
 
+
+
+

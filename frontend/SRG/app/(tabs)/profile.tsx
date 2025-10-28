@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, ScrollView, Switch, Image, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, ScrollView, Switch, Image, Modal, Linking, Clipboard } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { HybridAuthService } from '../../lib/hybrid-auth';
@@ -114,6 +115,43 @@ export default function ProfileFirebaseScreen() {
     // Save avatar to AsyncStorage
     AsyncStorage.setItem('user_avatar', avatarUrl);
     AsyncStorage.setItem('user_avatar_seed', seed);
+  };
+
+  const handleEmailPress = async () => {
+    const email = 'tsebo.ramonyalioa.an@gmail.com';
+    const url = `mailto:${email}`;
+    try {
+      await Linking.openURL(url);
+    } catch (error) {
+      await Clipboard.setString(email);
+      Alert.alert('Email copied', 'Email address copied to clipboard');
+    }
+  };
+
+  const handleGithubPress = async () => {
+    const url = 'https://github.com/Tsebo200';
+    try {
+      await Linking.openURL(url);
+    } catch (error) {
+      await Clipboard.setString(url);
+      Alert.alert('Link copied', 'GitHub link copied to clipboard');
+    }
+  };
+
+  const handleDiscordPress = async () => {
+    const username = 'Tsebo200200';
+    await Clipboard.setString(username);
+    Alert.alert('Discord username copied', `${username} copied to clipboard`);
+  };
+
+  const handleLinkedInPress = async () => {
+    const url = 'https://www.linkedin.com/in/tsebo-ramonyalioa-2392381b4';
+    try {
+      await Linking.openURL(url);
+    } catch (error) {
+      await Clipboard.setString(url);
+      Alert.alert('Link copied', 'LinkedIn link copied to clipboard');
+    }
   };
 
   const handleSignOut = async () => {
@@ -264,11 +302,9 @@ export default function ProfileFirebaseScreen() {
             </View>
           </TouchableOpacity>
         </View>
+        
+{/* Network Status */}
 
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Network</Text>
-          <NetworkStatus />
-        </View>
 
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Appearance</Text>
@@ -294,7 +330,7 @@ export default function ProfileFirebaseScreen() {
             </View>
           </View>
           
-          <TouchableOpacity 
+          {/* <TouchableOpacity 
             style={[styles.menuItem, { borderBottomColor: themeColors.border }]}
             onPress={() => setShowThemeSelector(!showThemeSelector)}
           >
@@ -309,7 +345,7 @@ export default function ProfileFirebaseScreen() {
                 </Text>
               </View>
             </View>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           {/* Colour Palette Preview */}
 
@@ -375,7 +411,36 @@ export default function ProfileFirebaseScreen() {
             </View>
           )}
 
-          <TouchableOpacity
+
+        </View>
+
+        {/* Contact */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Contact</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.contactCarousel}>
+             <TouchableOpacity style={[styles.contactCard, { backgroundColor: themeColors.surface }]} onPress={handleEmailPress}>
+               <Ionicons name="mail" size={20} color={themeColors.primary} />
+               <Text style={[styles.contactTitle, { color: themeColors.text }]}>Email</Text>
+               <Text style={[styles.contactSubtitle, { color: themeColors.textSecondary }]}>tsebo.ramonyalioa.an@gmail.com</Text>
+             </TouchableOpacity>
+             <TouchableOpacity style={[styles.contactCard, { backgroundColor: themeColors.surface }]} onPress={handleGithubPress}>
+               <Ionicons name="logo-github" size={20} color={themeColors.primary} />
+               <Text style={[styles.contactTitle, { color: themeColors.text }]}>GitHub</Text>
+               <Text style={[styles.contactSubtitle, { color: themeColors.textSecondary }]}>github.com/Tsebo200</Text>
+             </TouchableOpacity>
+             <TouchableOpacity style={[styles.contactCard, { backgroundColor: themeColors.surface }]} onPress={handleDiscordPress}>
+               <Ionicons name="chatbubbles" size={20} color={themeColors.primary} />
+               <Text style={[styles.contactTitle, { color: themeColors.text }]}>Discord</Text>
+               <Text style={[styles.contactSubtitle, { color: themeColors.textSecondary }]}>Tsebo200200</Text>
+             </TouchableOpacity>
+             <TouchableOpacity style={[styles.contactCard, { backgroundColor: themeColors.surface }]} onPress={handleLinkedInPress}>
+               <Ionicons name="logo-linkedin" size={20} color={themeColors.primary} />
+               <Text style={[styles.contactTitle, { color: themeColors.text }]}>LinkedIn</Text>
+               <Text style={[styles.contactSubtitle, { color: themeColors.textSecondary }]}>linkedin.com/in/tsebo-ramonyalioa-2392381b4</Text>
+             </TouchableOpacity>
+          </ScrollView>
+        </View>
+        <TouchableOpacity
             style={[
               styles.signOutButton, 
               { backgroundColor: themeColors.error, marginTop: 30 },
@@ -390,8 +455,6 @@ export default function ProfileFirebaseScreen() {
               <Text style={[styles.signOutText, { color: themeColors.buttonText }]}>Sign Out</Text>
             )}
           </TouchableOpacity>
-        </View>
-
         <View style={styles.section}>
           {/* <Text style={styles.sectionTitle}>Support</Text>
           
@@ -524,6 +587,25 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#fff',
     marginBottom: 16,
+  },
+  contactCarousel: {
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  contactCard: {
+    width: 180,
+    height: 105,
+    borderRadius: 12,
+    marginRight: 12,
+    padding: 12,
+    justifyContent: 'space-between',
+  },
+  contactTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  contactSubtitle: {
+    fontSize: 12,
   },
   menuItem: {
     paddingVertical: 16,

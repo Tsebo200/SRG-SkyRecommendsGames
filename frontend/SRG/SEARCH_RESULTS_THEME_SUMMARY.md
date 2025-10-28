@@ -117,3 +117,6 @@ Your search results game details screen now features:
 **Ready to see your themed search results in action? Search for "FIFA 22" and tap on it to see your beautiful Nature Palette colors!** 🚀
 
 
+
+
+

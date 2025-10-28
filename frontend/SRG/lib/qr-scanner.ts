@@ -91,7 +91,8 @@ export function parseQRCodeData(qrData: string): QRScanResult {
     // Check if it's a SkyScansGames API URL
     if (qrData.includes('localhost:8000/api/games/') || qrData.includes('localhost:3000/') || qrData.includes('localhost:3001/') ||
         qrData.includes('10.0.0.14:8000/api/games/') || qrData.includes('10.0.0.14:3000/') || qrData.includes('10.0.0.14:3001/') ||
-        qrData.includes('10.0.0.8:8000/api/games/') || qrData.includes('10.0.0.8:3000/') || qrData.includes('10.0.0.8:3001/')) {
+        qrData.includes('10.0.0.8:8000/api/games/') || qrData.includes('10.0.0.8:3000/') || qrData.includes('10.0.0.8:3001/') ||
+        qrData.includes('192.168.66.17:8000/api/games/') || qrData.includes('192.168.66.17:3000/') || qrData.includes('192.168.66.17:3001/')) {
       return {
         type: 'url',
         data: qrData,
@@ -169,12 +170,16 @@ export async function handleQRScanResult(result: QRScanResult): Promise<void> {
         const url = result.data as string;
         if (url.includes('localhost:8000/api/games/') || url.includes('localhost:3000/') || url.includes('localhost:3001/') ||
             url.includes('10.0.0.14:8000/api/games/') || url.includes('10.0.0.14:3000/') || url.includes('10.0.0.14:3001/') ||
-            url.includes('10.0.0.8:8000/api/games/') || url.includes('10.0.0.8:3000/') || url.includes('10.0.0.8:3001/')) {
-          // Convert localhost to IP address for phone access
-          let networkUrl = url.replace('localhost', '10.0.0.8');
-          // Also handle the case where it might already have an IP
+            url.includes('10.0.0.8:8000/api/games/') || url.includes('10.0.0.8:3000/') || url.includes('10.0.0.8:3001/') ||
+            url.includes('192.168.66.17:8000/api/games/') || url.includes('192.168.66.17:3000/') || url.includes('192.168.66.17:3001/')) {
+          // Convert localhost to current IP address for phone access
+          let networkUrl = url.replace('localhost', '192.168.66.17');
+          // Also handle the case where it might already have an old IP
           if (url.includes('10.0.0.14')) {
-            networkUrl = url.replace('10.0.0.14', '10.0.0.8');
+            networkUrl = url.replace('10.0.0.14', '192.168.66.17');
+          }
+          if (url.includes('10.0.0.8')) {
+            networkUrl = url.replace('10.0.0.8', '192.168.66.17');
           }
           
           // Fetch game data from SkyScansGames API

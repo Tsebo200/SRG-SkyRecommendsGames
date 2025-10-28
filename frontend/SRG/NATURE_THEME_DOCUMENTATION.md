@@ -141,3 +141,6 @@ npm run reset-theme
 **The Nature Palette theme transforms your app into a beautiful, nature-inspired gaming companion that's both professional and inviting! 🌿🎮**
 
 
+
+
+

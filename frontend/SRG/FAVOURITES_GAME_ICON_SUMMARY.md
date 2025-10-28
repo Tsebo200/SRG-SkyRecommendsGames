@@ -111,3 +111,6 @@ Your favourites tab now features:
 **Ready to see your enhanced favourites with game icons? Add some games to favourites and see the beautiful game icons next to the titles!** 🚀
 
 
+
+
+

@@ -355,18 +355,7 @@ export default function RecommendationsScreen() {
             </View>
           )}
 
-          {/* Enhanced recommendation details */}
-          {item.personalized_description && (
-            <Text style={[styles.gameDescription, { color: themeColors.textSecondary }]} numberOfLines={3}>
-              {item.personalized_description}
-            </Text>
-          )}
-
-          {item.similarity_reason && (
-            <Text style={[styles.similarityReason, { color: themeColors.primary }]} numberOfLines={2}>
-              {item.similarity_reason}
-            </Text>
-          )}
+          {/* Description and similarity reason intentionally omitted to keep cards concise */}
 
           {/* AI-enhanced recommendation score */}
           {item.recommendation_score && (
@@ -456,7 +445,7 @@ export default function RecommendationsScreen() {
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]} edges={['top', 'bottom', 'left', 'right']}>
       <View style={styles.header}>
         <Text style={[styles.headerTitle, { color: themeColors.text }]}>Recommendations</Text>
         <View style={styles.headerActions}>
@@ -614,6 +603,7 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     padding: 16,
+    paddingBottom: 47, // ensure last item is fully visible above tab bar
   },
   row: {
     justifyContent: 'space-between',

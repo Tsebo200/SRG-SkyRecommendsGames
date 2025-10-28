@@ -7,8 +7,9 @@ import { Platform } from 'react-native';
 
 // Common development IP ranges to try
 const COMMON_DEV_IPS = [
-  '10.0.0.8',   // Your current IP
-  '10.0.0.14',  // Your previous IP
+  '192.168.66.17',  // Your current IP
+  '10.0.0.8',       // Your previous IP
+  '10.0.0.14',      // Your older IP
   '192.168.1.1',
   '192.168.0.1',
   '172.16.0.1',
