@@ -23,20 +23,23 @@ const BACKEND_PORT = 8080;
  * Get the backend URL with automatic IP detection and fallbacks
  */
 export function getBackendUrl(): string {
-  // First, try the environment variable
+  // First, try the environment variable (highest priority)
   const envUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
-  if (envUrl && envUrl !== 'http://localhost:8080') {
-    return envUrl;
+  if (envUrl && envUrl.trim()) {
+    console.log('🌐 Using environment backend URL:', envUrl);
+    return envUrl.trim();
   }
 
   // For development, try to detect the correct IP
   if (__DEV__) {
     // Try localhost first (most reliable for development)
+    console.log('🌐 Using localhost backend URL for development');
     return `http://localhost:${BACKEND_PORT}`;
   }
 
-  // Fallback to environment variable or default
-  return envUrl || `http://localhost:${BACKEND_PORT}`;
+  // Fallback to default
+  console.log('🌐 Using default backend URL');
+  return `http://localhost:${BACKEND_PORT}`;
 }
 
 /**

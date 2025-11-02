@@ -42,7 +42,8 @@ export default function AvatarPicker({ onAvatarSelect, currentAvatar, currentSee
     ];
 
     seeds.forEach((seed, index) => {
-      const avatarUrl = `https://api.dicebear.com/9.x/micah/svg?seed=${seed}&size=100&backgroundColor=transparent`;
+      // Use PNG format instead of SVG for React Native compatibility
+      const avatarUrl = `https://api.dicebear.com/9.x/micah/png?seed=${seed}&size=200&backgroundColor=transparent`;
       options.push({
         id: `avatar-${index}`,
         name: seed.charAt(0).toUpperCase() + seed.slice(1),
@@ -74,7 +75,8 @@ export default function AvatarPicker({ onAvatarSelect, currentAvatar, currentSee
 
   const generateRandomAvatar = () => {
     const randomSeed = Math.random().toString(36).substring(7);
-    const randomUrl = `https://api.dicebear.com/9.x/micah/svg?seed=${randomSeed}&size=100&backgroundColor=transparent`;
+    // Use PNG format instead of SVG for React Native compatibility
+    const randomUrl = `https://api.dicebear.com/9.x/micah/png?seed=${randomSeed}&size=200&backgroundColor=transparent`;
     
     setLoading(true);
     setTimeout(() => {
@@ -99,12 +101,20 @@ export default function AvatarPicker({ onAvatarSelect, currentAvatar, currentSee
         onPress={() => handleAvatarSelect(item)}
         activeOpacity={0.7}
       >
-        <Image
-          source={{ uri: item.url }}
-          style={styles.avatarImage}
-          resizeMode="contain"
-        />
-        <Text style={[styles.avatarName, { color: themeColors.text }]}>
+        <View style={styles.avatarImageContainer}>
+          <Image
+            source={{ uri: item.url }}
+            style={styles.avatarImage}
+            resizeMode="cover"
+            onError={(error) => {
+              console.log('❌ Avatar image failed to load:', item.url, error);
+            }}
+            onLoad={() => {
+              console.log('✅ Avatar image loaded:', item.url);
+            }}
+          />
+        </View>
+        <Text style={[styles.avatarName, { color: themeColors.text }]} numberOfLines={1}>
           {item.name}
         </Text>
         {isSelected && (
@@ -154,6 +164,13 @@ export default function AvatarPicker({ onAvatarSelect, currentAvatar, currentSee
         contentContainerStyle={styles.avatarGrid}
         showsVerticalScrollIndicator={false}
         columnWrapperStyle={styles.row}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={[styles.emptyText, { color: themeColors.textSecondary }]}>
+              Loading avatars...
+            </Text>
+          </View>
+        }
       />
 
       <View style={styles.infoContainer}>
@@ -217,21 +234,31 @@ const styles = StyleSheet.create({
     width: '23%',
     aspectRatio: 1,
     borderRadius: 12,
-    padding: 8,
+    padding: 6,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     position: 'relative',
+    overflow: 'visible',
+  },
+  avatarImageContainer: {
+    width: '100%',
+    flex: 1,
+    borderRadius: 8,
+    overflow: 'hidden',
+    marginBottom: 4,
+    backgroundColor: 'transparent',
   },
   avatarImage: {
     width: '100%',
     height: '100%',
     borderRadius: 8,
+    backgroundColor: 'transparent',
   },
   avatarName: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '500',
-    marginTop: 4,
     textAlign: 'center',
+    marginTop: 2,
   },
   selectedIndicator: {
     position: 'absolute',
@@ -255,5 +282,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
     marginBottom: 4,
+  },
+  emptyContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
+    fontSize: 14,
+    textAlign: 'center',
   },
 });

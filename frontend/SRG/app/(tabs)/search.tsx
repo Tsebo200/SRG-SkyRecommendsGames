@@ -11,6 +11,7 @@ import {
   Alert,
   Animated,
   Vibration,
+  Platform,
 } from 'react-native';
 import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +23,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useThemeColors } from '../../lib/theme-context';
 
+// Conditional import for voice recognition
+let Voice: any = null;
+try {
+  Voice = require('@react-native-voice/voice').default;
+  console.log('✅ Voice module loaded successfully');
+} catch (e) {
+  console.log('❌ Voice recognition not available:', e);
+}
+
 export default function SearchScreen() {
   const router = useRouter();
   const themeColors = useThemeColors();
@@ -30,6 +40,7 @@ export default function SearchScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [favourites, setFavourites] = useState<Set<string>>(new Set());
+  const [isListening, setIsListening] = useState(false);
 
   // Play favorite sound and haptic feedback
   const playFavoriteFeedback = async (isFavourited: boolean) => {
@@ -249,6 +260,97 @@ export default function SearchScreen() {
     loadFavourites();
   }, []);
 
+  // Voice recognition setup
+  useEffect(() => {
+    if (!Voice) return;
+
+    Voice.onSpeechStart = () => {
+      console.log('🎤 Speech recognition started');
+      setIsListening(true);
+    };
+
+    Voice.onSpeechEnd = () => {
+      console.log('🎤 Speech recognition ended');
+      setIsListening(false);
+    };
+
+    Voice.onSpeechResults = (event: any) => {
+      if (event.value && event.value.length > 0) {
+        const spokenText = event.value[0];
+        console.log('🎤 Speech result:', spokenText);
+        setQuery(spokenText);
+      }
+      setIsListening(false);
+    };
+
+    Voice.onSpeechError = (event: any) => {
+      console.error('🎤 Speech recognition error:', event.error);
+      setIsListening(false);
+      const error = event.error || {};
+      const errorMessage = error.message || error.code || 'Unknown error';
+      
+      // Don't show alert for common "not recognised" errors - just log it
+      if (error.code === '7' || errorMessage.includes('not recognisable') || errorMessage.includes('No match')) {
+        console.log('🎤 No speech detected or not recognised');
+        return;
+      }
+      
+      Alert.alert('Speech Recognition Error', errorMessage);
+    };
+
+    return () => {
+      if (Voice) {
+        Voice.destroy().then(Voice.removeAllListeners).catch(() => {});
+      }
+    };
+  }, []);
+
+  const startListening = async () => {
+    if (!Voice) {
+      Alert.alert(
+        'Voice Recognition Unavailable',
+        'Voice recognition requires a custom development build. This feature is not available in Expo Go. Please build a custom development client with: npx expo prebuild && npx expo run:ios'
+      );
+      return;
+    }
+
+    try {
+      // Check if speech recognition is available
+      const isAvailable = await Voice.isAvailable();
+      console.log('🎤 Speech recognition available:', isAvailable);
+      
+      if (!isAvailable) {
+        Alert.alert('Voice Recognition', 'Speech recognition is not available on this device or platform.');
+        return;
+      }
+
+      setIsListening(true);
+      await Voice.start('en-US');
+      console.log('🎤 Started listening...');
+    } catch (error: any) {
+      console.error('Error starting voice recognition:', error);
+      setIsListening(false);
+      const errorMessage = error?.message || error?.code || 'Unknown error';
+      Alert.alert(
+        'Voice Recognition Error', 
+        `Failed to start voice recognition: ${errorMessage}. Please ensure you have a custom development build and microphone permissions are granted.`
+      );
+    }
+  };
+
+  const stopListening = async () => {
+    if (!Voice) return;
+
+    try {
+      await Voice.stop();
+      setIsListening(false);
+      console.log('🎤 Stopped listening...');
+    } catch (error: any) {
+      console.error('Error stopping voice recognition:', error);
+      setIsListening(false);
+    }
+  };
+
   const renderGame = ({ item }: { item: Game }) => {
     const isFavourited = favourites.has(item.slug);
     
@@ -375,6 +477,18 @@ export default function SearchScreen() {
             keyboardType="default"
             textContentType="none"
           />
+          <TouchableOpacity 
+            onPress={isListening ? stopListening : startListening}
+            style={styles.micButton}
+            accessibilityRole="button"
+            accessibilityLabel={isListening ? 'Stop voice input' : 'Start voice input'}
+          >
+            <Ionicons 
+              name={isListening ? 'stop-circle' : 'mic'} 
+              size={24} 
+              color={isListening ? '#ff6b6b' : themeColors.primary} 
+            />
+          </TouchableOpacity>
           {query.length > 0 && (
             <TouchableOpacity 
               onPress={() => setQuery('')} 
@@ -445,6 +559,10 @@ const styles = StyleSheet.create({
   },
   loader: {
     marginLeft: 12,
+  },
+  micButton: {
+    marginLeft: 8,
+    padding: 4,
   },
   clearButton: {
     marginLeft: 8,

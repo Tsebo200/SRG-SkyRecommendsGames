@@ -14,7 +14,12 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.anonymous.SRG",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "We need access to your microphone to enable voice search for games.",
+        "NSSpeechRecognitionUsageDescription": "We need access to speech recognition to convert your voice to text for searching games."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -22,7 +27,12 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ],
+      "package": "com.anonymous.SRG"
     },
     "web": {
       "favicon": "./assets/favicon.png"

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, ScrollView, Switch, Image, Modal, Linking, Clipboard } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, ScrollView, Switch, Image, Modal, Linking, Clipboard, TextInput } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -11,6 +11,7 @@ import ColorThemeSelector from '../../components/ColorThemeSelector';
 import NetworkStatus from '../../components/NetworkStatus';
 import AvatarPicker from '../../components/AvatarPicker';
 import { useTheme, useThemeColors, useIsDarkTheme } from '../../lib/theme-context';
+import { SteamAPIService } from '../../lib/steam-api';
 
 export default function ProfileFirebaseScreen() {
   const [user, setUser] = useState<any>(null);
@@ -22,6 +23,9 @@ export default function ProfileFirebaseScreen() {
   const [accessibilityOptions, setAccessibilityOptions] = useState<any[]>([]);
   const [userAvatar, setUserAvatar] = useState<string>('');
   const [userAvatarSeed, setUserAvatarSeed] = useState<string>('');
+  const [userSteamAccount, setUserSteamAccount] = useState<string>('');
+  const [showSteamInput, setShowSteamInput] = useState(false);
+  const [steamInput, setSteamInput] = useState<string>('');
   
   // Use theme context
   const { currentTheme, setTheme } = useTheme();
@@ -31,6 +35,7 @@ export default function ProfileFirebaseScreen() {
   useEffect(() => {
     loadUserProfile();
     loadUserAvatar();
+    loadUserSteamAccount();
     // Preload accessibility options
     setAccessibilityOptions(ColorThemeService.getAvailableAccessibilityThemes());
   }, []);
@@ -40,11 +45,133 @@ export default function ProfileFirebaseScreen() {
       const savedAvatar = await AsyncStorage.getItem('user_avatar');
       const savedSeed = await AsyncStorage.getItem('user_avatar_seed');
       if (savedAvatar && savedSeed) {
-        setUserAvatar(savedAvatar);
+        // Convert SVG URLs to PNG format for React Native compatibility
+        let avatarUrl = savedAvatar;
+        if (avatarUrl.includes('/svg?') || avatarUrl.includes('.svg')) {
+          avatarUrl = avatarUrl.replace('/svg?', '/png?').replace('.svg', '.png');
+          // Update size to 200 for better quality
+          avatarUrl = avatarUrl.replace('size=100', 'size=200');
+          if (!avatarUrl.includes('size=')) {
+            avatarUrl += (avatarUrl.includes('?') ? '&' : '?') + 'size=200';
+          }
+          // Save the updated PNG URL
+          await AsyncStorage.setItem('user_avatar', avatarUrl);
+        }
+        setUserAvatar(avatarUrl);
         setUserAvatarSeed(savedSeed);
       }
     } catch (error) {
       console.error('❌ Error loading user avatar:', error);
+    }
+  };
+
+  const loadUserSteamAccount = async () => {
+    try {
+      console.log('🔍 Loading Steam account from AsyncStorage...');
+      const allKeys = await AsyncStorage.getAllKeys();
+      console.log('🔍 All AsyncStorage keys:', allKeys);
+      
+      const savedSteamAccount = await AsyncStorage.getItem('user_steam_account');
+      console.log('🔍 Raw Steam account from storage:', savedSteamAccount);
+      
+      if (savedSteamAccount) {
+        console.log('✅ Loaded Steam account from storage:', savedSteamAccount);
+        console.log('✅ Steam account type:', typeof savedSteamAccount, 'length:', savedSteamAccount.length);
+        
+        // Check if it's a URL that needs processing
+        if (savedSteamAccount.includes('steamcommunity.com') || savedSteamAccount.includes('steam.com')) {
+          console.log('🔄 Found Steam URL in storage, processing...');
+          try {
+            const extractedId = SteamAPIService.extractSteamIdFromUrl(savedSteamAccount);
+            if (extractedId) {
+              const steamId64 = SteamAPIService.convertToSteamId64(extractedId);
+              console.log('🔄 Processed Steam ID64:', steamId64);
+              await AsyncStorage.setItem('user_steam_account', steamId64);
+              setUserSteamAccount(steamId64);
+              console.log('✅ Updated Steam account with processed ID64');
+            } else {
+              console.log('❌ Failed to extract Steam ID from URL');
+              setUserSteamAccount(savedSteamAccount);
+            }
+          } catch (error) {
+            console.error('❌ Error processing Steam URL:', error);
+            setUserSteamAccount(savedSteamAccount);
+          }
+        } else {
+          console.log('✅ Using Steam ID directly:', savedSteamAccount);
+          setUserSteamAccount(savedSteamAccount);
+        }
+      } else {
+        console.log('❌ No Steam account found in AsyncStorage');
+      }
+    } catch (error) {
+      console.error('❌ Error loading Steam account:', error);
+    }
+  };
+
+  const handleSteamAccountSave = async () => {
+    if (!steamInput.trim()) {
+      Alert.alert('Error', 'Please enter a Steam ID or profile URL');
+      return;
+    }
+
+    try {
+      console.log('🔄 Processing Steam input:', steamInput.trim());
+      let processedSteamId = steamInput.trim();
+      
+      // Check if it's a URL and extract Steam ID
+      if (steamInput.includes('steamcommunity.com') || steamInput.includes('steam.com')) {
+        console.log('🔄 Detected Steam URL, extracting Steam ID...');
+        const extractedId = SteamAPIService.extractSteamIdFromUrl(steamInput);
+        console.log('🔄 Extracted Steam ID:', extractedId);
+        if (!extractedId) {
+          Alert.alert('Error', 'Invalid Steam profile URL');
+          return;
+        }
+        processedSteamId = extractedId;
+        console.log('🔄 Using extracted Steam ID:', processedSteamId);
+      }
+      
+      // Validate and convert to Steam ID64
+      console.log('🔄 Converting to Steam ID64...');
+      let steamId64: string;
+      try {
+        steamId64 = SteamAPIService.convertToSteamId64(processedSteamId);
+        console.log('🔄 Converted Steam ID64:', steamId64);
+      } catch (conversionError) {
+        console.error('❌ Steam ID conversion failed:', conversionError);
+        Alert.alert('Error', `Invalid Steam ID format: ${processedSteamId}. Please enter a valid Steam ID or profile URL.`);
+        return;
+      }
+
+      // Save the processed Steam ID64
+      console.log('🔄 Saving Steam ID64 to storage:', steamId64);
+      await AsyncStorage.setItem('user_steam_account', steamId64);
+      
+      // Verify the save worked
+      const verifySave = await AsyncStorage.getItem('user_steam_account');
+      console.log('🔍 Verification - Steam account after save:', verifySave);
+      
+      setUserSteamAccount(steamId64);
+      setShowSteamInput(false);
+      setSteamInput('');
+      console.log('✅ Steam account saved successfully:', steamId64);
+      console.log('✅ Steam ID64 type:', typeof steamId64, 'length:', steamId64.length);
+      Alert.alert('Success', 'Steam account linked successfully!');
+    } catch (error) {
+      console.error('❌ Error saving Steam account:', error);
+      Alert.alert('Error', 'Failed to save Steam account');
+    }
+  };
+
+  const handleSteamAccountRemove = async () => {
+    try {
+      await AsyncStorage.removeItem('user_steam_account');
+      setUserSteamAccount('');
+      Alert.alert('Success', 'Steam account unlinked successfully!');
+    } catch (error) {
+      console.error('❌ Error removing Steam account:', error);
+      Alert.alert('Error', 'Failed to remove Steam account');
     }
   };
 
@@ -256,6 +383,18 @@ export default function ProfileFirebaseScreen() {
                   source={{ uri: userAvatar }} 
                   style={styles.avatarImage}
                   resizeMode="cover"
+                  onError={(error) => {
+                    console.log('❌ Avatar image failed to load in profile:', userAvatar, error);
+                    // If PNG fails, try regenerating with current seed
+                    if (userAvatarSeed) {
+                      const fallbackUrl = `https://api.dicebear.com/9.x/micah/png?seed=${userAvatarSeed}&size=200&backgroundColor=transparent`;
+                      setUserAvatar(fallbackUrl);
+                      AsyncStorage.setItem('user_avatar', fallbackUrl);
+                    }
+                  }}
+                  onLoad={() => {
+                    console.log('✅ Avatar image loaded in profile:', userAvatar);
+                  }}
                 />
               ) : (
                 <Text style={[styles.avatarText, { color: themeColors.buttonText }]}>
@@ -272,7 +411,7 @@ export default function ProfileFirebaseScreen() {
                 {user.email}
               </Text>
               <Text style={[styles.userId, { color: themeColors.textSecondary }]}>
-                Firebase UID: {user.uid}
+                {/* Firebase UID: {user.uid} */}
               </Text>
             </View>
           </View>
@@ -416,7 +555,7 @@ export default function ProfileFirebaseScreen() {
 
         {/* Contact */}
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Contact</Text>
+          <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Contact Me (Developer)</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.contactCarousel}>
              <TouchableOpacity style={[styles.contactCard, { backgroundColor: themeColors.surface }]} onPress={handleEmailPress}>
                <Ionicons name="mail" size={20} color={themeColors.primary} />
@@ -439,6 +578,81 @@ export default function ProfileFirebaseScreen() {
                <Text style={[styles.contactSubtitle, { color: themeColors.textSecondary }]}>linkedin.com/in/tsebo-ramonyalioa-2392381b4</Text>
              </TouchableOpacity>
           </ScrollView>
+        </View>
+
+        {/* Steam Account */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Steam Account</Text>
+          
+          {userSteamAccount ? (
+            <View style={[styles.steamAccountCard, { backgroundColor: themeColors.surface }]}>
+              <View style={styles.steamAccountHeader}>
+                <Ionicons name="logo-steam" size={24} color="#007AFF" />
+                <View style={styles.steamAccountInfo}>
+                  <Text style={[styles.steamAccountTitle, { color: themeColors.text }]}>Linked Steam Account</Text>
+                  <Text style={[styles.steamAccountValue, { color: themeColors.textSecondary }]}>{userSteamAccount}</Text>
+                </View>
+                <TouchableOpacity 
+                  style={styles.steamAccountRemoveButton}
+                  onPress={handleSteamAccountRemove}
+                >
+                  <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          ) : (
+            <View style={[styles.steamAccountCard, { backgroundColor: themeColors.surface }]}>
+              <View style={styles.steamAccountHeader}>
+                <Ionicons name="logo-steam" size={24} color="#8E8E93" />
+                <View style={styles.steamAccountInfo}>
+                  <Text style={[styles.steamAccountTitle, { color: themeColors.text }]}>No Steam Account Linked</Text>
+                  <Text style={[styles.steamAccountValue, { color: themeColors.textSecondary }]}>Link your Steam account for personalised recommendations</Text>
+                </View>
+                <TouchableOpacity 
+                  style={styles.steamAccountAddButton}
+                  onPress={() => setShowSteamInput(true)}
+                >
+                  <Ionicons name="add" size={20} color="#007AFF" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
+          {showSteamInput && (
+            <View style={[styles.steamInputCard, { backgroundColor: themeColors.surface }]}>
+              <Text style={[styles.steamInputTitle, { color: themeColors.text }]}>Link Steam Account</Text>
+              <TextInput
+                style={[styles.steamInput, { 
+                  backgroundColor: themeColors.background, 
+                  color: themeColors.text,
+                  borderColor: themeColors.border 
+                }]}
+                placeholder="Steam ID, Steam URL, or Steam username"
+                placeholderTextColor={themeColors.textSecondary}
+                value={steamInput}
+                onChangeText={setSteamInput}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              <View style={styles.steamInputButtons}>
+                <TouchableOpacity 
+                  style={[styles.steamInputButton, styles.steamInputCancelButton]}
+                  onPress={() => {
+                    setShowSteamInput(false);
+                    setSteamInput('');
+                  }}
+                >
+                  <Text style={styles.steamInputCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.steamInputButton, styles.steamInputSaveButton]}
+                  onPress={handleSteamAccountSave}
+                >
+                  <Text style={styles.steamInputSaveText}>Save</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
         </View>
         <TouchableOpacity
             style={[
@@ -606,6 +820,76 @@ const styles = StyleSheet.create({
   },
   contactSubtitle: {
     fontSize: 12,
+  },
+  steamAccountCard: {
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+  },
+  steamAccountHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  steamAccountInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  steamAccountTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  steamAccountValue: {
+    fontSize: 14,
+  },
+  steamAccountAddButton: {
+    padding: 8,
+  },
+  steamAccountRemoveButton: {
+    padding: 8,
+  },
+  steamInputCard: {
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 12,
+  },
+  steamInputTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  steamInput: {
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+  steamInputButtons: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+  },
+  steamInputButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  steamInputCancelButton: {
+    backgroundColor: 'transparent',
+  },
+  steamInputSaveButton: {
+    backgroundColor: '#007AFF',
+  },
+  steamInputCancelText: {
+    color: '#8E8E93',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  steamInputSaveText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
   menuItem: {
     paddingVertical: 16,

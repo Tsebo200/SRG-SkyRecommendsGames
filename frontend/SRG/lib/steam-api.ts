@@ -89,7 +89,6 @@ export class SteamAPIService {
         headers: {
           'Content-Type': 'application/json',
         },
-        timeout: 5000, // 5 second timeout
       });
       
       if (!response.ok) {
@@ -114,7 +113,6 @@ export class SteamAPIService {
           headers: {
             'Content-Type': 'application/json',
           },
-          timeout: 5000,
         });
         
         if (!response.ok) {
@@ -172,7 +170,6 @@ export class SteamAPIService {
         headers: {
           'Content-Type': 'application/json',
         },
-        timeout: 8000, // 8 second timeout for games (larger response)
       });
       
       if (!response.ok) {
@@ -197,7 +194,6 @@ export class SteamAPIService {
           headers: {
             'Content-Type': 'application/json',
           },
-          timeout: 8000,
         });
         
         if (!response.ok) {
@@ -311,15 +307,22 @@ export class SteamAPIService {
     
     try {
       console.log('🔄 Fetching personalised recommendations...');
+      console.log('🔄 Backend URL:', backendUrl);
+      console.log('🔄 Steam ID:', steamId);
+      
       const response = await fetch(backendUrl, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
         },
-        timeout: 8000,
       });
       
+      console.log('🔄 Response status:', response.status);
+      console.log('🔄 Response ok:', response.ok);
+      
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Response error text:', errorText);
         throw new Error(`Recommendations API request failed: ${response.status}`);
       }
       

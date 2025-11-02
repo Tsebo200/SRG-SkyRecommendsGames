@@ -12,13 +12,17 @@ import {
   Platform
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { HybridAuthService } from '../../lib/hybrid-auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { SteamAPIService } from '../../lib/steam-api';
 
 export default function SignUpFirebase() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [steamAccount, setSteamAccount] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSignUp = async () => {
@@ -45,6 +49,34 @@ export default function SignUpFirebase() {
       
       if (result.success) {
         console.log('✅ Firebase sign up successful');
+        
+        // Save Steam account if provided
+        if (steamAccount.trim()) {
+          try {
+            let processedSteamId = steamAccount.trim();
+            
+            // Check if it's a URL and extract Steam ID
+            if (steamAccount.includes('steamcommunity.com') || steamAccount.includes('steam.com')) {
+              const extractedId = SteamAPIService.extractSteamIdFromUrl(steamAccount);
+              if (extractedId) {
+                processedSteamId = extractedId;
+              }
+            }
+            
+            // Validate and convert to Steam ID64
+            try {
+              const steamId64 = SteamAPIService.convertToSteamId64(processedSteamId);
+              await AsyncStorage.setItem('user_steam_account', steamId64);
+              console.log('✅ Steam account saved:', steamId64);
+            } catch (conversionError) {
+              console.log('⚠️ Invalid Steam ID format, saving raw input:', processedSteamId);
+              await AsyncStorage.setItem('user_steam_account', processedSteamId);
+            }
+          } catch (error) {
+            console.error('❌ Error saving Steam account:', error);
+          }
+        }
+        
         Alert.alert(
           'Success', 
           'Account created successfully! Please check your email to verify your account.',
@@ -105,6 +137,25 @@ export default function SignUpFirebase() {
               onChangeText={setConfirmPassword}
               secureTextEntry
             />
+
+            <View style={styles.steamSection}>
+              <View style={styles.steamHeader}>
+                <Ionicons name="logo-steam" size={20} color="#007AFF" />
+                <Text style={styles.steamTitle}>Steam Account (Optional)</Text>
+              </View>
+              <Text style={styles.steamDescription}>
+                Link your Steam account to get personalised game recommendations
+              </Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Steam ID, Steam URL, or Steam username"
+                placeholderTextColor="#8E8E93"
+                value={steamAccount}
+                onChangeText={setSteamAccount}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
 
             <TouchableOpacity
               style={[styles.button, loading && styles.buttonDisabled]}
@@ -193,5 +244,30 @@ const styles = StyleSheet.create({
   linkText: {
     color: '#007AFF',
     fontSize: 16,
+  },
+  steamSection: {
+    marginTop: 20,
+    padding: 16,
+    backgroundColor: '#1C1C1E',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#2C2C2E',
+  },
+  steamHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  steamTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+    marginLeft: 8,
+  },
+  steamDescription: {
+    fontSize: 14,
+    color: '#8E8E93',
+    marginBottom: 12,
+    lineHeight: 20,
   },
 });

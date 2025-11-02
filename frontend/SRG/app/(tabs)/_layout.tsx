@@ -53,15 +53,24 @@ export default function TabLayout() {
       <Tabs.Screen
         name="scanner"
         options={{
-          title: 'Scan',
+          href: null, // Hide from tab bar
+          title: 'Scan QR Code',
           tabBarIcon: ({ color, size }) => <Ionicons name="qr-code" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="recommendations"
         options={{
+          href: null, // Hide from tab bar
           title: 'For You',
           tabBarIcon: ({ color, size }) => <Ionicons name="sparkles" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="favourites"
+        options={{
+          title: 'Favourites',
+          tabBarIcon: ({ color, size }) => <Ionicons name="heart" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
@@ -72,26 +81,10 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="favourites"
+        name="profile"
         options={{
-          title: 'Favourites',
-          tabBarIcon: ({ color, size }) => <Ionicons name="heart" size={size} color={color} />,
-        }}
-      />
-
-    <Tabs.Screen
-      name="profile"
-      options={{
-        title: 'Profile',
-        tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} />,
-        }}
-      />
-
-      <Tabs.Screen
-        name="steam-profile"
-        options={{
-          title: 'Steam',
-          tabBarIcon: ({ color, size }) => <Ionicons name="game-controller" size={size} color={color} />,
+          title: 'Profile',
+          tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} />,
         }}
       />
 
