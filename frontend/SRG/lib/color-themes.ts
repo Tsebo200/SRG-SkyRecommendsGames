@@ -186,8 +186,8 @@ export const ACCESSIBILITY_THEMES: AccessibilityTheme[] = [
       button: '#000000',
       buttonText: '#FFFFFF',
       tabBar: '#DDDDDD', // Light gray background for better contrast
-      tabBarActive: '#FFFFFF',     // White - active tab (maximum contrast)
-      tabBarInactive: '#000000',   // Black - inactive tabs (maximum contrast)
+      tabBarActive: '#000000',     // Black - active tab for maximum visibility on light bg
+      tabBarInactive: '#666666',   // Dark gray - dimmer inactive for reduced prominence
     },
     darkColors: {
       primary: '#FFFFFF',
@@ -206,7 +206,7 @@ export const ACCESSIBILITY_THEMES: AccessibilityTheme[] = [
       buttonText: '#000000',
       tabBar: '#000000',
       tabBarActive: '#FFFFFF',
-      tabBarInactive: '#CCCCCC',
+      tabBarInactive: '#555555',   // Darker gray - dimmer inactive on dark bg
     },
     accessibility: {
       protanomaly: false,

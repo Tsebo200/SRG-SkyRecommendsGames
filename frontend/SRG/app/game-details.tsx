@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -58,10 +59,40 @@ export default function GameDetailsScreen() {
           }
         }
       } else if (params.slug) {
-        // Load game by slug
+        // Load game by slug - fetch full game details to get description
         const searchResults = await apiClient.searchGames(params.slug as string);
         if (searchResults.results.length > 0) {
-          setGame(searchResults.results[0]);
+          const foundGame = searchResults.results[0];
+          setGame(foundGame);
+          
+          // Fetch full game details to get description
+          if (foundGame.slug) {
+            try {
+              const fullGameDetails = await apiClient.getGameBySlug(foundGame.slug);
+              if (fullGameDetails) {
+                setGame(fullGameDetails);
+                console.log('✅ Loaded full game details with description');
+              }
+            } catch (error) {
+              console.warn('⚠️ Could not fetch full game details, using search result:', error);
+            }
+          }
+        }
+      }
+      
+      // If game data exists but no description, try to fetch full details
+      if (game && !game.description && game.slug) {
+        try {
+          const fullGameDetails = await apiClient.getGameBySlug(game.slug);
+          if (fullGameDetails && fullGameDetails.description) {
+            setGame({
+              ...game,
+              description: fullGameDetails.description,
+            });
+            console.log('✅ Added description to game');
+          }
+        } catch (error) {
+          console.warn('⚠️ Could not fetch description:', error);
         }
       }
       
@@ -80,6 +111,7 @@ export default function GameDetailsScreen() {
     }
   };
 
+
   const toggleFavourite = async () => {
     if (!game) return;
     
@@ -91,13 +123,12 @@ export default function GameDetailsScreen() {
         setIsFavourite(false);
         Alert.alert('Removed from Favourites', `${game.name} has been removed from your favourites.`);
       } else {
-        await HybridFavouritesService.addFavourite({
-          game_id: game.id?.toString() || game.slug || 'unknown',
-          game_name: game.name,
-          game_slug: game.slug,
-          genres: game.genres?.map(g => typeof g === 'string' ? g : g.name) || [],
-          platforms: game.platforms?.map(p => typeof p === 'string' ? p : p.platform?.name || p.name) || [],
-        });
+        await HybridFavouritesService.addFavourite(
+          game.id?.toString() || game.slug || 'unknown',
+          game.name,
+          game.slug,
+          game.background_image
+        );
         setIsFavourite(true);
         Alert.alert('Added to Favourites', `${game.name} has been added to your favourites!`);
       }
@@ -123,6 +154,20 @@ export default function GameDetailsScreen() {
     });
   };
 
+  const stripHtmlTags = (html?: string): string => {
+    if (!html) return '';
+    // Remove HTML tags and decode HTML entities
+    return html
+      .replace(/<[^>]*>/g, '') // Remove HTML tags
+      .replace(/&nbsp;/g, ' ') // Replace &nbsp; with space
+      .replace(/&amp;/g, '&') // Replace &amp; with &
+      .replace(/&lt;/g, '<') // Replace &lt; with <
+      .replace(/&gt;/g, '>') // Replace &gt; with >
+      .replace(/&quot;/g, '"') // Replace &quot; with "
+      .replace(/&#39;/g, "'") // Replace &#39; with '
+      .trim();
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
@@ -144,7 +189,7 @@ export default function GameDetailsScreen() {
             We couldn't find details for this game. The QR code might be invalid or the game might not be in our database.
           </Text>
           <TouchableOpacity style={[styles.backButton, { backgroundColor: themeColors.primary }]} onPress={() => router.back()}>
-            <Text style={[styles.backButtonText, { color: themeColors.buttonText }]}>Go Back</Text>
+            <Text style={{ color: themeColors.buttonText, fontSize: 16, fontWeight: '600' }}>Go Back</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -199,6 +244,15 @@ export default function GameDetailsScreen() {
         {/* Game Info */}
         <View style={styles.content}>
           <Text style={[styles.gameTitle, { color: themeColors.text }]}>{game?.name || qrData?.name || 'Unknown Game'}</Text>
+          
+          {/* Game Description - Right after title */}
+          {(game?.description || qrData?.description) && (
+            <View style={styles.descriptionContainer}>
+              <Text style={[styles.descriptionText, { color: themeColors.textSecondary }]}>
+                {stripHtmlTags(game?.description || qrData?.description)}
+              </Text>
+            </View>
+          )}
           
           {/* AI Recommendation Data */}
           {game?.personalized_description && (
@@ -282,6 +336,20 @@ export default function GameDetailsScreen() {
                   <Text style={[styles.infoValue, { color: themeColors.text }]}>{formatDate(game.released)}</Text>
                 </View>
               )}
+
+              {/* Game Type (Genres) */}
+              {game.genres && game.genres.length > 0 && (
+                <View style={styles.infoRow}>
+                  <Ionicons name="pricetag" size={20} color={themeColors.primary} />
+                  <Text style={[styles.infoLabel, { color: themeColors.textSecondary }]}>Type:</Text>
+                  <Text style={[styles.infoValue, { color: themeColors.text }]}>
+                    {game.genres
+                      .map((g: any) => (typeof g === 'string' ? g : g?.name))
+                      .filter((n: string | undefined) => !!n)
+                      .join(', ')}
+                  </Text>
+                </View>
+              )}
             </View>
           )}
 
@@ -348,15 +416,6 @@ export default function GameDetailsScreen() {
             </View>
           )}
 
-          {/* Game Description */}
-          {(qrData?.description || game?.description) && (
-            <View style={styles.descriptionContainer}>
-              <Text style={[styles.descriptionTitle, { color: themeColors.text }]}>Description</Text>
-              <Text style={[styles.descriptionText, { color: themeColors.textSecondary }]}>
-                {qrData?.description || game?.description}
-              </Text>
-            </View>
-          )}
 
           {/* Game Genres */}
           {game?.genres && game.genres.length > 0 && (
@@ -388,7 +447,9 @@ export default function GameDetailsScreen() {
                   // Handle both AI recommendation format (string array) and database format (object array)
                   const platformName = typeof platform === 'string' 
                     ? platform 
-                    : platform.platform?.name || platform.name || 'Unknown Platform';
+                    : ('platform' in platform && platform.platform?.name) 
+                      ? platform.platform.name 
+                      : ('name' in platform ? (platform as any).name : 'Unknown Platform');
                   
                   return (
                     <View key={index} style={[styles.platformTag, { backgroundColor: themeColors.surface, borderColor: themeColors.border }]}>
@@ -400,19 +461,7 @@ export default function GameDetailsScreen() {
             </View>
           )}
 
-          {/* Store Links */}
-          {game?.stores && game.stores.length > 0 && (
-            <View style={styles.storesContainer}>
-              <Text style={[styles.storesTitle, { color: themeColors.text }]}>Available Stores</Text>
-              {game.stores.map((store, index) => (
-                <TouchableOpacity key={index} style={[styles.storeButton, { backgroundColor: themeColors.surface }]}>
-                  <Ionicons name="storefront" size={20} color={themeColors.primary} />
-                  <Text style={[styles.storeText, { color: themeColors.text }]}>{store.store.name}</Text>
-                  <Ionicons name="open" size={16} color={themeColors.primary} />
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
+          {/* Store Links removed as requested */}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -471,7 +520,7 @@ const styles = StyleSheet.create({
   gameTitle: {
     fontSize: 28,
     fontWeight: 'bold',
-    marginBottom: 20,
+    marginBottom: 12,
   },
   qrDataContainer: {
     borderRadius: 12,
@@ -502,14 +551,9 @@ const styles = StyleSheet.create({
   descriptionContainer: {
     marginBottom: 20,
   },
-  descriptionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 8,
-  },
   descriptionText: {
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 15,
+    lineHeight: 22,
   },
   genresContainer: {
     marginBottom: 20,

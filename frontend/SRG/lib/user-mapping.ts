@@ -22,21 +22,23 @@ export class UserMappingService {
 
       console.log('🔄 Creating user mapping for Firebase UID:', firebaseUser.uid);
 
-      // Check if user already exists
-      const { data: existingUser, error: fetchError } = await supabase
+      // Check if user already exists using service role (bypasses RLS)
+      const { data: existingUser, error: fetchError } = await supabaseService
         .from('users')
         .select('id')
         .eq('firebase_uid', firebaseUser.uid)
-        .single();
+        .maybeSingle();
 
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        console.error('❌ Error checking existing user:', fetchError.message);
-        return null;
-      }
-
+      // If user already exists, return the existing ID
       if (existingUser) {
         console.log('✅ User mapping already exists:', existingUser.id);
         return existingUser.id;
+      }
+
+      // Handle error only if it's not a "not found" error
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error('❌ Error checking existing user:', fetchError.message);
+        return null;
       }
 
       // Create new user mapping using service role (bypasses RLS)
@@ -50,8 +52,28 @@ export class UserMappingService {
         .select('id')
         .single();
 
+      // Handle duplicate key error - user was created between check and insert
       if (insertError) {
-        console.error('❌ Error creating user mapping:', insertError.message);
+        if (insertError.code === '23505' || insertError.message.includes('duplicate key')) {
+          console.log('⚠️ User already exists (race condition), fetching existing user...');
+          // Try to get the existing user again
+          const { data: existingUserAfterRace, error: raceError } = await supabaseService
+            .from('users')
+            .select('id')
+            .eq('firebase_uid', firebaseUser.uid)
+            .single();
+          
+          if (existingUserAfterRace) {
+            console.log('✅ Found existing user after race condition:', existingUserAfterRace.id);
+            return existingUserAfterRace.id;
+          }
+          
+          if (raceError) {
+            console.error('❌ Error fetching user after race condition:', raceError.message);
+          }
+        } else {
+          console.error('❌ Error creating user mapping:', insertError.message);
+        }
         return null;
       }
 

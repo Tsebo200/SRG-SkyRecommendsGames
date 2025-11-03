@@ -16,9 +16,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { HybridAuthService } from '../../lib/hybrid-auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SteamAPIService } from '../../lib/steam-api';
+import { updateProfile } from 'firebase/auth';
+import { supabaseService } from '../../lib/supabase-service';
 
 export default function SignUpFirebase() {
   const router = useRouter();
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -26,8 +29,13 @@ export default function SignUpFirebase() {
   const [loading, setLoading] = useState(false);
 
   const handleSignUp = async () => {
-    if (!email || !password || !confirmPassword) {
-      Alert.alert('Error', 'Please fill in all fields');
+    if (!username || !email || !password || !confirmPassword) {
+      Alert.alert('Error', 'Please fill in all required fields');
+      return;
+    }
+
+    if (username.trim().length < 3) {
+      Alert.alert('Error', 'Username must be at least 3 characters');
       return;
     }
 
@@ -47,8 +55,33 @@ export default function SignUpFirebase() {
       
       const result = await HybridAuthService.signUp(email, password);
       
-      if (result.success) {
+      if (result.success && result.user) {
         console.log('✅ Firebase sign up successful');
+        
+        // Update user profile with username
+        if (username.trim()) {
+          try {
+            await updateProfile(result.user, {
+              displayName: username.trim()
+            });
+            console.log('✅ Username updated in Firebase profile');
+            
+            // Update Supabase with the username
+            const { error: updateError } = await supabaseService
+              .from('users')
+              .update({ display_name: username.trim() })
+              .eq('firebase_uid', result.user.uid);
+            
+            if (updateError) {
+              console.error('❌ Error updating username in Supabase:', updateError.message);
+            } else {
+              console.log('✅ Username updated in Supabase');
+            }
+          } catch (profileError: any) {
+            console.error('❌ Error updating username:', profileError);
+            // Don't fail the signup if username update fails
+          }
+        }
         
         // Save Steam account if provided
         if (steamAccount.trim()) {
@@ -109,6 +142,16 @@ export default function SignUpFirebase() {
           <Text style={styles.subtitle}>Sign up to get started</Text>
 
           <View style={styles.form}>
+            <TextInput
+              style={styles.input}
+              placeholder="Username"
+              placeholderTextColor="#8E8E93"
+              value={username}
+              onChangeText={setUsername}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+
             <TextInput
               style={styles.input}
               placeholder="Email"

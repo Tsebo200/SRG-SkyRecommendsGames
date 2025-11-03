@@ -627,6 +627,34 @@ func main() {
 		_, _ = w.Write(buf.Bytes())
 	})
 
+	// Get full game details by slug from RAWG API (includes description)
+	// See: https://api.rawg.io/docs/#operation/games_read
+	r.Get("/rawg/game", func(w http.ResponseWriter, r *http.Request) {
+		slug := r.URL.Query().Get("slug")
+		if slug == "" {
+			http.Error(w, "slug parameter required", http.StatusBadRequest)
+			return
+		}
+
+		// Fetch full game details from RAWG API
+		apiURL := "https://api.rawg.io/api/games/" + urlQueryEscape(slug) + "?key=" + urlQueryEscape(cfg.RawgAPIKey)
+		fmt.Printf("🔍 RAWG API URL (full game details): %s\n", apiURL)
+
+		resp, err := http.Get(apiURL)
+		if err != nil {
+			http.Error(w, "upstream error", http.StatusBadGateway)
+			return
+		}
+		defer resp.Body.Close()
+
+		buf := new(bytes.Buffer)
+		_, _ = io.Copy(buf, resp.Body)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(resp.StatusCode)
+		_, _ = w.Write(buf.Bytes())
+	})
+
 	// Upsert game via Supabase RPC; generates embedding if not provided and OPENAI_API_KEY is set
 	r.Post("/games/upsert", func(w http.ResponseWriter, r *http.Request) {
 		var req upsertGameRequest

@@ -371,6 +371,27 @@ export class HybridFavouritesService {
     }
   }
 
+  // Update a favourite's stored image locally (no-op if not found)
+  static async updateFavouriteImage(gameSlug: string, imageUrl: string): Promise<void> {
+    try {
+      const currentFavourites = await this.loadFromLocalStorage();
+      let updated = false;
+      const updatedFavourites = currentFavourites.map((fav) => {
+        if (fav.game_slug === gameSlug) {
+          updated = true;
+          return { ...fav, game_image: imageUrl };
+        }
+        return fav;
+      });
+      if (updated) {
+        await this.saveToLocalStorage(updatedFavourites);
+        console.log('🖼️ Updated favourite image locally for', gameSlug);
+      }
+    } catch (error) {
+      console.error('❌ Failed to update favourite image:', error);
+    }
+  }
+
   // Toggle favourite status (with persistence)
   static async toggleFavourite(gameId: string, gameName: string, gameSlug: string, gameImage?: string): Promise<boolean> {
     const isFavourited = await this.isFavourited(gameSlug);

@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Alert, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Alert, ActivityIndicator, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { HybridFavouritesService, FavouriteGame } from '../../lib/favourites-hybrid';
+import { apiClient } from '../../lib/api';
 import { useThemeColors } from '../../lib/theme-context';
 
 export default function FavouritesScreen() {
@@ -12,6 +13,70 @@ export default function FavouritesScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [removingGameId, setRemovingGameId] = useState<string | null>(null);
+
+  // Background animated bubbles
+  const Bubbles = () => {
+    const configs = [
+      { size: 180, top: -30, left: -50, baseOpacity: 0.10, duration: 7000, delay: 0 },
+      { size: 140, top: 80, right: -30, baseOpacity: 0.09, duration: 6000, delay: 400 },
+      { size: 100, top: 260, left: -20, baseOpacity: 0.08, duration: 6500, delay: 800 },
+      { size: 220, bottom: -70, right: -80, baseOpacity: 0.06, duration: 8000, delay: 1200 },
+      { size: 120, bottom: 140, left: 30, baseOpacity: 0.07, duration: 7500, delay: 1600 },
+    ];
+    const translateVals = useRef(configs.map(() => new Animated.Value(0))).current;
+    const scaleVals = useRef(configs.map(() => new Animated.Value(1))).current;
+    const opacityVals = useRef(configs.map(() => new Animated.Value(0))).current;
+    useEffect(() => {
+      const animations = configs.map((cfg, i) => {
+        const float = Animated.loop(
+          Animated.sequence([
+            Animated.timing(translateVals[i], { toValue: 10, duration: cfg.duration, delay: cfg.delay, useNativeDriver: true }),
+            Animated.timing(translateVals[i], { toValue: 0, duration: cfg.duration, useNativeDriver: true }),
+          ])
+        );
+        const pulse = Animated.loop(
+          Animated.sequence([
+            Animated.timing(scaleVals[i], { toValue: 1.06, duration: cfg.duration, delay: cfg.delay, useNativeDriver: true }),
+            Animated.timing(scaleVals[i], { toValue: 1.0, duration: cfg.duration, useNativeDriver: true }),
+          ])
+        );
+        const fade = Animated.loop(
+          Animated.sequence([
+            Animated.timing(opacityVals[i], { toValue: 1, duration: cfg.duration, delay: cfg.delay, useNativeDriver: true }),
+            Animated.timing(opacityVals[i], { toValue: 0, duration: cfg.duration, useNativeDriver: true }),
+          ])
+        );
+        float.start();
+        pulse.start();
+        fade.start();
+        return { float, pulse, fade };
+      });
+      return () => { animations.forEach(a => { a.float.stop(); a.pulse.stop(); a.fade.stop(); }); };
+    }, []);
+    return (
+      <View pointerEvents="none" style={StyleSheet.absoluteFillObject}>
+        {configs.map((b, idx) => (
+          <Animated.View
+            key={`bubble-${idx}`}
+            style={{
+              position: 'absolute',
+              width: b.size,
+              height: b.size,
+              borderRadius: b.size / 2,
+              backgroundColor: themeColors.primary,
+              opacity: opacityVals[idx].interpolate({ inputRange: [0, 1], outputRange: [b.baseOpacity, Math.min(b.baseOpacity + 0.06, 0.2)] }),
+              top: b.top,
+              left: b.left,
+              right: b.right,
+              bottom: b.bottom,
+              shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 24, shadowOffset: { width: 0, height: 8 },
+              transform: [{ translateY: translateVals[idx] }, { scale: scaleVals[idx] }],
+            }}
+          />
+        ))}
+      </View>
+    );
+  };
 
   useEffect(() => {
     loadFavourites();
@@ -83,6 +148,24 @@ export default function FavouritesScreen() {
       
       console.log('🧹 Cleaned favourites data:', cleanedFavourites.length, 'items');
       setFavourites(cleanedFavourites);
+
+      // Lazy backfill missing images by slug
+      const missing = cleanedFavourites.filter(f => (!f.game_image || f.game_image.length === 0) && f.game_slug);
+      if (missing.length > 0) {
+        (async () => {
+          for (const fav of missing) {
+            try {
+              const full = await apiClient.getGameBySlug(fav.game_slug!);
+              const imageUrl = (full as any)?.background_image || (full as any)?.background_image_additional;
+              if (imageUrl) {
+                await HybridFavouritesService.updateFavouriteImage(fav.game_slug!, imageUrl);
+                // update in-memory state too
+                setFavourites(prev => prev.map(p => p.game_slug === fav.game_slug ? { ...p, game_image: imageUrl } : p));
+              }
+            } catch {}
+          }
+        })();
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to load favourites');
       console.error('Favourites error:', err);
@@ -278,6 +361,7 @@ export default function FavouritesScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
+      <Bubbles />
       <View style={[styles.header, { borderBottomColor: themeColors.border }]}>
         <Text style={[styles.title, { color: themeColors.text }]}>Favourites</Text>
         <Text style={[styles.subtitle, { color: themeColors.textSecondary }]}>

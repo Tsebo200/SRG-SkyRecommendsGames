@@ -42,6 +42,7 @@
 | 29 | Avatar Picker Implementation | Medium | ✅ Fixed | ~15 minutes |
 | 30 | Tab Bar Color Accessibility | High | ✅ Fixed | ~10 minutes |
 | 31 | Color Palette Preview Removal | Low | ✅ Fixed | ~5 minutes |
+| 33 | Speech-to-Text (Google) No Results | Medium | ✅ Fixed | ~10 minutes |
 | 32 | QR Scanner Network Request Failed | High | ✅ Fixed | ~10 minutes |
 
 ---
@@ -2145,7 +2146,7 @@ custom-nature: {
 | 30 | Tab Bar Color Accessibility | High | ✅ Fixed | ~10 minutes |
 | 31 | Color Palette Preview Removal | Low | ✅ Fixed | ~5 minutes |
 
-**Total Errors Resolved**: 32  
+**Total Errors Resolved**: 33  
 **Overall Resolution Success Rate**: 100%  
 **Total Resolution Time**: ~8 hours 55 minutes  
 
@@ -2166,3 +2167,210 @@ custom-nature: {
 5. **Theme Management** - Careful isolation of theme-specific styling to prevent conflicts
 
 The project continues to evolve with user-driven improvements and accessibility enhancements! 🎉
+
+---
+
+### Error #33: Speech-to-Text (Google) Returns No Results
+**Error Code**: `No speech detected / undefined transcript`  
+**Error Message**: 
+```
+LOG  ✅ Transcription successful: undefined
+LOG  🎤 No speech detected
+```
+**Timestamp**: 3rd November 2025 09:40:00  
+**Severity**: Medium  
+
+#### **Root Cause**
+- Audio format/config mismatch: Expo AV recorder (HIGH_QUALITY preset) outputs AAC in .m4a, while we initially configured Google STT as `LINEAR16` PCM. Google could not recognise the audio → empty results/undefined transcript.
+- Very short/quiet clips: Press-and-release too fast yields no alternatives.
+- Filesystem API/runtime differences: `FileSystem.EncodingType.Base64` not available at runtime; deprecation warning for `readAsStringAsync` modern API.
+- Double-start race: Starting a second recording before the first started could cause recording errors.
+
+#### **Resolution Steps**
+1. Filesystem compatibility
+   - Switched to legacy import to avoid deprecation/runtime mismatch.
+   - Added runtime fallback for base64 encoding.
+   - Files: `frontend/SRG/lib/google-speech-to-text.ts`
+   - Changes:
+```ts
+// BEFORE
+import * as FileSystem from 'expo-file-system';
+await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
+
+// AFTER
+import * as FileSystem from 'expo-file-system/legacy';
+await FileSystem.readAsStringAsync(uri, { encoding: (FileSystem as any).EncodingType?.Base64 ?? 'base64' } as any);
+```
+
+2. UX and state guards
+   - Press-and-hold mic: start onPressIn, stop/transcribe onPressOut.
+   - Added listening state UI hint: “Listening… release to transcribe”.
+   - Prevent concurrent starts by guarding state (single recording at a time).
+   - Files: `frontend/SRG/app/(tabs)/search.tsx`
+   - Changes:
+```tsx
+// Press-and-hold mic button
+onPressIn={() => { if (!isListening) startListening(); }}
+onPressOut={() => { if (isListening) stopListening(); }}
+{isListening && <Text>Listening… release to transcribe</Text>}
+```
+
+3. Configuration guidance
+   - Recommend letting Google auto-detect encoding (remove hard-coded `LINEAR16`/`sampleRate`), and ensure a minimum record duration (>700ms) for reliable results.
+
+#### **Verification**
+1. Restart the Expo dev server to load env changes.  
+2. On Search tab, press-and-hold mic, speak for ~1–2 seconds, then release.  
+3. Query field populates with transcript; no undefined transcript logs; no deprecation/runtime errors.
+
+#### **Security Note**
+- No API keys were logged or exposed. Environment variables remain in `.env` (not committed).
+
+---
+
+### Error #34: Animated Bubbles – Native/JS Driver Mismatch
+**Error Code**: `Animated: JS driven animation on node moved to native`
+**Error Message**: `Attempting to run JS driven animation on animated node that has been moved to native earlier by starting an animation with useNativeDriver: true`
+**Timestamp**: 3rd November 2025 11:05:00  
+**Severity**: Medium
+
+#### Root Cause
+- Mixed native-driven animations (translate/scale with `useNativeDriver: true`) with JS-driven opacity animations (`useNativeDriver: false`) on the same nodes.
+- Animations were being re-initialised on render due to effect dependencies.
+
+#### Resolution Steps
+1. Switched fade/opacity animations to `useNativeDriver: true` to match others.
+2. Ensured animation setup runs once by using an empty dependency array in the effect.
+3. Kept animations looped with `Animated.loop` and proper cleanup on unmount.
+
+#### Files Updated
+- `app/(tabs)/index.tsx` – Bubbles component in Home screen.
+
+#### Verification
+- No runtime warning; bubbles animate smoothly without errors.
+
+---
+
+### Error #35: Steam Recommendations Not Scrollable (Overflow)
+**Error Code**: UI overflow  
+**Error Message**: Steam recommendation items extend beyond visible area  
+**Timestamp**: 3rd November 2025 11:25:00  
+**Severity**: Low
+
+#### Root Cause
+- Static mapped views caused long content with no internal scrolling.
+
+#### Resolution Steps
+1. Replaced static map with an inner `FlatList` for the Steam section.
+2. Added `maxHeight` and `nestedScrollEnabled` to allow vertical scroll inside the main list.
+3. Added `ItemSeparatorComponent` for vertical spacing between items.
+
+#### Files Updated
+- `app/(tabs)/recommendations.tsx`
+
+#### Verification
+- Steam items now scroll within the section; no content is clipped.
+
+---
+
+### Error #36: No Recommendations When Favourites Empty But Steam Linked
+**Error Code**: Empty-state logic gap  
+**Error Message**: User sees empty state despite having Steam connected  
+**Timestamp**: 3rd November 2025 11:40:00  
+**Severity**: Medium
+
+#### Root Cause
+- Logic returned early to empty state when no favourites existed, ignoring Steam linkage.
+
+#### Resolution Steps
+1. If favourites are empty AND a Steam profile exists AND Steam influence privacy is enabled, skip the error and show the Steam section.
+2. Only show empty state when neither favourites exist nor an eligible Steam profile is present.
+
+#### Files Updated
+- `app/(tabs)/recommendations.tsx`
+
+#### Verification
+- With Steam linked (and influence enabled), user sees Steam recommendations even with zero favourites.
+
+---
+
+### Error #37: Microphone Should Be Disabled Without Consent
+**Error Code**: Privacy enforcement gap  
+**Error Message**: Mic starts recording even when consent is off  
+**Timestamp**: 3rd November 2025 12:00:00  
+**Severity**: High
+
+#### Root Cause
+- Search mic flow didn’t check the privacy toggle before starting recording.
+
+#### Resolution Steps
+1. Added `privacy_mic_consent` check (AsyncStorage) before `startListening()`.
+2. If disabled, show an informative alert and do nothing.
+
+#### Files Updated
+- `app/(tabs)/search.tsx`
+
+#### Verification
+- Pressing mic with consent off shows alert; recording does not start.
+
+---
+
+### Error #38: Steam Influence Privacy Not Enforced
+**Error Code**: Privacy enforcement gap  
+**Error Message**: Steam section visible and generator callable when user disabled Steam influence  
+**Timestamp**: 3rd November 2025 12:15:00  
+**Severity**: Medium
+
+#### Root Cause
+- For You screen did not respect `privacy_steam_influence` when rendering Steam section or triggering generation.
+
+#### Resolution Steps
+1. Loaded `privacy_steam_influence` from AsyncStorage on mount.
+2. Hid Steam section when disabled; prevented generation and showed contextual alert.
+3. Updated empty-state logic to consider the privacy flag.
+
+#### Files Updated
+- `app/(tabs)/recommendations.tsx`
+
+#### Verification
+- Steam section hidden and generation blocked when influence is disabled.
+
+---
+
+### Error #39: Google STT “bad encoding / bad sample rate hertz”
+**Error Code**: Google STT config invalid  
+**Error Message**: `Invalid recognition 'config': bad encoding.` / `bad sample rate hertz.`  
+**Timestamp**: 3rd November 2025 12:30:00  
+**Severity**: High
+
+#### Root Cause
+- Mismatch between recorded audio format and Google STT request config.
+- Platform-specific formats (iOS: AAC .m4a; Android: AMR_NB 3GP) need different handling.
+
+#### Resolution Steps
+1. iOS: Omitted explicit `encoding`/`sampleRateHertz` to allow auto-detection.
+2. Android: Recorded AMR_NB at 8 kHz; set `encoding: 'AMR'` and `sampleRateHertz: 8000` only when known valid.
+3. Added minimum recording duration guard (~700ms) and single-recording state guard.
+4. Kept legacy FileSystem import and base64 fallback for runtime compatibility.
+
+#### Files Updated
+- `frontend/SRG/lib/google-speech-to-text.ts`
+- `frontend/SRG/app/(tabs)/search.tsx`
+
+#### Verification
+- No more “bad encoding/sample rate” errors; speech-to-text returns transcripts reliably.
+
+---
+
+## 📊 Updated Error Summary (Addendum)
+
+| Error # | Category | Severity | Status |
+|---------|----------|----------|--------|
+| 34 | Animation driver mismatch | Medium | ✅ Fixed |
+| 35 | UI overflow (Steam list) | Low | ✅ Fixed |
+| 36 | Empty-state logic gap | Medium | ✅ Fixed |
+| 37 | Privacy – mic consent | High | ✅ Fixed |
+| 38 | Privacy – Steam influence | Medium | ✅ Fixed |
+| 39 | Google STT config | High | ✅ Fixed |
+
+Security note: No secrets or API keys are included in this document. All secret values are referenced via environment variables only.

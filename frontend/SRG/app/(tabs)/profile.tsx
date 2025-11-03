@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, ScrollView, Switch, Image, Modal, Linking, Clipboard, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, ScrollView, Switch, Image, Modal, Linking, Clipboard, TextInput, Vibration } from 'react-native';
+import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -12,6 +13,7 @@ import NetworkStatus from '../../components/NetworkStatus';
 import AvatarPicker from '../../components/AvatarPicker';
 import { useTheme, useThemeColors, useIsDarkTheme } from '../../lib/theme-context';
 import { SteamAPIService } from '../../lib/steam-api';
+import { updateProfile } from 'firebase/auth';
 
 export default function ProfileFirebaseScreen() {
   const [user, setUser] = useState<any>(null);
@@ -26,6 +28,14 @@ export default function ProfileFirebaseScreen() {
   const [userSteamAccount, setUserSteamAccount] = useState<string>('');
   const [showSteamInput, setShowSteamInput] = useState(false);
   const [steamInput, setSteamInput] = useState<string>('');
+  // Username edit state
+  const [editingName, setEditingName] = useState(false);
+  const [newDisplayName, setNewDisplayName] = useState<string>('');
+  const [savingName, setSavingName] = useState(false);
+  // Privacy settings state
+  const [showPrivacyModal, setShowPrivacyModal] = useState(false);
+  const [privacySteamInfluence, setPrivacySteamInfluence] = useState(true);
+  const [privacyMicConsent, setPrivacyMicConsent] = useState(true);
   
   // Use theme context
   const { currentTheme, setTheme } = useTheme();
@@ -38,7 +48,29 @@ export default function ProfileFirebaseScreen() {
     loadUserSteamAccount();
     // Preload accessibility options
     setAccessibilityOptions(ColorThemeService.getAvailableAccessibilityThemes());
+    loadPrivacySettings();
   }, []);
+
+  const loadPrivacySettings = async () => {
+    try {
+      const [steamInf, micCon] = await Promise.all([
+        AsyncStorage.getItem('privacy_steam_influence'),
+        AsyncStorage.getItem('privacy_mic_consent'),
+      ]);
+      if (steamInf !== null) setPrivacySteamInfluence(steamInf === 'true');
+      if (micCon !== null) setPrivacyMicConsent(micCon === 'true');
+    } catch (e) {
+      // non-fatal
+    }
+  };
+
+  const updatePrivacySetting = async (key: string, value: boolean) => {
+    try {
+      await AsyncStorage.setItem(key, value ? 'true' : 'false');
+    } catch (e) {
+      // non-fatal
+    }
+  };
 
   const loadUserAvatar = async () => {
     try {
@@ -157,6 +189,7 @@ export default function ProfileFirebaseScreen() {
       setSteamInput('');
       console.log('✅ Steam account saved successfully:', steamId64);
       console.log('✅ Steam ID64 type:', typeof steamId64, 'length:', steamId64.length);
+      await playSteamFeedback(true);
       Alert.alert('Success', 'Steam account linked successfully!');
     } catch (error) {
       console.error('❌ Error saving Steam account:', error);
@@ -168,6 +201,7 @@ export default function ProfileFirebaseScreen() {
     try {
       await AsyncStorage.removeItem('user_steam_account');
       setUserSteamAccount('');
+      await playSteamFeedback(false);
       Alert.alert('Success', 'Steam account unlinked successfully!');
     } catch (error) {
       console.error('❌ Error removing Steam account:', error);
@@ -242,6 +276,33 @@ export default function ProfileFirebaseScreen() {
     // Save avatar to AsyncStorage
     AsyncStorage.setItem('user_avatar', avatarUrl);
     AsyncStorage.setItem('user_avatar_seed', seed);
+  };
+
+  const playSuccessSound = async () => {
+    try {
+      const { sound } = await Audio.Sound.createAsync(
+        require('../../assets/FavouriteSound.mp3')
+      );
+      await sound.playAsync();
+      setTimeout(() => sound.unloadAsync(), 1500);
+    } catch (e) {
+      // Silent fail if audio not available
+    }
+  };
+
+  const playSteamFeedback = async (added: boolean) => {
+    try {
+      Vibration.vibrate(added ? 50 : 100);
+      const { sound } = await Audio.Sound.createAsync(
+        added
+          ? require('../../assets/FavouriteSound.mp3')
+          : require('../../assets/RemoveSound.mp3')
+      );
+      await sound.playAsync();
+      setTimeout(() => sound.unloadAsync(), added ? 1000 : 1500);
+    } catch (e) {
+      // non-fatal
+    }
   };
 
   const handleEmailPress = async () => {
@@ -372,7 +433,11 @@ export default function ProfileFirebaseScreen() {
         <Text style={[styles.subtitle, { color: themeColors.textSecondary }]}>Manage your account</Text>
 
         {user && (
-          <View style={[styles.profileCard, { backgroundColor: themeColors.card }]}>
+          <TouchableOpacity 
+            style={[styles.profileCard, { backgroundColor: themeColors.card }]}
+            activeOpacity={0.85}
+            onPress={() => setShowAvatarPicker(true)}
+          >
             <TouchableOpacity 
               style={[styles.avatar, { backgroundColor: themeColors.primary }]}
               onPress={() => setShowAvatarPicker(true)}
@@ -404,9 +469,85 @@ export default function ProfileFirebaseScreen() {
             </TouchableOpacity>
             
             <View style={styles.userInfo}>
-              <Text style={[styles.userName, { color: themeColors.text }]}>
-                {user.displayName || 'User'}
-              </Text>
+              {editingName ? (
+                <View>
+                  <TextInput
+                    style={[styles.nameInput, { backgroundColor: themeColors.background, color: themeColors.text, borderColor: themeColors.border }]}
+                    placeholder="Enter username"
+                    placeholderTextColor={themeColors.textSecondary}
+                    value={newDisplayName}
+                    onChangeText={setNewDisplayName}
+                    autoCapitalize="words"
+                  />
+                  <View style={styles.nameActions}>
+                    <TouchableOpacity
+                      style={[styles.nameButton, { backgroundColor: themeColors.surface, borderColor: themeColors.border }]}
+                      onPress={() => {
+                        setEditingName(false);
+                        setNewDisplayName('');
+                      }}
+                    >
+                      <Text style={[styles.nameButtonText, { color: themeColors.textSecondary }]}>Cancel</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.nameButton, { backgroundColor: themeColors.primary }]}
+                      onPress={async () => {
+                        const trimmed = newDisplayName.trim();
+                        if (trimmed.length < 3) {
+                          Alert.alert('Invalid Name', 'Username must be at least 3 characters.');
+                          return;
+                        }
+                        try {
+                          setSavingName(true);
+                          const firebaseUser = HybridAuthService.getCurrentUser();
+                          if (!firebaseUser) {
+                            Alert.alert('Error', 'Not signed in');
+                            return;
+                          }
+                          // Update Firebase displayName
+                          await updateProfile(firebaseUser, { displayName: trimmed });
+                          // Update Supabase profile
+                          await UserMappingService.updateUserProfile({ display_name: trimmed } as any);
+                          // Refresh local state
+                          setUser({ ...firebaseUser, displayName: trimmed });
+                          setEditingName(false);
+                          setNewDisplayName('');
+                          Alert.alert('Success', 'Username updated');
+                        } catch (e: any) {
+                          console.error('❌ Error updating username:', e);
+                          Alert.alert('Error', e?.message || 'Failed to update username');
+                        } finally {
+                          setSavingName(false);
+                        }
+                      }}
+                      disabled={savingName}
+                    >
+                      {savingName ? (
+                        <ActivityIndicator color={themeColors.buttonText} />
+                      ) : (
+                        <Text style={[styles.nameButtonText, { color: themeColors.buttonText }]}>Save</Text>
+                      )}
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : (
+                <View style={styles.nameRow}>
+                  <Text style={[styles.userName, { color: themeColors.text }]}>
+                    {user.displayName || 'User'}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setNewDisplayName(user?.displayName || '');
+                      setEditingName(true);
+                    }}
+                    style={styles.editNameIcon}
+                    accessibilityRole="button"
+                    accessibilityLabel="Edit username"
+                  >
+                    <Ionicons name="pencil" size={18} color={themeColors.textSecondary} />
+                  </TouchableOpacity>
+                </View>
+              )}
               <Text style={[styles.userEmail, { color: themeColors.textSecondary }]}>
                 {user.email}
               </Text>
@@ -414,20 +555,28 @@ export default function ProfileFirebaseScreen() {
                 {/* Firebase UID: {user.uid} */}
               </Text>
             </View>
-          </View>
+          </TouchableOpacity>
         )}
 
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Account</Text>
           
-          <TouchableOpacity style={[styles.menuItem, { borderBottomColor: themeColors.border }]}> 
+          <TouchableOpacity 
+            style={[styles.menuItem, { borderBottomColor: themeColors.border }]}
+            onPress={() => setShowAvatarPicker(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Edit profile (avatar and username)"
+          > 
             <View style={styles.menuItemContent}>
               <Text style={[styles.menuText, { color: themeColors.text }]}>Edit Profile</Text>
               <Text style={[styles.menuArrow, { color: themeColors.textSecondary }]}>›</Text>
             </View>
           </TouchableOpacity>
           
-          <TouchableOpacity style={[styles.menuItem, { borderBottomColor: themeColors.border }]}> 
+          <TouchableOpacity 
+            style={[styles.menuItem, { borderBottomColor: themeColors.border }]}
+            onPress={() => setShowPrivacyModal(true)}
+          > 
             <View style={styles.menuItemContent}>
               <Text style={[styles.menuText, { color: themeColors.text }]}>Privacy Settings</Text>
               <Text style={[styles.menuArrow, { color: themeColors.textSecondary }]}>›</Text>
@@ -553,35 +702,8 @@ export default function ProfileFirebaseScreen() {
 
         </View>
 
-        {/* Contact */}
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Contact Me (Developer)</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.contactCarousel}>
-             <TouchableOpacity style={[styles.contactCard, { backgroundColor: themeColors.surface }]} onPress={handleEmailPress}>
-               <Ionicons name="mail" size={20} color={themeColors.primary} />
-               <Text style={[styles.contactTitle, { color: themeColors.text }]}>Email</Text>
-               <Text style={[styles.contactSubtitle, { color: themeColors.textSecondary }]}>tsebo.ramonyalioa.an@gmail.com</Text>
-             </TouchableOpacity>
-             <TouchableOpacity style={[styles.contactCard, { backgroundColor: themeColors.surface }]} onPress={handleGithubPress}>
-               <Ionicons name="logo-github" size={20} color={themeColors.primary} />
-               <Text style={[styles.contactTitle, { color: themeColors.text }]}>GitHub</Text>
-               <Text style={[styles.contactSubtitle, { color: themeColors.textSecondary }]}>github.com/Tsebo200</Text>
-             </TouchableOpacity>
-             <TouchableOpacity style={[styles.contactCard, { backgroundColor: themeColors.surface }]} onPress={handleDiscordPress}>
-               <Ionicons name="chatbubbles" size={20} color={themeColors.primary} />
-               <Text style={[styles.contactTitle, { color: themeColors.text }]}>Discord</Text>
-               <Text style={[styles.contactSubtitle, { color: themeColors.textSecondary }]}>Tsebo200200</Text>
-             </TouchableOpacity>
-             <TouchableOpacity style={[styles.contactCard, { backgroundColor: themeColors.surface }]} onPress={handleLinkedInPress}>
-               <Ionicons name="logo-linkedin" size={20} color={themeColors.primary} />
-               <Text style={[styles.contactTitle, { color: themeColors.text }]}>LinkedIn</Text>
-               <Text style={[styles.contactSubtitle, { color: themeColors.textSecondary }]}>linkedin.com/in/tsebo-ramonyalioa-2392381b4</Text>
-             </TouchableOpacity>
-          </ScrollView>
-        </View>
-
-        {/* Steam Account */}
-        <View style={styles.section}>
+         {/* Steam Account */}
+         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Steam Account</Text>
           
           {userSteamAccount ? (
@@ -654,6 +776,35 @@ export default function ProfileFirebaseScreen() {
             </View>
           )}
         </View>
+
+        {/* Contact */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Contact Me (Developer)</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.contactCarousel}>
+             <TouchableOpacity style={[styles.contactCard, { backgroundColor: themeColors.surface }]} onPress={handleEmailPress}>
+               <Ionicons name="mail" size={20} color={themeColors.primary} />
+               <Text style={[styles.contactTitle, { color: themeColors.text }]}>Email</Text>
+               <Text style={[styles.contactSubtitle, { color: themeColors.textSecondary }]}>tsebo.ramonyalioa.an@gmail.com</Text>
+             </TouchableOpacity>
+             <TouchableOpacity style={[styles.contactCard, { backgroundColor: themeColors.surface }]} onPress={handleGithubPress}>
+               <Ionicons name="logo-github" size={20} color={themeColors.primary} />
+               <Text style={[styles.contactTitle, { color: themeColors.text }]}>GitHub</Text>
+               <Text style={[styles.contactSubtitle, { color: themeColors.textSecondary }]}>github.com/Tsebo200</Text>
+             </TouchableOpacity>
+             <TouchableOpacity style={[styles.contactCard, { backgroundColor: themeColors.surface }]} onPress={handleDiscordPress}>
+               <Ionicons name="chatbubbles" size={20} color={themeColors.primary} />
+               <Text style={[styles.contactTitle, { color: themeColors.text }]}>Discord</Text>
+               <Text style={[styles.contactSubtitle, { color: themeColors.textSecondary }]}>Tsebo200200</Text>
+             </TouchableOpacity>
+             <TouchableOpacity style={[styles.contactCard, { backgroundColor: themeColors.surface }]} onPress={handleLinkedInPress}>
+               <Ionicons name="logo-linkedin" size={20} color={themeColors.primary} />
+               <Text style={[styles.contactTitle, { color: themeColors.text }]}>LinkedIn</Text>
+               <Text style={[styles.contactSubtitle, { color: themeColors.textSecondary }]}>linkedin.com/in/tsebo-ramonyalioa-2392381b4</Text>
+             </TouchableOpacity>
+          </ScrollView>
+        </View>
+
+       
         <TouchableOpacity
             style={[
               styles.signOutButton, 
@@ -713,7 +864,77 @@ export default function ProfileFirebaseScreen() {
             onAvatarSelect={handleAvatarSelect}
             currentAvatar={userAvatar}
             currentSeed={userAvatarSeed}
+            initialDisplayName={user?.displayName || ''}
+            onSaveProfile={async (newName: string) => {
+              try {
+                const firebaseUser = HybridAuthService.getCurrentUser();
+                if (!firebaseUser) {
+                  Alert.alert('Error', 'Not signed in');
+                  return;
+                }
+                await updateProfile(firebaseUser, { displayName: newName });
+                await UserMappingService.updateUserProfile({ display_name: newName } as any);
+                setUser({ ...firebaseUser, displayName: newName });
+                setShowAvatarPicker(false);
+                await playSuccessSound();
+                Alert.alert('Success', 'Profile updated');
+              } catch (e: any) {
+                console.error('❌ Error updating profile:', e);
+                Alert.alert('Error', e?.message || 'Failed to update profile');
+              }
+            }}
           />
+        </SafeAreaView>
+      </Modal>
+
+      {/* Privacy Settings Modal */}
+      <Modal
+        visible={showPrivacyModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowPrivacyModal(false)}
+      >
+        <SafeAreaView style={[styles.modalContainer, { backgroundColor: themeColors.background }]}> 
+          <View style={[styles.modalHeader, { borderBottomColor: themeColors.border }]}> 
+            <TouchableOpacity onPress={() => setShowPrivacyModal(false)} style={styles.closeButton}> 
+              <Text style={[styles.closeButtonText, { color: themeColors.primary }]}>Close</Text>
+            </TouchableOpacity>
+            <Text style={[styles.modalTitle, { color: themeColors.text }]}>Privacy Settings</Text>
+            <View style={styles.placeholder} />
+          </View>
+
+          <ScrollView contentContainerStyle={{ padding: 20 }}>
+            <View style={[styles.privacyCard, { backgroundColor: themeColors.surface, borderColor: themeColors.border }]}> 
+              <View style={styles.privacyRow}> 
+                <View style={styles.privacyTextCol}>
+                  <Text style={[styles.privacyTitle, { color: themeColors.text }]}>Use Steam data in recommendations</Text>
+                  <Text style={[styles.privacySubtitle, { color: themeColors.textSecondary }]}>Allow your linked Steam profile to influence personalised game picks.</Text>
+                </View>
+                <Switch
+                  value={privacySteamInfluence}
+                  onValueChange={(v) => { setPrivacySteamInfluence(v); updatePrivacySetting('privacy_steam_influence', v); }}
+                  trackColor={{ false: themeColors.border, true: themeColors.primary }}
+                  thumbColor={privacySteamInfluence ? themeColors.buttonText : themeColors.background}
+                />
+              </View>
+            </View>
+
+            <View style={[styles.privacyCard, { backgroundColor: themeColors.surface, borderColor: themeColors.border }]}> 
+              <View style={styles.privacyRow}> 
+                <View style={styles.privacyTextCol}>
+                  <Text style={[styles.privacyTitle, { color: themeColors.text }]}>Microphone consent</Text>
+                  <Text style={[styles.privacySubtitle, { color: themeColors.textSecondary }]}>Allow speech‑to‑text when using the search microphone.</Text>
+                </View>
+                <Switch
+                  value={privacyMicConsent}
+                  onValueChange={(v) => { setPrivacyMicConsent(v); updatePrivacySetting('privacy_mic_consent', v); }}
+                  trackColor={{ false: themeColors.border, true: themeColors.primary }}
+                  thumbColor={privacyMicConsent ? themeColors.buttonText : themeColors.background}
+                />
+              </View>
+            </View>
+
+          </ScrollView>
         </SafeAreaView>
       </Modal>
     </SafeAreaView>
@@ -783,6 +1004,38 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#fff',
     marginBottom: 4,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  editNameIcon: {
+    padding: 6,
+  },
+  nameInput: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    marginBottom: 10,
+  },
+  nameActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 10,
+  },
+  nameButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  nameButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
   },
   userEmail: {
     fontSize: 16,
@@ -972,6 +1225,31 @@ const styles = StyleSheet.create({
   selectedIndicator: {
     fontSize: 18,
     fontWeight: '700',
+  },
+  privacyCard: {
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    marginBottom: 12,
+  },
+  privacyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  privacyTextCol: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  privacyTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  privacySubtitle: {
+    fontSize: 12,
+    lineHeight: 16,
   },
   menuText: {
     fontSize: 16,

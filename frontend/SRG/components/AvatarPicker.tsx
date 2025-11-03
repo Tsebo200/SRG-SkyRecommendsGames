@@ -9,6 +9,7 @@ import {
   Alert,
   ActivityIndicator,
   ScrollView,
+  TextInput,
 } from 'react-native';
 import { useThemeColors } from '../lib/theme-context';
 
@@ -23,13 +24,16 @@ interface AvatarPickerProps {
   onAvatarSelect: (avatarUrl: string, seed: string) => void;
   currentAvatar?: string;
   currentSeed?: string;
+  initialDisplayName?: string;
+  onSaveProfile?: (displayName: string) => void;
 }
 
-export default function AvatarPicker({ onAvatarSelect, currentAvatar, currentSeed }: AvatarPickerProps) {
+export default function AvatarPicker({ onAvatarSelect, currentAvatar, currentSeed, initialDisplayName = '', onSaveProfile }: AvatarPickerProps) {
   const themeColors = useThemeColors();
   const [selectedAvatar, setSelectedAvatar] = useState<string>(currentSeed || '');
   const [loading, setLoading] = useState(false);
   const [avatarOptions, setAvatarOptions] = useState<AvatarOption[]>([]);
+  const [displayName, setDisplayName] = useState<string>(initialDisplayName);
 
   // Generate avatar options with different seeds
   const generateAvatarOptions = () => {
@@ -61,6 +65,10 @@ export default function AvatarPicker({ onAvatarSelect, currentAvatar, currentSee
       setSelectedAvatar(currentSeed);
     }
   }, [currentSeed]);
+
+  useEffect(() => {
+    setDisplayName(initialDisplayName);
+  }, [initialDisplayName]);
 
   const handleAvatarSelect = (avatar: AvatarOption) => {
     setSelectedAvatar(avatar.seed);
@@ -146,6 +154,18 @@ export default function AvatarPicker({ onAvatarSelect, currentAvatar, currentSee
         Select from our collection of unique avatars powered by DiceBear
       </Text>
 
+      {/* Username input */}
+      {onSaveProfile && (
+        <TextInput
+          style={[styles.nameInput, { backgroundColor: themeColors.card, color: themeColors.text, borderColor: themeColors.border }]}
+          placeholder="Enter username"
+          placeholderTextColor={themeColors.textSecondary}
+          value={displayName}
+          onChangeText={setDisplayName}
+          autoCapitalize="words"
+        />)
+      }
+
       <TouchableOpacity
         style={[styles.randomButton, { backgroundColor: themeColors.primary }]}
         onPress={generateRandomAvatar}
@@ -181,6 +201,23 @@ export default function AvatarPicker({ onAvatarSelect, currentAvatar, currentSee
           Licensed under CC BY 4.0
         </Text>
       </View>
+
+      {onSaveProfile && (
+        <TouchableOpacity
+          style={[styles.saveButton, { backgroundColor: themeColors.primary }]}
+          onPress={() => {
+            const trimmed = displayName.trim();
+            if (trimmed.length < 3) {
+              Alert.alert('Invalid Name', 'Username must be at least 3 characters.');
+              return;
+            }
+            onSaveProfile(trimmed);
+          }}
+          activeOpacity={0.8}
+        >
+          <Text style={[styles.saveButtonText, { color: themeColors.buttonText }]}>Save Profile</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -211,6 +248,14 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     textAlign: 'center',
     lineHeight: 20,
+  },
+  nameInput: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    marginBottom: 16,
   },
   randomButton: {
     paddingVertical: 12,
@@ -277,6 +322,16 @@ const styles = StyleSheet.create({
   infoContainer: {
     marginTop: 20,
     alignItems: 'center',
+  },
+  saveButton: {
+    marginTop: 16,
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
   },
   infoText: {
     fontSize: 12,

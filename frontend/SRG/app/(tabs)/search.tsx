@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -22,15 +22,8 @@ import { HybridFavouritesService } from '../../lib/favourites-hybrid';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useThemeColors } from '../../lib/theme-context';
-
-// Conditional import for voice recognition
-let Voice: any = null;
-try {
-  Voice = require('@react-native-voice/voice').default;
-  console.log('✅ Voice module loaded successfully');
-} catch (e) {
-  console.log('❌ Voice recognition not available:', e);
-}
+import { googleSpeechToTextService } from '../../lib/google-speech-to-text';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function SearchScreen() {
   const router = useRouter();
@@ -41,6 +34,71 @@ export default function SearchScreen() {
   const [error, setError] = useState<string | null>(null);
   const [favourites, setFavourites] = useState<Set<string>>(new Set());
   const [isListening, setIsListening] = useState(false);
+
+  // Background animated bubbles
+  const Bubbles = () => {
+    const theme = themeColors;
+    const configs = [
+      { size: 180, top: -30, left: -50, baseOpacity: 0.10, duration: 7000, delay: 0 },
+      { size: 140, top: 80, right: -30, baseOpacity: 0.09, duration: 6000, delay: 400 },
+      { size: 100, top: 260, left: -20, baseOpacity: 0.08, duration: 6500, delay: 800 },
+      { size: 220, bottom: -70, right: -80, baseOpacity: 0.06, duration: 8000, delay: 1200 },
+      { size: 120, bottom: 140, left: 30, baseOpacity: 0.07, duration: 7500, delay: 1600 },
+    ];
+    const translateVals = useRef(configs.map(() => new Animated.Value(0))).current;
+    const scaleVals = useRef(configs.map(() => new Animated.Value(1))).current;
+    const opacityVals = useRef(configs.map(() => new Animated.Value(0))).current;
+    useEffect(() => {
+      const animations = configs.map((cfg, i) => {
+        const float = Animated.loop(
+          Animated.sequence([
+            Animated.timing(translateVals[i], { toValue: 10, duration: cfg.duration, delay: cfg.delay, useNativeDriver: true }),
+            Animated.timing(translateVals[i], { toValue: 0, duration: cfg.duration, useNativeDriver: true }),
+          ])
+        );
+        const pulse = Animated.loop(
+          Animated.sequence([
+            Animated.timing(scaleVals[i], { toValue: 1.06, duration: cfg.duration, delay: cfg.delay, useNativeDriver: true }),
+            Animated.timing(scaleVals[i], { toValue: 1.0, duration: cfg.duration, useNativeDriver: true }),
+          ])
+        );
+        const fade = Animated.loop(
+          Animated.sequence([
+            Animated.timing(opacityVals[i], { toValue: 1, duration: cfg.duration, delay: cfg.delay, useNativeDriver: true }),
+            Animated.timing(opacityVals[i], { toValue: 0, duration: cfg.duration, useNativeDriver: true }),
+          ])
+        );
+        float.start();
+        pulse.start();
+        fade.start();
+        return { float, pulse, fade };
+      });
+      return () => { animations.forEach(a => { a.float.stop(); a.pulse.stop(); a.fade.stop(); }); };
+    }, []);
+    return (
+      <View pointerEvents="none" style={StyleSheet.absoluteFillObject}>
+        {configs.map((b, idx) => (
+          <Animated.View
+            key={`bubble-${idx}`}
+            style={{
+              position: 'absolute',
+              width: b.size,
+              height: b.size,
+              borderRadius: b.size / 2,
+              backgroundColor: theme.primary,
+              opacity: opacityVals[idx].interpolate({ inputRange: [0, 1], outputRange: [b.baseOpacity, Math.min(b.baseOpacity + 0.06, 0.2)] }),
+              top: b.top,
+              left: b.left,
+              right: b.right,
+              bottom: b.bottom,
+              shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 24, shadowOffset: { width: 0, height: 8 },
+              transform: [{ translateY: translateVals[idx] }, { scale: scaleVals[idx] }],
+            }}
+          />
+        ))}
+      </View>
+    );
+  };
 
   // Play favorite sound and haptic feedback
   const playFavoriteFeedback = async (isFavourited: boolean) => {
@@ -179,21 +237,11 @@ export default function SearchScreen() {
   };
 
   const goToDetails = (game: Game) => {
-    const platformsLabel = game.platforms?.map(p => p.platform.name).join(', ') || '';
-    const genresLabel = game.genres?.map(g => g.name).join(', ') || '';
-    const storeMap = (game.stores || []).reduce((acc, s) => {
-      acc[s.store.name.toLowerCase()] = s.url;
-      return acc;
-    }, {} as Record<string, string>);
-
+    // Pass full game data so we don't need to refetch
     router.push({
-      pathname: `/game/${game.slug}`,
+      pathname: '/game-details',
       params: {
-        name: game.name,
-        image: game.background_image || '',
-        platforms: platformsLabel,
-        genres: genresLabel,
-        stores: JSON.stringify(storeMap),
+        gameData: JSON.stringify(game),
       },
     });
   };
@@ -233,7 +281,15 @@ export default function SearchScreen() {
             imageLength: game.background_image?.length || 0
           });
         }
-        await HybridFavouritesService.addFavourite(game.id.toString(), game.name, game.slug, game.background_image);
+        // Ensure we have an image: if missing, fetch full details by slug
+        let imageUrl = game.background_image;
+        if (!imageUrl && game.slug) {
+          try {
+            const full = await apiClient.getGameBySlug(game.slug);
+            imageUrl = full?.background_image || full?.background_image_additional || '';
+          } catch {}
+        }
+        await HybridFavouritesService.addFavourite(game.id.toString(), game.name, game.slug, imageUrl);
         setFavourites(prev => new Set(prev).add(gameSlug));
         
         // Play feedback for adding to favorites
@@ -260,94 +316,94 @@ export default function SearchScreen() {
     loadFavourites();
   }, []);
 
-  // Voice recognition setup
+  // Check if Google Cloud Speech-to-Text is available on mount
   useEffect(() => {
-    if (!Voice) return;
-
-    Voice.onSpeechStart = () => {
-      console.log('🎤 Speech recognition started');
-      setIsListening(true);
-    };
-
-    Voice.onSpeechEnd = () => {
-      console.log('🎤 Speech recognition ended');
-      setIsListening(false);
-    };
-
-    Voice.onSpeechResults = (event: any) => {
-      if (event.value && event.value.length > 0) {
-        const spokenText = event.value[0];
-        console.log('🎤 Speech result:', spokenText);
-        setQuery(spokenText);
-      }
-      setIsListening(false);
-    };
-
-    Voice.onSpeechError = (event: any) => {
-      console.error('🎤 Speech recognition error:', event.error);
-      setIsListening(false);
-      const error = event.error || {};
-      const errorMessage = error.message || error.code || 'Unknown error';
-      
-      // Don't show alert for common "not recognised" errors - just log it
-      if (error.code === '7' || errorMessage.includes('not recognisable') || errorMessage.includes('No match')) {
-        console.log('🎤 No speech detected or not recognised');
-        return;
-      }
-      
-      Alert.alert('Speech Recognition Error', errorMessage);
-    };
-
-    return () => {
-      if (Voice) {
-        Voice.destroy().then(Voice.removeAllListeners).catch(() => {});
-      }
-    };
+    if (!googleSpeechToTextService.isAvailable()) {
+      console.warn('⚠️ Google Cloud Speech-to-Text API key not configured');
+    }
   }, []);
 
   const startListening = async () => {
-    if (!Voice) {
+    // Check privacy microphone consent
+    try {
+      const micConsent = await AsyncStorage.getItem('privacy_mic_consent');
+      if (micConsent !== 'true') {
+        Alert.alert(
+          'Microphone Disabled',
+          'Enable Microphone consent in Profile > Privacy Settings to use voice search.'
+        );
+        return;
+      }
+    } catch {}
+
+    // Check if Google Cloud Speech-to-Text is available
+    if (!googleSpeechToTextService.isAvailable()) {
       Alert.alert(
         'Voice Recognition Unavailable',
-        'Voice recognition requires a custom development build. This feature is not available in Expo Go. Please build a custom development client with: npx expo prebuild && npx expo run:ios'
+        'Google Cloud Speech-to-Text API key is not configured. Please add EXPO_PUBLIC_GOOGLE_CLOUD_SPEECH_API_KEY to your environment variables.'
       );
       return;
     }
 
     try {
-      // Check if speech recognition is available
-      const isAvailable = await Voice.isAvailable();
-      console.log('🎤 Speech recognition available:', isAvailable);
-      
-      if (!isAvailable) {
-        Alert.alert('Voice Recognition', 'Speech recognition is not available on this device or platform.');
-        return;
-      }
-
       setIsListening(true);
-      await Voice.start('en-US');
-      console.log('🎤 Started listening...');
+      console.log('🎤 Starting recording...');
+      
+      // Start recording audio
+      await googleSpeechToTextService.startRecording();
+      console.log('🎤 Recording started...');
     } catch (error: any) {
-      console.error('Error starting voice recognition:', error);
+      console.error('❌ Error starting voice recognition:', error);
       setIsListening(false);
-      const errorMessage = error?.message || error?.code || 'Unknown error';
-      Alert.alert(
-        'Voice Recognition Error', 
-        `Failed to start voice recognition: ${errorMessage}. Please ensure you have a custom development build and microphone permissions are granted.`
-      );
+      const errorMessage = error?.message || 'Unknown error';
+      
+      // Handle permission errors
+      if (errorMessage.includes('permission') || errorMessage.includes('Permission')) {
+        Alert.alert(
+          'Microphone Permission Required',
+          'Please grant microphone permission in your device settings to use voice search.'
+        );
+      } else {
+        Alert.alert('Voice Recognition Error', `Failed to start recording: ${errorMessage}`);
+      }
     }
   };
 
   const stopListening = async () => {
-    if (!Voice) return;
+    if (!googleSpeechToTextService.isAvailable() || !isListening) return;
 
     try {
-      await Voice.stop();
       setIsListening(false);
-      console.log('🎤 Stopped listening...');
+      console.log('🎤 Stopping recording and transcribing...');
+      
+      // Stop recording and transcribe
+      const transcript = await googleSpeechToTextService.stopAndTranscribe({
+        languageCode: 'en-US',
+        encoding: 'LINEAR16',
+      });
+      
+      if (transcript && transcript.trim().length > 0) {
+        console.log('🎤 Transcription successful:', transcript);
+        setQuery(transcript);
+      } else {
+        console.log('🎤 No speech detected');
+        Alert.alert('No Speech Detected', 'Please try speaking again.');
+      }
     } catch (error: any) {
-      console.error('Error stopping voice recognition:', error);
-      setIsListening(false);
+      console.error('❌ Error transcribing audio:', error);
+      const errorMessage = error?.message || 'Unknown error';
+      
+      // Handle specific Google Cloud API errors
+      if (errorMessage.includes('API key') || errorMessage.includes('authentication')) {
+        Alert.alert(
+          'API Configuration Error',
+          'Google Cloud Speech-to-Text API key is invalid. Please check your configuration.'
+        );
+      } else if (errorMessage.includes('No transcription results')) {
+        Alert.alert('No Speech Detected', 'Please try speaking again.');
+      } else {
+        Alert.alert('Transcription Error', `Failed to transcribe audio: ${errorMessage}`);
+      }
     }
   };
 
@@ -371,8 +427,15 @@ export default function SearchScreen() {
               const isFavourited = favourites.has(gameSlug);
               
               if (!isFavourited) {
-                // Add to favorites with feedback
-                await HybridFavouritesService.addFavourite(item.id.toString(), item.name, item.slug, item.background_image);
+                    // Add to favorites with image fallback by slug
+                    let imageUrl = item.background_image;
+                    if (!imageUrl && item.slug) {
+                      try {
+                        const full = await apiClient.getGameBySlug(item.slug);
+                        imageUrl = (full as any)?.background_image || (full as any)?.background_image_additional || '';
+                      } catch {}
+                    }
+                    await HybridFavouritesService.addFavourite(item.id.toString(), item.name, item.slug, imageUrl);
                 setFavourites(prev => new Set(prev).add(gameSlug));
                 await playFavoriteFeedback(true);
               } else {
@@ -406,8 +469,15 @@ export default function SearchScreen() {
             const isFavourited = favourites.has(gameSlug);
             
             if (!isFavourited) {
-              // Add to favorites with feedback
-              await HybridFavouritesService.addFavourite(item.id.toString(), item.name, item.slug, item.background_image);
+              // Add to favorites with image fallback by slug
+              let imageUrl = item.background_image;
+              if (!imageUrl && item.slug) {
+                try {
+                  const full = await apiClient.getGameBySlug(item.slug);
+                  imageUrl = (full as any)?.background_image || (full as any)?.background_image_additional || '';
+                } catch {}
+              }
+              await HybridFavouritesService.addFavourite(item.id.toString(), item.name, item.slug, imageUrl);
               setFavourites(prev => new Set(prev).add(gameSlug));
               await playFavoriteFeedback(true);
             } else {
@@ -462,6 +532,7 @@ export default function SearchScreen() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
+        <Bubbles />
             {/* <View style={styles.container}> */}
           <View style={[styles.searchCard, { backgroundColor: themeColors.surface, borderColor: themeColors.border }]}>
           <TextInput
@@ -478,7 +549,12 @@ export default function SearchScreen() {
             textContentType="none"
           />
           <TouchableOpacity 
-            onPress={isListening ? stopListening : startListening}
+            onPressIn={() => {
+              if (!isListening) startListening();
+            }}
+            onPressOut={() => {
+              if (isListening) stopListening();
+            }}
             style={styles.micButton}
             accessibilityRole="button"
             accessibilityLabel={isListening ? 'Stop voice input' : 'Start voice input'}
@@ -489,6 +565,9 @@ export default function SearchScreen() {
               color={isListening ? '#ff6b6b' : themeColors.primary} 
             />
           </TouchableOpacity>
+          {isListening && (
+            <Text style={{ color: themeColors.textSecondary, marginLeft: 8 }}>Listening… release to transcribe</Text>
+          )}
           {query.length > 0 && (
             <TouchableOpacity 
               onPress={() => setQuery('')} 

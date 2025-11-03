@@ -58,6 +58,7 @@ export default function RecommendationsScreen() {
   const [steamProfile, setSteamProfile] = useState<string | null>(null);
   const [steamInitialized, setSteamInitialized] = useState(false);
   const [steamApi] = useState(new SteamAPIService('4E45453FFB33641E29B4C44FF691D29E'));
+  const [privacySteamInfluence, setPrivacySteamInfluence] = useState(true);
   
   // View mode state
   const [isGridView, setIsGridView] = useState(true);
@@ -66,6 +67,12 @@ export default function RecommendationsScreen() {
   useEffect(() => {
     loadFavourites();
     checkForSteamProfile();
+    (async () => {
+      try {
+        const v = await AsyncStorage.getItem('privacy_steam_influence');
+        if (v !== null) setPrivacySteamInfluence(v === 'true');
+      } catch {}
+    })();
   }, []);
 
   // Monitor recommendations count
@@ -105,6 +112,14 @@ export default function RecommendationsScreen() {
   };
 
   const generateSteamRecommendations = async (steamId: string) => {
+    try {
+      const v = await AsyncStorage.getItem('privacy_steam_influence');
+      const allowed = v === null ? privacySteamInfluence : v === 'true';
+      if (!allowed) {
+        Alert.alert('Steam data disabled', 'Enable "Use Steam data in recommendations" in Privacy Settings to see Steam-based picks.');
+        return;
+      }
+    } catch {}
     setSteamLoading(true);
     try {
       console.log('🔄 Generating Steam-based recommendations...');
@@ -141,10 +156,20 @@ export default function RecommendationsScreen() {
       console.log('🔍 Generating recommendations for:', userFavourites.length, 'favourite games');
       
       if (userFavourites.length === 0) {
-        console.log('⚠️ No favourites found, showing empty state');
-        setError('Add some games to your favourites first to get personalised recommendations!');
-        setLoading(false);
-        return;
+        console.log('⚠️ No favourites found');
+        // If user has Steam connected, allow Steam section to be shown without blocking with an error
+        if (steamProfile && privacySteamInfluence) {
+          console.log('ℹ️ Steam profile detected; skipping favourites requirement and showing Steam section');
+          setError(null);
+          setRecommendations([]);
+          setLoading(false);
+          return;
+        } else {
+          console.log('⚠️ No Steam profile detected; showing empty state message');
+          setError('Add some games to your favourites first to get personalised recommendations!');
+          setLoading(false);
+          return;
+        }
       }
 
       // Use gpt-3.5-turbo for AI-powered recommendations
@@ -519,7 +544,7 @@ export default function RecommendationsScreen() {
         renderLoading()
       ) : error ? (
         renderError()
-      ) : recommendations.length === 0 ? (
+      ) : recommendations.length === 0 && !(steamProfile && privacySteamInfluence) ? (
         renderEmptyState()
       ) : (
         <FlatList
@@ -537,7 +562,7 @@ export default function RecommendationsScreen() {
           ListHeaderComponent={() => (
             <View>
               {/* Steam Recommendations Section - Optional */}
-              {steamProfile ? (
+              {steamProfile && privacySteamInfluence ? (
                 <View style={styles.steamSection}>
                   <View style={styles.steamHeader}>
                     <View style={styles.steamTitleContainer}>
@@ -557,23 +582,30 @@ export default function RecommendationsScreen() {
                   </View>
                   
                   {steamRecommendations ? (
-                    <View style={styles.steamRecommendations}>
-                      {steamRecommendations.recommendations.map((rec, index) => (
-                        <View key={index} style={styles.steamRecommendationItem}>
+                    <FlatList
+                      style={styles.steamList}
+                      data={steamRecommendations.recommendations}
+                      keyExtractor={(item, idx) => `${item.gameName}-${idx}`}
+                      renderItem={({ item }) => (
+                        <View style={styles.steamRecommendationItem}>
                           <View style={styles.steamRecHeader}>
-                            <Text style={styles.steamRecGameName}>{rec.gameName}</Text>
+                            <Text style={styles.steamRecGameName}>{item.gameName}</Text>
                             <View style={styles.steamConfidenceBadge}>
-                              <Text style={styles.steamConfidenceText}>{rec.confidence}/10</Text>
+                              <Text style={styles.steamConfidenceText}>{item.confidence}/10</Text>
                             </View>
                           </View>
-                          <Text style={styles.steamRecReason}>{rec.reason}</Text>
+                          <Text style={styles.steamRecReason}>{item.reason}</Text>
                           <View style={styles.steamRecMeta}>
-                            <Text style={styles.steamRecGenre}>{rec.genre}</Text>
-                            <Text style={styles.steamRecPlaytime}>{rec.estimatedPlaytime}</Text>
+                            <Text style={styles.steamRecGenre}>{item.genre}</Text>
+                            <Text style={styles.steamRecPlaytime}>{item.estimatedPlaytime}</Text>
                           </View>
                         </View>
-                      ))}
-                    </View>
+                      )}
+                      ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+                      contentContainerStyle={{ paddingBottom: 4 }}
+                      nestedScrollEnabled
+                      showsVerticalScrollIndicator={true}
+                    />
                   ) : (
                     <View style={styles.steamEmptyState}>
                       <Text style={styles.steamEmptyText}>
@@ -899,6 +931,9 @@ const styles = StyleSheet.create({
   steamRecommendations: {
     gap: 8,
   },
+  steamList: {
+    maxHeight: 360,
+  },
   steamRecommendationItem: {
     backgroundColor: '#fff',
     borderRadius: 8,
@@ -1092,3 +1127,4 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
 });
+

@@ -185,6 +185,13 @@ class ApiClient {
     return response.data;
   }
 
+  async getGameBySlug(slug: string): Promise<Game> {
+    const response = await this.client.get('/rawg/game', {
+      params: { slug },
+    });
+    return response.data;
+  }
+
   async upsertGame(game: UpsertGameRequest): Promise<{ id: string }> {
     const response = await this.client.post('/games/upsert', game);
     return response.data;
