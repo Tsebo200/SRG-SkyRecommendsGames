@@ -74,7 +74,7 @@
 
 ### Project Description
 
-An AI-powered game recommendation mobile application built with Expo Go that uses rubric-driven scoring (Completeness, Monetisation, Accessibility, Creativity) to provide personalised game recommendations. The app integrates with gaming platforms (Steam, Xbox, PSN, Nintendo) and features accessibility-first design with WCAG AA/AAA compliance, color vision modes, speech-to-text, and haptic feedback.
+An AI-powered game recommendation mobile application built with Expo Go that uses rubric-driven scoring (Completeness, Monetisation, Accessibility, Creativity) to provide personalised game recommendations. The app integrates with gaming platforms (Steam, Xbox, PSN, Nintendo) and features an accessibility-first design with WCAG AA/AAA compliance, colour vision modes, speech-to-text, and haptic feedback.
 
 ### Built With
 
@@ -117,14 +117,14 @@ Here are a couple of ways to clone this repo:
 Enter `https://github.com/Tsebo200/SRG-ReactNative-Expo.git` into the URL field and press the `Clone` button.
 
 2. **Clone Repository** </br>
-Run the following in the command-line to clone the project:
+Run the following in the command line to clone the project:
 
    ```sh
    git clone https://github.com/Tsebo200/SRG-ReactNative-Expo.git
    ```
 
 3. **Install Dependencies** </br>
-Run the following in the command-line to install all the required dependencies:
+Run the following in the command line to install all the required dependencies:
 
    ```sh
    cd frontend/SRG
@@ -198,25 +198,25 @@ npx expo start
 - **Privacy Controls**: Microphone consent toggle in privacy settings
 - **Visual Feedback**: "Listening..." indicator during voice recording
 - **Swipeable Game Cards**: Swipe right to add to favourites, swipe left to remove
-- **Game Details**: Tap any game to view full details including description, genres, release date, and platforms
+- **Game Details**: Tap any game to view full details, including description, genres, release date, and platforms
 
 ### For You (Recommendations) Screen
-- **AI Recommendations**: Personalized game recommendations based on:
+- **AI Recommendations**: Personalised game recommendations based on:
   - SSG rubric scores (Completeness, Monetisation, Accessibility, Creativity)
-  - User preferences and favourited games
+  - User preferences and favourite games
   - Steam account integration (optional)
 - **Steam Integration**: 
-  - Link Steam account to get recommendations based on your library
+  - Link your Steam account to get recommendations based on your library
   - Privacy toggle to control Steam data influence
   - Scrollable Steam recommendations section
-- **Favourites-Based Recommendations**: Games recommended based on your favourited games
+- **Favourites-Based Recommendations**: Games recommended based on your favourite games
 - **Animated Background**: Decorative bubbles for visual appeal
 
 ### Favourites Screen
 - **Favourite Games List**: View all your favourited games
 - **Image Fallback**: Automatic image fetching for games missing cover art
 - **Game Details**: Tap any game to view full details
-- **Remove Favourites**: Long press or swipe to remove games from favourites
+- **Remove Favourites**: Long-press or swipe to remove games from favourites
 - **Offline Support**: Favourites stored locally with hybrid persistence (AsyncStorage + Supabase)
 
 ### Game Details Screen
@@ -227,7 +227,7 @@ npx expo start
   - Platforms
   - Metacritic rating
 - **Favourite Toggle**: Add or remove games from favourites
-- **Rich Content**: Game cover images and detailed descriptions from RAWG API
+- **Rich Content**: Game cover images and detailed descriptions from the RAWG API
 
 ### Profile Screen
 - **User Profile Management**:
@@ -243,11 +243,11 @@ npx expo start
   - Control what data is used for recommendations
 - **Theme Selection**:
   - Light mode, dark mode, and custom themes
-  - Color vision modes (protanopia, deuteranopia, tritanopia, achromatopsia)
+  - Colour vision modes (protanopia, deuteranopia, tritanopia, achromatopsia)
   - High contrast mode
   - Accessibility options (reduce motion, large text)
 - **Accessibility Settings**:
-  - Color theme selector
+  - Colour theme selector
   - Accessibility options toggle
 - **Logout**: Sign out securely with Firebase Auth
 
@@ -264,7 +264,7 @@ npx expo start
 - **AsyncStorage**: Local storage for offline support
 - **Supabase**: Cloud database for synchronization
 - **Firebase**: User authentication and preferences
-- **Automatic Sync**: Seamless data synchronization between local and cloud storage
+- **Automatic Sync**: Seamless data synchronisation between local and cloud storage
 
 ### Accessibility Features
 - **WCAG 2.2 AA/AAA Compliance**: Built-in accessibility standards
@@ -280,15 +280,15 @@ npx expo start
 
 ## Concept Process
 
-The `Conceptual Process` is the set of actions, activities and research that was done when starting this project.
+The `Conceptual Process` is the set of actions, activities and research that were done when starting this project.
 
-Gamers often struggle to find games that match their preferences, especially those with accessibility needs or specific requirements (e.g., no pay-to-win, strong accessibility support). Existing recommendation systems don't prioritize accessibility or use rubric-based scoring.
+Gamers often struggle to find games that match their preferences, especially those with accessibility needs or specific requirements (e.g., no pay-to-win, strong accessibility support). Existing recommendation systems don't prioritise accessibility or use rubric-based scoring.
 
-The aim of the app is to provide personalised game recommendations using AI-powered rubric scoring (Completeness, Monetisation, Accessibility, Creativity) while ensuring the app itself is accessible to all users, including those with color vision deficiencies, hearing impairments, or motor disabilities.
+The aim of the app is to provide personalised game recommendations using AI-powered rubric scoring (Completeness, Monetisation, Accessibility, Creativity) while ensuring the app itself is accessible to all users, including those with colour vision deficiencies, hearing impairments, or motor disabilities.
 
 ### Ideation
 
-The stylistic choice was going for a fresh and modern look with liquid glass UI effects, beautiful gradients, and smooth animations. The app emphasizes accessibility while maintaining a visually appealing and fun gaming experience. The color palette is designed to work across multiple color vision modes, and interactions are designed to be intuitive with gesture-driven controls.
+The stylistic choice was going for a fresh and modern look with liquid glass UI effects, beautiful gradients, and smooth animations. The app emphasises accessibility while maintaining a visually appealing and fun gaming experience. The colour palette is designed to work across multiple colour vision modes, and interactions are designed to be intuitive with gesture-driven controls.
 
 ### Wireframes
 
@@ -300,12 +300,12 @@ Wireframes were created in Figma during the initial planning phase, focusing on:
 
 ### Custom UI
 
-The UI is unique and heavily customized to accommodate:
+The UI is unique and heavily customised to accommodate:
 - **Gesture-Driven Interactions**: Swipeable cards for favourites management
 - **Press-and-Hold Actions**: Microphone button for voice search
 - **Animated Backgrounds**: Decorative bubbles for visual appeal
 - **Liquid Glass Effects**: Blur effects and gradients using expo-blur and expo-linear-gradient
-- **Accessibility-First Design**: Color themes, contrast modes, and reduced motion options
+- **Accessibility-First Design**: Colour themes, contrast modes, and reduced motion options
 
 ### User Flow
 
@@ -316,13 +316,13 @@ The app follows a tab-based navigation structure:
 4. **Favourites** → Saved games list
 5. **Profile** → User settings and preferences
 
-User can navigate between tabs, search for games, add favourites, view game details, and customize their experience through the profile screen.
+User can navigate between tabs, search for games, add favourites, view game details, and customise their experience through the profile screen.
 
 <!-- DEVELOPMENT PROCESS -->
 
 ## Development Process
 
-The `Development Process` is the technical implementations and functionality done in the frontend and backend of the application.
+The `Development Process` is the technical implementation and functionality done in the frontend and backend of the application.
 
 ### Implementation Process
 
@@ -334,7 +334,7 @@ The `Development Process` is the technical implementations and functionality don
 * **Navigation**: Expo Router for file-based routing
 * **API Integration**: RAWG API for game data, Google Cloud Speech-to-Text for voice search
 * **TypeScript**: Full type safety throughout the application
-* **Accessibility**: Custom theme system with color vision modes and WCAG compliance
+* **Accessibility**: Custom theme system with colour vision modes and WCAG compliance
 
 ### Data Flow Diagram
 
@@ -351,12 +351,12 @@ The initial architecture planned for:
 ##### Firebase Collections
 
 - **users**: User authentication data
-- **favourites**: User favourited games (synced with Supabase)
+- **favourites**: User-favoured games (synced with Supabase)
 
 ##### Supabase Tables
 
 - **games**: Game data with embeddings
-- **favourites**: User favourited games (synced with Firebase)
+- **favourites**: User-favoured games (synced with Firebase)
 - **user_preferences**: User preferences and settings
 
 ##### Hybrid Storage
@@ -371,19 +371,19 @@ I think it was a good decision to start off the project with the search and favo
 
 I was excited when I got the voice search working with Google Cloud Speech-to-Text, especially after resolving the encoding and sample rate issues for different platforms.
 
-Once I got the hybrid persistence working (AsyncStorage + Supabase + Firebase), I felt like this is coming together as an actual production-ready app.
+Once I got the hybrid persistence working (AsyncStorage + Supabase + Firebase), I felt like this was coming together as an actual production-ready app.
 
-The accessibility features implementation, including color vision modes and WCAG compliance, was particularly rewarding as it makes the app usable for a wider audience.
+The accessibility features implementation, including colour vision modes and WCAG compliance, was particularly rewarding as it makes the app usable for a wider audience.
 
-The Steam integration for personalised recommendations based on user's library was a great addition that enhances the recommendation quality.
+The Steam integration for personalised recommendations based on users' libraries was a great addition that enhances the recommendation quality.
 
 ### Challenges
 
 I initially struggled with the Google Cloud Speech-to-Text integration due to encoding and sample rate mismatches between Expo's audio recording and Google's API expectations. This was resolved by implementing platform-specific audio recording presets (AMR_NB for Android, Linear PCM for iOS).
 
-The hybrid persistence (AsyncStorage + Supabase + Firebase) required careful synchronization logic to ensure data consistency across all storage layers.
+The hybrid persistence (AsyncStorage + Supabase + Firebase) required careful synchronisation logic to ensure data consistency across all storage layers.
 
-Implementing accessibility features while maintaining visual appeal required extensive testing across different color vision modes and accessibility settings.
+Implementing accessibility features while maintaining visual appeal required extensive testing across different colour vision modes and accessibility settings.
 
 The image fallback system for games missing cover art required additional API calls and careful state management to prevent performance issues.
 
@@ -394,7 +394,7 @@ The image fallback system for games missing cover art required additional API ca
 - **QR Code Scanner**: Integration with SkyScansGames for game data transfer
 - **Maps Integration**: Visual representation of game availability
 - **Social Features**: Share recommendations with friends
-- **Advanced Filtering**: Filter recommendations by genre, platform, rubric scores
+- **Advanced Filtering**: Filter recommendations by genre, platform, and rubric scores
 - **Game Reviews**: User reviews and ratings system
 - **Wishlist Notifications**: Notify users when wishlisted games go on sale
 - **Offline Mode**: Full offline functionality with sync when online
@@ -410,12 +410,12 @@ The app features a modern, accessible design with:
 - **Liquid Glass UI**: Beautiful blur effects and gradients
 - **Animated Backgrounds**: Decorative bubbles for visual appeal
 - **Swipeable Cards**: Intuitive gesture-driven interactions
-- **Accessibility-First**: Color themes and contrast modes for all users
+- **Accessibility-First**: Colour themes and contrast modes for all users
 - **Responsive Layout**: Works seamlessly on iOS and Android
 
 ### Video Demonstration
 
-To see a run through of the application, click below:
+To see a run-through of the application, click below:
 
 [View Demonstration](https://youtu.be/t7LZq0_ATSo)
 
