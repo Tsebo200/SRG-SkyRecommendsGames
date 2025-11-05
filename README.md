@@ -28,7 +28,7 @@
   <h3 align="center">Sky Recommends Games (SRG)</h3>
 
   <p align="center">
-    An AI-Powered Game Recommendation Mobile Application to help users discover personalised games based on rubric scoring and accessibility preferences<br>
+    An AI-Powered Game Recommendation Mobile Application to help users discover personalised games based on their favourite game list with accessibility preferences<br>
     
    <br />
    <br />
