@@ -92,7 +92,7 @@ The REFTSGO Stack
 
 * Go (Golang) [<img src="https://go.dev/images/go-logo-blue.svg" width="7%" height="7%">](https://go.dev/)
   
-* OpenAi (GPT Turbo 3.5) [<img src="https://us1.discourse-cdn.com/openai1/original/4X/3/2/1/321a1ba297482d3d4060d114860de1aa5610f8a9.png" width="7%" height="7%">](https://go.dev/)
+* OpenAi (GPT Turbo 3.5) [<img src="https://us1.discourse-cdn.com/openai1/original/4X/3/2/1/321a1ba297482d3d4060d114860de1aa5610f8a9.png" width="7%" height="7%">](https://platform.openai.com/docs/models/compare)
 
 <!-- GETTING STARTED -->
 
