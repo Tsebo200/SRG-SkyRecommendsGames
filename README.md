@@ -22,7 +22,7 @@
 <p align="center">
 
   <a href="https://github.com/Tsebo200/SRG-ReactNative-Expo">
-    <img src="frontend/SRG/assets/Sky Logo.png" align="center" alt="Sky Logo" width="140" height="140">
+    <img src="frontend/SRG/assets/Sky Logo.png" align="center" alt="Sky Logo" width="140" height="140" style="border-radius: 50px solid black">
   </a>
 
   <h3 align="center">Sky Recommends Games (SRG)</h3>
