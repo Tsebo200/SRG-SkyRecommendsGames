@@ -15,7 +15,7 @@
 
 <h5 align="center" style="padding:0;margin:0;">200200</h5>
 
-<h6 align="center">DV300 - Semester 2 - Term 3 | 2025</h6>
+<h6 align="center">DV300 - Semester 2 - Term 4 | 2025</h6>
 
 </br>
 
@@ -74,7 +74,7 @@
 
 ### Project Description
 
-An AI-powered game recommendation mobile application built with Expo Go that uses rubric-driven scoring (Completeness, Monetisation, Accessibility, Creativity) to provide personalised game recommendations. The app integrates with gaming platforms (Steam, Xbox, PSN, Nintendo) and features an accessibility-first design with WCAG AA/AAA compliance, colour vision modes, speech-to-text, and haptic feedback.
+An AI-powered game recommendation mobile application built with Expo Go that uses rubric-driven scoring (Completeness, Monetisation, Accessibility, Creativity) to provide personalised game recommendations. The app integrates with gaming platforms (Steam), intended for integration with Xbox, PSN, & Nintendo as well, and features an accessibility-first design with WCAG AA/AAA compliance, colour vision modes, speech-to-text, and haptic feedback.
 
 ### Built With
 
@@ -88,7 +88,7 @@ The REFTS Stack
 
 * TypeScript [<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/Typescript.svg/1200px-Typescript.svg.png" width="7%" height="7%">](https://www.typescriptlang.org/)
 
-* Supabase [<img src="https://supabase.com/docs/img/supabase-logo.svg" width="7%" height="7%">](https://supabase.com)
+* Supabase [<img src="https://logo.svgcdn.com/logos/supabase-icon.png" width="7%" height="7%">](https://supabase.com)
 
 * Go (Golang) [<img src="https://go.dev/images/go-logo-blue.svg" width="7%" height="7%">](https://go.dev/)
 
