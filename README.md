@@ -78,7 +78,7 @@ An AI-powered game recommendation mobile application built with Expo Go that use
 
 ### Built With
 
-The REFTS Stack
+The REFTSGO Stack
 
 * React Native [<img src="https://i0.wp.com/everyday.codes/wp-content/uploads/2019/06/react-native-1024x631-1024x631.png?resize=680%2C419&ssl=1" width="7%" height="7%">](https://reactnative.dev/)
 
@@ -91,6 +91,7 @@ The REFTS Stack
 * Supabase [<img src="https://logo.svgcdn.com/logos/supabase-icon.png" width="7%" height="7%">](https://supabase.com)
 
 * Go (Golang) [<img src="https://go.dev/images/go-logo-blue.svg" width="7%" height="7%">](https://go.dev/)
+  
 * OpenAi (GPT Turbo 3.5) [<img src="https://us1.discourse-cdn.com/openai1/original/4X/3/2/1/321a1ba297482d3d4060d114860de1aa5610f8a9.png" width="7%" height="7%">](https://go.dev/)
 
 <!-- GETTING STARTED -->
