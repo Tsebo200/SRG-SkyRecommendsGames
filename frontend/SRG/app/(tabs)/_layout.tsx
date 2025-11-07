@@ -4,14 +4,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { Platform, StyleSheet, View } from 'react-native';
 import { useThemeColors } from '../../lib/theme-context';
+import { useGradientColor } from '../../lib/gradient-color-context';
 
 export default function TabLayout() {
   const themeColors = useThemeColors();
+  const { currentGradientColor } = useGradientColor();
+  
+  // Use gradient color for active tab if motion is enabled, otherwise use theme color
+  const activeTabColor = currentGradientColor || themeColors.tabBarActive;
   
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: themeColors.tabBarActive,
+        tabBarActiveTintColor: activeTabColor,
         tabBarInactiveTintColor: themeColors.tabBarInactive,
         headerShown: false,
         tabBarStyle: {

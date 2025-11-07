@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useThemeColors } from '../../lib/theme-context';
+import { useGradientColor } from '../../lib/gradient-color-context';
 import { useState, useEffect, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import BottomSheet from '../../components/BottomSheet';
@@ -10,6 +11,7 @@ import { UserMappingService } from '../../lib/user-mapping';
 
 export default function HomeScreen() {
   const themeColors = useThemeColors();
+  const { setGradientColor } = useGradientColor();
   const [bottomSheetVisible, setBottomSheetVisible] = useState(false);
   const [username, setUsername] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -122,11 +124,67 @@ export default function HomeScreen() {
         ]);
       };
 
+      // Track gradient color based on animation timing
+      const gradientColors = ['#3B82F6', '#8B5CF6', '#EC4899', '#10B981']; // Blue, Purple, Pink, Green
+      const totalCycleTime = 14000; // 7 steps * 2000ms each
+      const startTime = Date.now();
+      
+      // Set initial color
+      setGradientColor(gradientColors[0]);
+      
+      // Track color based on animation timing
+      const colorInterval = setInterval(() => {
+        if (!motionEnabled) {
+          clearInterval(colorInterval);
+          return;
+        }
+        
+        const elapsed = (Date.now() - startTime) % totalCycleTime;
+        const progress = elapsed / totalCycleTime;
+        
+        let newColor: string;
+        if (progress < 1/7) {
+          // Blue
+          newColor = gradientColors[0];
+        } else if (progress < 2/7) {
+          // Purple
+          newColor = gradientColors[1];
+        } else if (progress < 3/7) {
+          // Pink
+          newColor = gradientColors[2];
+        } else if (progress < 4/7) {
+          // Green
+          newColor = gradientColors[3];
+        } else if (progress < 5/7) {
+          // Pink (reverse)
+          newColor = gradientColors[2];
+        } else if (progress < 6/7) {
+          // Purple (reverse)
+          newColor = gradientColors[1];
+        } else {
+          // Blue (reverse)
+          newColor = gradientColors[0];
+        }
+        
+        setGradientColor(newColor);
+      }, 100); // Update every 100ms
+      
       animationRef.current = Animated.loop(createGradientSequence());
       animationRef.current.start();
+      
+      return () => {
+        if (animationRef.current) {
+          animationRef.current.stop();
+          animationRef.current = null;
+        }
+        if (colorInterval) {
+          clearInterval(colorInterval);
+        }
+      };
     } else {
       // Pause animation at current state - don't change opacity values
       // The animation is already stopped above, so the current values remain
+      // Keep the last color
     }
 
     return () => {
@@ -135,7 +193,7 @@ export default function HomeScreen() {
         animationRef.current = null;
       }
     };
-  }, [motionEnabled]);
+  }, [motionEnabled, setGradientColor]);
 
   const Bubbles = () => {
     const configs = [

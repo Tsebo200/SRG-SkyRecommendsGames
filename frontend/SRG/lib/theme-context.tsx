@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { ColorThemeService, ColorTheme } from './color-themes';
+import { useGradientColor } from './gradient-color-context';
 
 interface ThemeContextType {
   currentTheme: ColorTheme;
@@ -92,6 +93,14 @@ export function useTheme(): ThemeContextType {
 // Hook to get theme colours for styling
 export function useThemeColors() {
   const { currentTheme } = useTheme();
+  let gradientColor: string | null = null;
+  
+  try {
+    const { currentGradientColor } = useGradientColor();
+    gradientColor = currentGradientColor;
+  } catch (e) {
+    // GradientColorProvider not available, use theme colors only
+  }
 
   // Ensure WCAG AA contrast for text vs background and buttonText vs button
   const hexToRgb = (hex: string) => {
@@ -136,11 +145,20 @@ export function useThemeColors() {
   const colors = currentTheme.colors;
   const adjustedText = pickAAContrast(colors.background, colors.text);
   const adjustedTextSecondary = pickAAContrast(colors.background, colors.textSecondary);
-  const adjustedButtonText = pickAAContrast(colors.button, colors.buttonText);
+  
+  // Use gradient color for primary/button colors if available, otherwise use theme colors
+  const primaryColor = gradientColor || colors.primary;
+  const buttonColor = gradientColor || colors.button;
+  const tabBarActiveColor = gradientColor || colors.tabBarActive;
+  
+  const adjustedButtonText = pickAAContrast(buttonColor, colors.buttonText);
   const adjustedCardText = pickAAContrast(colors.card, adjustedText);
 
   return {
     ...colors,
+    primary: primaryColor,
+    button: buttonColor,
+    tabBarActive: tabBarActiveColor,
     text: adjustedText,
     textSecondary: adjustedTextSecondary,
     buttonText: adjustedButtonText,

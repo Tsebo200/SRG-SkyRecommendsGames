@@ -5,6 +5,7 @@ import { View, Image, Animated, Easing } from 'react-native';
 import { FirebaseAuthService, AuthUser } from '../lib/firebase-auth';
 import { UserMappingService } from '../lib/user-mapping';
 import { ThemeProvider } from '../lib/theme-context';
+import { GradientColorProvider } from '../lib/gradient-color-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function RootLayout() {
@@ -399,14 +400,16 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider>
-      <StatusBar style="light" />
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="auth/signin-firebase" />
-        <Stack.Screen name="auth/signup-firebase" />
-        <Stack.Screen name="game/[slug]" />
-        <Stack.Screen name="onboarding" />
-      </Stack>
+      <GradientColorProvider>
+        <StatusBar style="light" />
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="auth/signin-firebase" />
+          <Stack.Screen name="auth/signup-firebase" />
+          <Stack.Screen name="game/[slug]" />
+          <Stack.Screen name="onboarding" />
+        </Stack>
+      </GradientColorProvider>
     </ThemeProvider>
   );
 }
