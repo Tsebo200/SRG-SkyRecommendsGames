@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated, Easing } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useThemeColors } from '../../lib/theme-context';
@@ -17,12 +17,17 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [motionEnabled, setMotionEnabled] = useState(true);
   const animationRef = useRef<Animated.CompositeAnimation | null>(null);
+  const animationStartTimeRef = useRef<number | null>(null);
 
   // Animated gradient colors - blue, purple, pink, green
   const gradientOpacity1 = useRef(new Animated.Value(1)).current;
   const gradientOpacity2 = useRef(new Animated.Value(0)).current;
   const gradientOpacity3 = useRef(new Animated.Value(0)).current;
   const gradientOpacity4 = useRef(new Animated.Value(0)).current;
+  
+  // Animated value for color transitions with easing
+  const colorProgress = useRef(new Animated.Value(0)).current;
+  const colorAnimationRef = useRef<Animated.CompositeAnimation | null>(null);
   
   // Load motion setting
   useEffect(() => {
@@ -124,73 +129,133 @@ export default function HomeScreen() {
         ]);
       };
 
-      // Track gradient color based on animation timing
+      // Track gradient color with easing - sync with gradient animation
       const gradientColors = ['#3B82F6', '#8B5CF6', '#EC4899', '#10B981']; // Blue, Purple, Pink, Green
-      const totalCycleTime = 14000; // 7 steps * 2000ms each
-      const startTime = Date.now();
       
       // Set initial color
       setGradientColor(gradientColors[0]);
       
-      // Track color based on animation timing
-      const colorInterval = setInterval(() => {
-        if (!motionEnabled) {
-          clearInterval(colorInterval);
-          return;
-        }
-        
-        const elapsed = (Date.now() - startTime) % totalCycleTime;
-        const progress = elapsed / totalCycleTime;
-        
-        let newColor: string;
-        if (progress < 1/7) {
-          // Blue
-          newColor = gradientColors[0];
-        } else if (progress < 2/7) {
-          // Purple
-          newColor = gradientColors[1];
-        } else if (progress < 3/7) {
-          // Pink
-          newColor = gradientColors[2];
-        } else if (progress < 4/7) {
-          // Green
-          newColor = gradientColors[3];
-        } else if (progress < 5/7) {
-          // Pink (reverse)
-          newColor = gradientColors[2];
-        } else if (progress < 6/7) {
-          // Purple (reverse)
-          newColor = gradientColors[1];
-        } else {
-          // Blue (reverse)
-          newColor = gradientColors[0];
-        }
-        
-        setGradientColor(newColor);
-      }, 100); // Update every 100ms
+      // Create color animation sequence with easing to match gradient animation
+      const createColorSequence = () => {
+        return Animated.sequence([
+          // Forward: Blue → Purple → Pink → Green
+          // Blue (0-2s)
+          Animated.timing(colorProgress, { 
+            toValue: 0, 
+            duration: 2000, 
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: false 
+          }),
+          // Purple (2-4s)
+          Animated.timing(colorProgress, { 
+            toValue: 1, 
+            duration: 2000, 
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: false 
+          }),
+          // Pink (4-6s)
+          Animated.timing(colorProgress, { 
+            toValue: 2, 
+            duration: 2000, 
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: false 
+          }),
+          // Green (6-8s)
+          Animated.timing(colorProgress, { 
+            toValue: 3, 
+            duration: 2000, 
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: false 
+          }),
+          // Reverse: Green → Pink → Purple → Blue
+          // Pink reverse (8-10s)
+          Animated.timing(colorProgress, { 
+            toValue: 2, 
+            duration: 2000, 
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: false 
+          }),
+          // Purple reverse (10-12s)
+          Animated.timing(colorProgress, { 
+            toValue: 1, 
+            duration: 2000, 
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: false 
+          }),
+          // Blue reverse (12-14s)
+          Animated.timing(colorProgress, { 
+            toValue: 0, 
+            duration: 2000, 
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: false 
+          }),
+        ]);
+      };
       
+      // Start the gradient animation
       animationRef.current = Animated.loop(createGradientSequence());
       animationRef.current.start();
+      
+      // Start the color animation with easing
+      colorAnimationRef.current = Animated.loop(createColorSequence());
+      colorAnimationRef.current.start();
+      
+      // Listen to color progress changes and update color context with easing
+      // The value goes: 0 (Blue) → 1 (Purple) → 2 (Pink) → 3 (Green) → 2 (Pink) → 1 (Purple) → 0 (Blue)
+      let lastColorIndex = 0;
+      const colorListener = colorProgress.addListener(({ value }) => {
+        // Map the animated value to the correct color
+        // 0 = Blue, 1 = Purple, 2 = Pink, 3 = Green
+        // For reverse: 3 → 2 → 1 → 0
+        const rounded = Math.round(value);
+        let colorIndex: number;
+        
+        if (rounded >= 0 && rounded <= 3) {
+          // Use the rounded value directly to get the color
+          // This handles both forward and reverse transitions
+          colorIndex = rounded;
+        } else {
+          // Fallback to blue
+          colorIndex = 0;
+        }
+        
+        // Only update if the color actually changed to avoid unnecessary re-renders
+        if (colorIndex !== lastColorIndex) {
+          lastColorIndex = colorIndex;
+          const newColor = gradientColors[colorIndex];
+          setGradientColor(newColor);
+        }
+      });
       
       return () => {
         if (animationRef.current) {
           animationRef.current.stop();
           animationRef.current = null;
         }
-        if (colorInterval) {
-          clearInterval(colorInterval);
+        if (colorAnimationRef.current) {
+          colorAnimationRef.current.stop();
+          colorAnimationRef.current = null;
         }
+        colorProgress.removeListener(colorListener);
       };
     } else {
       // Pause animation at current state - don't change opacity values
       // The animation is already stopped above, so the current values remain
       // Keep the last color
+      if (colorAnimationRef.current) {
+        colorAnimationRef.current.stop();
+        colorAnimationRef.current = null;
+      }
     }
 
     return () => {
       if (animationRef.current) {
         animationRef.current.stop();
         animationRef.current = null;
+      }
+      if (colorAnimationRef.current) {
+        colorAnimationRef.current.stop();
+        colorAnimationRef.current = null;
       }
     };
   }, [motionEnabled, setGradientColor]);
