@@ -1,10 +1,11 @@
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Image, Animated, Easing } from 'react-native';
 import { FirebaseAuthService, AuthUser } from '../lib/firebase-auth';
 import { UserMappingService } from '../lib/user-mapping';
 import { ThemeProvider } from '../lib/theme-context';
+import { GradientColorProvider } from '../lib/gradient-color-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function RootLayout() {
@@ -14,11 +15,184 @@ export default function RootLayout() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [showLoading, setShowLoading] = useState(true);
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState<boolean | null>(null);
+  
+  // Animation values for logo
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.8)).current;
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const opacityAnim = useRef(new Animated.Value(1)).current;
+  // Multiple outline layers for cascading effect
+  const outline1ScaleAnim = useRef(new Animated.Value(1.1)).current;
+  const outline1OpacityAnim = useRef(new Animated.Value(0.3)).current;
+  const outline2ScaleAnim = useRef(new Animated.Value(1.2)).current;
+  const outline2OpacityAnim = useRef(new Animated.Value(0.2)).current;
+  const outline3ScaleAnim = useRef(new Animated.Value(1.3)).current;
+  const outline3OpacityAnim = useRef(new Animated.Value(0.15)).current;
 
   useEffect(() => {
     let mounted = true;
 
     console.log('🔍 Initializing Firebase authentication...');
+
+    // Start logo animation - fade in and scale up
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      // After initial animation, start pulsing with fade effect
+      Animated.loop(
+        Animated.parallel([
+          // Pulse scale animation (more pronounced: 1.0 to 1.4)
+          // Expand slower, reduce much faster with ease in-out
+          Animated.sequence([
+            Animated.timing(pulseAnim, {
+              toValue: 1.4,
+              duration: 800,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            }),
+            Animated.timing(pulseAnim, {
+              toValue: 1.0,
+              duration: 400,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            }),
+          ]),
+          // Opacity animation (inverse of scale - smaller = more transparent)
+          Animated.sequence([
+            Animated.timing(opacityAnim, {
+              toValue: 1.0,
+              duration: 800,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            }),
+            Animated.timing(opacityAnim, {
+              toValue: 0.3,
+              duration: 400,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            }),
+          ]),
+          // Outline 1 scale animation (keeps growing even when logo reduces)
+          Animated.sequence([
+            Animated.timing(outline1ScaleAnim, {
+              toValue: 1.5,
+              duration: 800,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            }),
+            Animated.timing(outline1ScaleAnim, {
+              toValue: 1.8,
+              duration: 400,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            }),
+            // Reset to starting value for smooth loop
+            Animated.timing(outline1ScaleAnim, {
+              toValue: 1.1,
+              duration: 0,
+              useNativeDriver: true,
+            }),
+          ]),
+          // Outline 1 opacity animation
+          Animated.sequence([
+            Animated.timing(outline1OpacityAnim, {
+              toValue: 0.2,
+              duration: 600,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            }),
+            Animated.timing(outline1OpacityAnim, {
+              toValue: 0.5,
+              duration: 400,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            }),
+          ]),
+          // Outline 2 scale animation (keeps growing even when logo reduces)
+          Animated.sequence([
+            Animated.timing(outline2ScaleAnim, {
+              toValue: 1.6,
+              duration: 800,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            }),
+            Animated.timing(outline2ScaleAnim, {
+              toValue: 1.9,
+              duration: 400,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            }),
+            // Reset to starting value for smooth loop
+            Animated.timing(outline2ScaleAnim, {
+              toValue: 1.2,
+              duration: 0,
+              useNativeDriver: true,
+            }),
+          ]),
+          // Outline 2 opacity animation
+          Animated.sequence([
+            Animated.timing(outline2OpacityAnim, {
+              toValue: 0.1,
+              duration: 600,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            }),
+            Animated.timing(outline2OpacityAnim, {
+              toValue: 0.4,
+              duration: 400,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            }),
+          ]),
+          // Outline 3 scale animation (keeps growing even when logo reduces)
+          Animated.sequence([
+            Animated.timing(outline3ScaleAnim, {
+              toValue: 1.7,
+              duration: 800,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            }),
+            Animated.timing(outline3ScaleAnim, {
+              toValue: 2.0,
+              duration: 400,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            }),
+            // Reset to starting value for smooth loop
+            Animated.timing(outline3ScaleAnim, {
+              toValue: 1.3,
+              duration: 0,
+              useNativeDriver: true,
+            }),
+          ]),
+          // Outline 3 opacity animation
+          Animated.sequence([
+            Animated.timing(outline3OpacityAnim, {
+              toValue: 0.05,
+              duration: 600,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            }),
+            Animated.timing(outline3OpacityAnim, {
+              toValue: 0.3,
+              duration: 400,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            }),
+          ]),
+        ])
+      ).start();
+    });
 
     // Start minimum loading time timer
     const loadingTimer = setTimeout(() => {
@@ -138,23 +312,87 @@ export default function RootLayout() {
           justifyContent: 'center', 
           alignItems: 'center' 
         }}>
-          <Text style={{
-            color: '#fff',
-            fontSize: 28,
-            fontWeight: 'bold',
-            marginBottom: 32
-          }}>
-            SRG
-          </Text>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={{ 
-            color: '#8E8E93', 
-            marginTop: 16, 
-            fontSize: 16,
-            fontWeight: '400'
-          }}>
-            {/* {initializing ? 'Loading...' : 'Checking authentication...'} */}
-          </Text>
+          <View style={{ position: 'relative', width: 200, height: 200 }}>
+            {/* Outline 3 layer (furthest behind, most transparent) */}
+            <Animated.View
+              style={{
+                position: 'absolute',
+                opacity: Animated.multiply(fadeAnim, outline3OpacityAnim),
+                transform: [
+                  { scale: Animated.multiply(scaleAnim, outline3ScaleAnim) },
+                ],
+              }}
+            >
+              <Image
+                source={require('../assets/Sky Logo.png')}
+                style={{
+                  width: 200,
+                  height: 200,
+                  resizeMode: 'contain',
+                }}
+              />
+            </Animated.View>
+            
+            {/* Outline 2 layer (middle, more transparent) */}
+            <Animated.View
+              style={{
+                position: 'absolute',
+                opacity: Animated.multiply(fadeAnim, outline2OpacityAnim),
+                transform: [
+                  { scale: Animated.multiply(scaleAnim, outline2ScaleAnim) },
+                ],
+              }}
+            >
+              <Image
+                source={require('../assets/Sky Logo.png')}
+                style={{
+                  width: 200,
+                  height: 200,
+                  resizeMode: 'contain',
+                }}
+              />
+            </Animated.View>
+            
+            {/* Outline 1 layer (closest, less transparent) */}
+            <Animated.View
+              style={{
+                position: 'absolute',
+                opacity: Animated.multiply(fadeAnim, outline1OpacityAnim),
+                transform: [
+                  { scale: Animated.multiply(scaleAnim, outline1ScaleAnim) },
+                ],
+              }}
+            >
+              <Image
+                source={require('../assets/Sky Logo.png')}
+                style={{
+                  width: 200,
+                  height: 200,
+                  resizeMode: 'contain',
+                }}
+              />
+            </Animated.View>
+            
+            {/* Main logo layer */}
+            <Animated.View
+              style={{
+                position: 'absolute',
+                opacity: Animated.multiply(fadeAnim, opacityAnim),
+                transform: [
+                  { scale: Animated.multiply(scaleAnim, pulseAnim) },
+                ],
+              }}
+            >
+              <Image
+                source={require('../assets/Sky Logo.png')}
+                style={{
+                  width: 200,
+                  height: 200,
+                  resizeMode: 'contain',
+                }}
+              />
+            </Animated.View>
+          </View>
         </View>
       </>
     );
@@ -162,14 +400,16 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider>
-      <StatusBar style="light" />
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="auth/signin-firebase" />
-        <Stack.Screen name="auth/signup-firebase" />
-        <Stack.Screen name="game/[slug]" />
-        <Stack.Screen name="onboarding" />
-      </Stack>
+      <GradientColorProvider>
+        <StatusBar style="light" />
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="auth/signin-firebase" />
+          <Stack.Screen name="auth/signup-firebase" />
+          <Stack.Screen name="game/[slug]" />
+          <Stack.Screen name="onboarding" />
+        </Stack>
+      </GradientColorProvider>
     </ThemeProvider>
   );
 }
