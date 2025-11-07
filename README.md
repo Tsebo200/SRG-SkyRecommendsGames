@@ -22,13 +22,13 @@
 <p align="center">
 
   <a href="https://github.com/Tsebo200/SRG-ReactNative-Expo">
-    <img src="frontend/SRG/assets/Sky Logo.png" align="center" alt="Sky Logo" width="140" height="140">
+    <img src="frontend/SRG/assets/Sky Logo.png" align="center" alt="Sky Logo" width="140" height="140" style="border-radius: 50px solid black">
   </a>
 
   <h3 align="center">Sky Recommends Games (SRG)</h3>
 
   <p align="center">
-    An AI-Powered Game Recommendation Mobile Application to help users discover personalised games based on rubric scoring and accessibility preferences<br>
+    An AI-Powered Game Recommendation Mobile Application to help users discover personalised games based on their favourite game list with accessibility preferences<br>
     
    <br />
    <br />
@@ -80,7 +80,7 @@ An AI-powered game recommendation mobile application built with Expo Go that use
 
 The REFTSGO Stack
 
-* React Native [<img src="https://i0.wp.com/everyday.codes/wp-content/uploads/2019/06/react-native-1024x631-1024x631.png?resize=680%2C419&ssl=1" width="7%" height="7%">](https://reactnative.dev/)
+* React Native [<img src="https://i0.wp.com/everyday.codes/wp-content/uploads/2019/06/react-native-1024x631-1024x631.png?resize=680%2C419&ssl=1" width="13%" height="7%">](https://reactnative.dev/)
 
 * Expo Go [<img src="https://avatars.githubusercontent.com/u/12504344?v=4" width="7%" height="7%">](https://expo.dev/go)
 
