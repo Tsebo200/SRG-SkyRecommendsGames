@@ -262,11 +262,11 @@ export default function HomeScreen() {
 
   const Bubbles = () => {
     const configs = [
-      { size: 220, top: -40, left: -60, baseOpacity: 0.25, duration: 7000, delay: 0 },
-      { size: 160, top: 120, right: -40, baseOpacity: 0.22, duration: 6000, delay: 400 },
-      { size: 120, top: 320, left: -30, baseOpacity: 0.20, duration: 6500, delay: 800 },
-      { size: 260, bottom: -80, right: -100, baseOpacity: 0.18, duration: 8000, delay: 1200 },
-      { size: 140, bottom: 120, left: 40, baseOpacity: 0.19, duration: 7500, delay: 1600 },
+      { size: 220, top: -40, left: -60, baseOpacity: 0.40, duration: 7000, delay: 0 },
+      { size: 160, top: 120, right: -40, baseOpacity: 0.38, duration: 6000, delay: 400 },
+      { size: 120, top: 320, left: -30, baseOpacity: 0.35, duration: 6500, delay: 800 },
+      { size: 260, bottom: -80, right: -100, baseOpacity: 0.32, duration: 8000, delay: 1200 },
+      { size: 140, bottom: 120, left: 40, baseOpacity: 0.36, duration: 7500, delay: 1600 },
     ] as Array<{ size: number; top?: number; left?: number; right?: number; bottom?: number; baseOpacity: number; duration: number; delay: number }>;
 
     const translateVals = useRef(configs.map(() => new Animated.Value(0))).current;
@@ -324,127 +324,39 @@ export default function HomeScreen() {
       };
     }, [motionEnabled]);
 
-    // Bubble colors that match the gradient
-    const bubbleColors = {
-      blue: '#3B82F6',      // Blue
-      purple: '#8B5CF6',    // Purple
-      pink: '#EC4899',      // Pink
-      green: '#10B981',     // Green
-    };
+    // White bubbles with shine
+    const bubbleColor = '#FFFFFF'; // White
 
     return (
       <View pointerEvents="none" style={StyleSheet.absoluteFillObject}>
         {configs.map((b, idx) => {
           const animatedOpacity = opacityVals[idx].interpolate({ 
             inputRange: [0, 1], 
-            outputRange: [b.baseOpacity, Math.min(b.baseOpacity + 0.1, 0.35)] 
+            outputRange: [b.baseOpacity, Math.min(b.baseOpacity + 0.15, 0.65)] 
           });
-          
-          // Combine bubble opacity with gradient opacity to sync colors
-          const blueBubbleOpacity = Animated.multiply(
-            animatedOpacity,
-            gradientOpacity1
-          );
-          const purpleBubbleOpacity = Animated.multiply(
-            animatedOpacity,
-            gradientOpacity2
-          );
-          const pinkBubbleOpacity = Animated.multiply(
-            animatedOpacity,
-            gradientOpacity3
-          );
-          const greenBubbleOpacity = Animated.multiply(
-            animatedOpacity,
-            gradientOpacity4
-          );
 
           return (
-            <View key={`bubble-container-${idx}`} style={StyleSheet.absoluteFill}>
-              {/* Blue bubbles */}
-              <Animated.View
-                style={[
-                  styles.bubble,
-                  {
-                    width: b.size,
-                    height: b.size,
-                    borderRadius: b.size / 2,
-                    backgroundColor: bubbleColors.blue,
-                    top: b.top,
-                    left: b.left,
-                    right: b.right,
-                    bottom: b.bottom,
-                    opacity: blueBubbleOpacity,
-                    transform: [
-                      { translateY: translateVals[idx] },
-                      { scale: scaleVals[idx] },
-                    ],
-                  },
-                ]}
-              />
-              {/* Purple bubbles */}
-              <Animated.View
-                style={[
-                  styles.bubble,
-                  {
-                    width: b.size,
-                    height: b.size,
-                    borderRadius: b.size / 2,
-                    backgroundColor: bubbleColors.purple,
-                    top: b.top,
-                    left: b.left,
-                    right: b.right,
-                    bottom: b.bottom,
-                    opacity: purpleBubbleOpacity,
-                    transform: [
-                      { translateY: translateVals[idx] },
-                      { scale: scaleVals[idx] },
-                    ],
-                  },
-                ]}
-              />
-              {/* Pink bubbles */}
-              <Animated.View
-                style={[
-                  styles.bubble,
-                  {
-                    width: b.size,
-                    height: b.size,
-                    borderRadius: b.size / 2,
-                    backgroundColor: bubbleColors.pink,
-                    top: b.top,
-                    left: b.left,
-                    right: b.right,
-                    bottom: b.bottom,
-                    opacity: pinkBubbleOpacity,
-                    transform: [
-                      { translateY: translateVals[idx] },
-                      { scale: scaleVals[idx] },
-                    ],
-                  },
-                ]}
-              />
-              {/* Green bubbles */}
-              <Animated.View
-                style={[
-                  styles.bubble,
-                  {
-                    width: b.size,
-                    height: b.size,
-                    borderRadius: b.size / 2,
-                    backgroundColor: bubbleColors.green,
-                    top: b.top,
-                    left: b.left,
-                    right: b.right,
-                    bottom: b.bottom,
-                    opacity: greenBubbleOpacity,
-                    transform: [
-                      { translateY: translateVals[idx] },
-                      { scale: scaleVals[idx] },
-                    ],
-                  },
-                ]}
-              />
-            </View>
+            <Animated.View
+              key={`bubble-${idx}`}
+              style={[
+                styles.bubble,
+                {
+                  width: b.size,
+                  height: b.size,
+                  borderRadius: b.size / 2,
+                  backgroundColor: bubbleColor,
+                  top: b.top,
+                  left: b.left,
+                  right: b.right,
+                  bottom: b.bottom,
+                  opacity: animatedOpacity,
+                  transform: [
+                    { translateY: translateVals[idx] },
+                    { scale: scaleVals[idx] },
+                  ],
+                },
+              ]}
+            />
           );
         })}
       </View>
@@ -540,10 +452,10 @@ export default function HomeScreen() {
             activeOpacity={0.8}
           >
             <View style={styles.quickActionsContent}>
-              <Ionicons name="options" size={24} color={themeColors.buttonText} />
+              <Ionicons name="options" size={24} color="#FFFFFF" />
               <View style={styles.quickActionsTextContainer}>
-                <Text style={[styles.quickActionsText, { color: themeColors.buttonText }]}>Quick Actions</Text>
-                <Text style={[styles.quickActionsSubtext, { color: themeColors.buttonText, opacity: 0.8 }]}>
+                <Text style={[styles.quickActionsText, { color: '#FFFFFF' }]}>Quick Actions</Text>
+                <Text style={[styles.quickActionsSubtext, { color: '#FFFFFF', opacity: 0.8 }]}>
                   Scan QR codes & Get Recommendations
                 </Text>
               </View>
@@ -569,12 +481,13 @@ const styles = StyleSheet.create({
   },
   bubble: {
     position: 'absolute',
-    borderWidth: 0,
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 8,
+    borderWidth: 2,
+    borderColor: 'rgba(255, 255, 255, 0.8)',
+    shadowColor: '#FFFFFF',
+    shadowOpacity: 0.6,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 12,
   },
   welcomeCard: {
     padding: 24,
