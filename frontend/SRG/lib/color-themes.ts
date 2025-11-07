@@ -71,6 +71,102 @@ export const THEME_MODES: ThemeMode[] = [
 // Accessibility themes with both light and dark variants
 export const ACCESSIBILITY_THEMES: AccessibilityTheme[] = [
   {
+    id: 'gradient-motion',
+    name: 'Gradient Motion',
+    description: 'Dynamic gradient colour scheme with motion effects',
+    lightColors: {
+      primary: '#6366F1',        // Indigo - main brand color (vibrant)
+      secondary: '#8B5CF6',       // Purple - secondary actions
+      background: '#F0F4FF',     // Light blue-purple gradient base
+      surface: '#E8EDFF',         // Soft purple-blue - cards/surfaces
+      text: '#1E293B',            // Dark slate - primary text
+      textSecondary: '#64748B',  // Slate gray - secondary text
+      accent: '#EC4899',          // Pink - accents/highlights
+      success: '#10B981',         // Emerald green - success states
+      warning: '#F59E0B',         // Amber - warnings
+      error: '#EF4444',           // Red - errors
+      border: '#C7D2FE',          // Light indigo - borders
+      card: '#E8EDFF',            // Soft purple-blue - card backgrounds
+      button: '#6366F1',          // Indigo - primary buttons
+      buttonText: '#FFFFFF',      // White - button text
+      tabBar: '#F0F4FF',          // Light blue-purple gradient - tab bar background
+      tabBarActive: '#6366F1',    // Indigo - active tab
+      tabBarInactive: '#A5B4FC', // Light indigo-purple - inactive tabs
+    },
+    darkColors: {
+      primary: '#818CF8',         // Light indigo - main brand (lighter for dark mode)
+      secondary: '#A78BFA',       // Light purple - secondary actions
+      background: '#0F172A',      // Dark slate - main background
+      surface: '#1E293B',         // Slate - cards/surfaces
+      text: '#F1F5F9',            // Light slate - primary text
+      textSecondary: '#CBD5E1',  // Slate - secondary text
+      accent: '#F472B6',          // Light pink - accents/highlights
+      success: '#34D399',         // Light emerald - success states
+      warning: '#FBBF24',         // Light amber - warnings
+      error: '#F87171',           // Light red - errors
+      border: '#334155',          // Dark slate - borders
+      card: '#1E293B',            // Slate - card backgrounds
+      button: '#818CF8',          // Light indigo - primary buttons
+      buttonText: '#0F172A',      // Dark slate - button text
+      tabBar: '#1E293B',          // Slate - tab bar
+      tabBarActive: '#818CF8',    // Light indigo - active tab
+      tabBarInactive: '#475569',  // Dark slate - inactive tabs
+    },
+    accessibility: {
+      protanomaly: false,
+      deuteranomaly: false,
+      tritanomaly: false,
+    },
+  },
+  {
+    id: 'blue-gradient',
+    name: 'Blue Gradient',
+    description: 'Beautiful cyan-blue gradient colour scheme',
+    lightColors: {
+      primary: '#06B6D4',        // Cyan - main brand color (vibrant)
+      secondary: '#3B82F6',       // Blue - secondary actions
+      background: '#F0F9FF',     // Light cyan-blue gradient base
+      surface: '#E0F2FE',         // Soft cyan-blue - cards/surfaces
+      text: '#0C4A6E',            // Dark cyan-blue - primary text
+      textSecondary: '#075985',  // Medium cyan-blue - secondary text
+      accent: '#06B6D4',          // Cyan - accents/highlights
+      success: '#10B981',         // Emerald green - success states
+      warning: '#F59E0B',         // Amber - warnings
+      error: '#EF4444',           // Red - errors
+      border: '#7DD3FC',          // Light cyan - borders
+      card: '#E0F2FE',            // Soft cyan-blue - card backgrounds
+      button: '#06B6D4',          // Cyan - primary buttons
+      buttonText: '#FFFFFF',      // White - button text
+      tabBar: '#F0F9FF',          // Light cyan-blue gradient - tab bar background
+      tabBarActive: '#06B6D4',    // Cyan - active tab
+      tabBarInactive: '#7DD3FC', // Light cyan - inactive tabs
+    },
+    darkColors: {
+      primary: '#22D3EE',         // Light cyan - main brand (lighter for dark mode)
+      secondary: '#60A5FA',       // Light blue - secondary actions
+      background: '#0C1222',      // Dark cyan-blue - main background
+      surface: '#1E3A5F',         // Dark cyan-blue - cards/surfaces
+      text: '#E0F2FE',            // Light cyan-blue - primary text
+      textSecondary: '#BAE6FD',  // Light cyan - secondary text
+      accent: '#22D3EE',          // Light cyan - accents/highlights
+      success: '#34D399',         // Light emerald - success states
+      warning: '#FBBF24',         // Light amber - warnings
+      error: '#F87171',           // Light red - errors
+      border: '#1E40AF',          // Dark blue - borders
+      card: '#1E3A5F',            // Dark cyan-blue - card backgrounds
+      button: '#22D3EE',          // Light cyan - primary buttons
+      buttonText: '#0C1222',      // Dark cyan-blue - button text
+      tabBar: '#1E3A5F',          // Dark cyan-blue - tab bar
+      tabBarActive: '#22D3EE',    // Light cyan - active tab
+      tabBarInactive: '#3B82F6',  // Medium blue - inactive tabs
+    },
+    accessibility: {
+      protanomaly: false,
+      deuteranomaly: false,
+      tritanomaly: false,
+    },
+  },
+  {
     id: 'custom-nature',
     name: 'Nature Palette',
     description: 'Custom nature-inspired colour scheme',
@@ -442,7 +538,7 @@ export class ColorThemeService {
   private static readonly THEME_MODE_KEY = 'selected_theme_mode';
   private static readonly ACCESSIBILITY_THEME_KEY = 'selected_accessibility_theme';
   private static currentThemeMode: ThemeMode = THEME_MODES[1]; // Default to dark
-  private static currentAccessibilityTheme: AccessibilityTheme = ACCESSIBILITY_THEMES[0]; // Default to custom-nature
+  private static currentAccessibilityTheme: AccessibilityTheme = ACCESSIBILITY_THEMES[0]; // Default to gradient-motion
 
   /**
    * Get all available theme modes (Light/Dark)
@@ -576,7 +672,7 @@ export class ColorThemeService {
       await AsyncStorage.removeItem(this.THEME_MODE_KEY);
       await AsyncStorage.removeItem(this.ACCESSIBILITY_THEME_KEY);
       this.currentThemeMode = THEME_MODES[1]; // Dark mode
-      this.currentAccessibilityTheme = ACCESSIBILITY_THEMES[0]; // Custom Nature Palette
+      this.currentAccessibilityTheme = ACCESSIBILITY_THEMES[0]; // Gradient Motion
       console.log('✅ Reset to default theme settings');
       return true;
     } catch (error) {

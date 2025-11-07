@@ -36,6 +36,7 @@ export default function ProfileFirebaseScreen() {
   const [showPrivacyModal, setShowPrivacyModal] = useState(false);
   const [privacySteamInfluence, setPrivacySteamInfluence] = useState(true);
   const [privacyMicConsent, setPrivacyMicConsent] = useState(true);
+  const [motionEnabled, setMotionEnabled] = useState(true);
   
   // Use theme context
   const { currentTheme, setTheme } = useTheme();
@@ -53,12 +54,14 @@ export default function ProfileFirebaseScreen() {
 
   const loadPrivacySettings = async () => {
     try {
-      const [steamInf, micCon] = await Promise.all([
+      const [steamInf, micCon, motion] = await Promise.all([
         AsyncStorage.getItem('privacy_steam_influence'),
         AsyncStorage.getItem('privacy_mic_consent'),
+        AsyncStorage.getItem('motion_enabled'),
       ]);
       if (steamInf !== null) setPrivacySteamInfluence(steamInf === 'true');
       if (micCon !== null) setPrivacyMicConsent(micCon === 'true');
+      if (motion !== null) setMotionEnabled(motion === 'true');
     } catch (e) {
       // non-fatal
     }
@@ -613,6 +616,27 @@ export default function ProfileFirebaseScreen() {
                 onValueChange={handleDarkModeToggle}
                 trackColor={{ false: themeColors.border, true: themeColors.primary }}
                 thumbColor={isDarkTheme ? themeColors.buttonText : themeColors.background}
+                ios_backgroundColor={themeColors.border}
+              />
+            </View>
+          </View>
+
+          {/* Motion Effects Toggle */}
+          <View style={[styles.menuItem, { borderBottomColor: themeColors.border }]}>
+            <View style={styles.menuItemContent}>
+              <View style={styles.darkModeContent}>
+                <Text style={[styles.menuText, { color: themeColors.text }]}>
+                  Motion effects
+                </Text>
+                <Text style={[styles.darkModeSubtext, { color: themeColors.textSecondary }]}>
+                  Enable animated gradient background on the home screen
+                </Text>
+              </View>
+              <Switch
+                value={motionEnabled}
+                onValueChange={(v) => { setMotionEnabled(v); updatePrivacySetting('motion_enabled', v); }}
+                trackColor={{ false: themeColors.border, true: themeColors.primary }}
+                thumbColor={motionEnabled ? themeColors.buttonText : '#FFFFFF'}
                 ios_backgroundColor={themeColors.border}
               />
             </View>
