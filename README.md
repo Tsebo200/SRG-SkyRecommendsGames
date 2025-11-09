@@ -288,11 +288,6 @@ Gamers often struggle to find games that match their preferences, especially tho
 
 The aim of the app is to provide personalised game recommendations using AI-powered rubric scoring (Completeness, Monetisation, Accessibility, Creativity) while ensuring the app itself is accessible to all users, including those with colour vision deficiencies, hearing impairments, or motor disabilities.
 
-<!-- <audio controls>
-  <source src="CreativeConceptofSkyRecomendsGames.m4a" type="audio/mp4">
-  The Expanded Reason For The Natural Colour Way
-</audio> -->
-
 **🎵 [The Expanded Reason For The Natural Colour Way](https://raw.githubusercontent.com/Tsebo200/SRG-SkyRecommendsGames/Develop/frontend/SRG/assets/CreativeConceptofSkyRecomendsGames.m4a)**
 
 ### Ideation
@@ -433,11 +428,9 @@ To see a run-through of the application, click below:
 
 Listen to the creative concept of Sky Recommends Games:
 
-**🎵 [Play Audio: The Expanded Reason For The Natural Colour Way](https://tsebo200.github.io/SRG-SkyRecommendsGames/docs/audio-player.html)**
+**🎵 [Play Audio: The Expanded Reason For The Natural Colour Way](https://raw.githubusercontent.com/Tsebo200/SRG-SkyRecommendsGames/Develop/frontend/SRG/assets/CreativeConceptofSkyRecomendsGames.m4a)**
 
-*Click the link above to open the audio player in your browser. The audio will play inline without downloading the file.*
-
-> **Note:** If the link above doesn't work, you may need to enable GitHub Pages in your repository settings. Alternatively, [download the audio file directly](https://raw.githubusercontent.com/Tsebo200/SRG-SkyRecommendsGames/Develop/frontend/SRG/assets/CreativeConceptofSkyRecomendsGames.m4a).
+*Click the link above to listen to the audio file in your browser. The audio will open in a new tab and play automatically.*
 
 See the [open issues](https://github.com/Tsebo200/SRG-SkyRecommendsGames/issues) for a list of proposed features (and known issues).
 
