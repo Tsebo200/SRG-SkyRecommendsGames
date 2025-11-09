@@ -292,7 +292,7 @@ The aim of the app is to provide personalised game recommendations using AI-powe
 
 **Original Logo Creation:**
 
-![Logo Creation](https://raw.githubusercontent.com/Tsebo200/SRG-SkyRecommendsGames/Master/frontend/SRG/assets/Logo%20Creation.JPG)
+<img src="https://raw.githubusercontent.com/Tsebo200/SRG-SkyRecommendsGames/Master/frontend/SRG/assets/Logo%20Creation.JPG" alt="Logo Creation" height="300px">
 
 ### Ideation
 
@@ -438,7 +438,7 @@ Listen to the creative concept of Sky Recommends Games:
 
 **Original Logo Creation:**
 
-![Logo Creation](https://raw.githubusercontent.com/Tsebo200/SRG-SkyRecommendsGames/Master/frontend/SRG/assets/Logo%20Creation.JPG)
+<img src="https://raw.githubusercontent.com/Tsebo200/SRG-SkyRecommendsGames/Master/frontend/SRG/assets/Logo%20Creation.JPG" alt="Logo Creation" height="300px">
 
 See the [open issues](https://github.com/Tsebo200/SRG-SkyRecommendsGames/issues) for a list of proposed features (and known issues).
 
