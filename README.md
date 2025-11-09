@@ -431,9 +431,11 @@ To see a run-through of the application, click below:
 
 Listen to the creative concept of Sky Recommends Games:
 
-**🎵 [Play Audio: The Expanded Reason For The Natural Colour Way](https://raw.githubusercontent.com/Tsebo200/SRG-SkyRecommendsGames/Develop/frontend/SRG/assets/CreativeConceptofSkyRecomendsGames.m4a)**
+**🎵 [Play Audio: The Expanded Reason For The Natural Colour Way](https://tsebo200.github.io/SRG-SkyRecommendsGames/docs/audio-player.html)**
 
-*Click the link above to listen to the audio file in your browser. The audio will open in a new tab and play automatically.*
+*Click the link above to open the audio player in your browser. The audio will play inline without downloading the file.*
+
+> **Note:** If the link above doesn't work, you may need to enable GitHub Pages in your repository settings. Alternatively, [download the audio file directly](https://raw.githubusercontent.com/Tsebo200/SRG-SkyRecommendsGames/Develop/frontend/SRG/assets/CreativeConceptofSkyRecomendsGames.m4a).
 
 See the [open issues](https://github.com/Tsebo200/SRG-SkyRecommendsGames/issues) for a list of proposed features (and known issues).
 
