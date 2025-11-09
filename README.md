@@ -219,7 +219,7 @@ npx expo start
 - **Image Fallback**: Automatic image fetching for games missing cover art
 - **Game Details**: Tap any game to view full details
 - **Remove Favourites**: Long-press or swipe to remove games from favourites
-- **Offline Support**: Favourites stored locally with hybrid persistence (AsyncStorage + Supabase)
+- **Offline Support**: Favourites stored locally with polyglot persistence (AsyncStorage + Supabase)
 
 ### Game Details Screen
 - **Full Game Information**: 
@@ -262,7 +262,7 @@ npx expo start
 - **Login Screen**: Email/password authentication with error handling
 - **Register Screen**: New user registration with validation
 
-### Hybrid Data Persistence
+### polyglot Data Persistence
 - **AsyncStorage**: Local storage for offline support
 - **Supabase**: Cloud database for synchronization
 - **Firebase**: User authentication and preferences
@@ -333,7 +333,7 @@ The `Development Process` is the technical implementation and functionality done
 * **Frontend**: React Native with Expo SDK 54
 * **Backend**: Go (Golang) with chi router and OpenAPI support
 * **Database**: Supabase (PostgreSQL with pgvector for embeddings)
-* **Authentication**: Firebase Auth with hybrid persistence
+* **Authentication**: Firebase Auth with Polyglot persistence
 * **State Management**: React hooks (useState, useEffect) with AsyncStorage for persistence
 * **Navigation**: Expo Router for file-based routing
 * **API Integration**: RAWG API for game data, Google Cloud Speech-to-Text for voice search
@@ -363,7 +363,7 @@ The initial architecture planned for:
 - **favourites**: User-favoured games (synced with Firebase)
 - **user_preferences**: User preferences and settings
 
-##### Hybrid Storage
+##### Hybrid/Polygot Storage
 
 - **AsyncStorage**: Local storage for offline support
 - **Firebase**: Real-time authentication and preferences
@@ -375,7 +375,7 @@ I think it was a good decision to start off the project with the search and favo
 
 I was excited when I got the voice search working with Google Cloud Speech-to-Text, especially after resolving the encoding and sample rate issues for different platforms.
 
-Once I got the hybrid persistence working (AsyncStorage + Supabase + Firebase), I felt like this was coming together as an actual production-ready app.
+Once I got the hybrid/polygot persistence working (AsyncStorage + Supabase + Firebase), I felt like this was coming together as an actual production-ready app.
 
 The accessibility features implementation, including colour vision modes and WCAG compliance, was particularly rewarding as it makes the app usable for a wider audience.
 
@@ -385,7 +385,7 @@ The Steam integration for personalised recommendations based on users' libraries
 
 I initially struggled with the Google Cloud Speech-to-Text integration due to encoding and sample rate mismatches between Expo's audio recording and Google's API expectations. This was resolved by implementing platform-specific audio recording presets (AMR_NB for Android, Linear PCM for iOS).
 
-The hybrid persistence (AsyncStorage + Supabase + Firebase) required careful synchronisation logic to ensure data consistency across all storage layers.
+The hybrid/polygot persistence (AsyncStorage + Supabase + Firebase) required careful synchronisation logic to ensure data consistency across all storage layers.
 
 Implementing accessibility features while maintaining visual appeal required extensive testing across different colour vision modes and accessibility settings.
 
