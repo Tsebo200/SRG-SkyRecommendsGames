@@ -431,12 +431,9 @@ To see a run-through of the application, click below:
 
 Listen to the creative concept of Sky Recommends Games:
 
-<audio controls>
-  <source src="https://raw.githubusercontent.com/Tsebo200/SRG-ReactNative-Expo/develop/frontend/SRG/assets/CreativeConceptofSkyRecomendsGames.m4a" type="audio/mp4">
-  The Expanded Reason For The Natural Colour Way
-</audio>
+**🎵 [Play Audio: The Expanded Reason For The Natural Colour Way](https://raw.githubusercontent.com/Tsebo200/SRG-ReactNative-Expo/develop/frontend/SRG/assets/CreativeConceptofSkyRecomendsGames.m4a)**
 
-> **Note:** GitHub markdown doesn't support embedded audio players. If you don't see a play button above, [click here to listen to the audio](https://raw.githubusercontent.com/Tsebo200/SRG-ReactNative-Expo/develop/frontend/SRG/assets/CreativeConceptofSkyRecomendsGames.m4a).
+*Click the link above to listen to the audio file in your browser. The audio will open in a new tab and play automatically.*
 
 See the [open issues](https://github.com/Tsebo200/SRG-ReactNative-Expo/issues) for a list of proposed features (and known issues).
 
