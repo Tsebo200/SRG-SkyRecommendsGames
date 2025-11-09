@@ -288,6 +288,7 @@ Gamers often struggle to find games that match their preferences, especially tho
 
 The aim of the app is to provide personalised game recommendations using AI-powered rubric scoring (Completeness, Monetisation, Accessibility, Creativity) while ensuring the app itself is accessible to all users, including those with colour vision deficiencies, hearing impairments, or motor disabilities.
 
+
 ### Ideation
 
 The stylistic choice was going for a fresh and modern look with liquid glass UI effects, beautiful gradients, and smooth animations. The app emphasises accessibility while maintaining a visually appealing and fun gaming experience. The colour palette is designed to work across multiple colour vision modes, and interactions are designed to be intuitive with gesture-driven controls.
@@ -312,11 +313,12 @@ The UI is unique and heavily customised to accommodate:
 ### User Flow
 
 The app follows a tab-based navigation structure:
-1. **Home** → Welcome screen with quick access
+1. **Home** → Welcome screen with quick access → Quick Action → AI Services (For You Recommendations/QR Code Scan Game (SSG))
 2. **Search** → Voice/text search for games
 3. **For You** → AI-powered recommendations
 4. **Favourites** → Saved games list
 5. **Profile** → User settings and preferences
+
 
 User can navigate between tabs, search for games, add favourites, view game details, and customise their experience through the profile screen.
 
