@@ -2,12 +2,12 @@
 
 <br />
 
-![GitHub repo size](https://img.shields.io/github/repo-size/Tsebo200/SRG-ReactNative-Expo)
-![GitHub watchers](https://img.shields.io/github/watchers/Tsebo200/SRG-ReactNative-Expo)
-![GitHub language count](https://img.shields.io/github/languages/count/Tsebo200/SRG-ReactNative-Expo)
-![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/Tsebo200/SRG-ReactNative-Expo)
-![Github Language](https://img.shields.io/github/languages/top/Tsebo200/SRG-ReactNative-Expo)
-![Github Downloads](https://img.shields.io/github/downloads/Tsebo200/SRG-ReactNative-Expo/total)
+![GitHub repo size](https://img.shields.io/github/repo-size/Tsebo200/SRG-SkyRecommendsGames)
+![GitHub watchers](https://img.shields.io/github/watchers/Tsebo200/SRG-SkyRecommendsGames)
+![GitHub language count](https://img.shields.io/github/languages/count/Tsebo200/SRG-SkyRecommendsGames)
+![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/Tsebo200/SRG-SkyRecommendsGames)
+![Github Language](https://img.shields.io/github/languages/top/Tsebo200/SRG-SkyRecommendsGames)
+![Github Downloads](https://img.shields.io/github/downloads/Tsebo200/SRG-SkyRecommendsGames/total)
 
 <!-- HEADER SECTION -->
 
@@ -21,7 +21,7 @@
 
 <p align="center">
 
-  <a href="https://github.com/Tsebo200/SRG-ReactNative-Expo">
+  <a href="https://github.com/Tsebo200/SRG-SkyRecommendsGames">
     <img src="frontend/SRG/assets/Sky Logo.png" align="center" alt="Sky Logo" width="140" height="140" style="border-radius: 50px solid black">
   </a>
 
@@ -34,9 +34,9 @@
    <br />
    <a href="https://youtu.be/t7LZq0_ATSo">View Demo</a>
     ·
-    <a href="https://github.com/Tsebo200/SRG-ReactNative-Expo/issues">Report Bug</a>
+    <a href="https://github.com/Tsebo200/SRG-SkyRecommendsGames/issues">Report Bug</a>
     ·
-    <a href="https://github.com/Tsebo200/SRG-ReactNative-Expo/issues">Request Feature</a>
+    <a href="https://github.com/Tsebo200/SRG-SkyRecommendsGames/issues">Request Feature</a>
 </p>
 
 <!-- TABLE OF CONTENTS -->
@@ -116,13 +116,13 @@ Ensure that you have the latest version of [NPM](https://www.npmjs.com/) and [No
 Here are a couple of ways to clone this repo:
 
 1. **GitHub Desktop** </br>
-Enter `https://github.com/Tsebo200/SRG-ReactNative-Expo.git` into the URL field and press the `Clone` button.
+Enter `https://github.com/Tsebo200/SRG-SkyRecommendsGames.git` into the URL field and press the `Clone` button.
 
 2. **Clone Repository** </br>
 Run the following in the command line to clone the project:
 
    ```sh
-   git clone https://github.com/Tsebo200/SRG-ReactNative-Expo.git
+   git clone https://github.com/Tsebo200/SRG-SkyRecommendsGames.git
    ```
 
 3. **Install Dependencies** </br>
@@ -288,10 +288,7 @@ Gamers often struggle to find games that match their preferences, especially tho
 
 The aim of the app is to provide personalised game recommendations using AI-powered rubric scoring (Completeness, Monetisation, Accessibility, Creativity) while ensuring the app itself is accessible to all users, including those with colour vision deficiencies, hearing impairments, or motor disabilities.
 
-<audio controls>
-  <source src="CreativeConceptofSkyRecomendsGames.m4a" type="audio/mp4">
-  The Expanded Reason For The Natural Colour Way
-</audio>
+**🎵 [The Expanded Reason For The Natural Colour Way](https://raw.githubusercontent.com/Tsebo200/SRG-SkyRecommendsGames/develop/frontend/SRG/assets/CreativeConceptofSkyRecomendsGames.mp3)**
 
 ### Ideation
 
@@ -431,14 +428,11 @@ To see a run-through of the application, click below:
 
 Listen to the creative concept of Sky Recommends Games:
 
-<audio controls>
-  <source src="https://raw.githubusercontent.com/Tsebo200/SRG-ReactNative-Expo/develop/frontend/SRG/assets/CreativeConceptofSkyRecomendsGames.m4a" type="audio/mp4">
-  Your browser does not support the audio element. [Download audio file](https://raw.githubusercontent.com/Tsebo200/SRG-ReactNative-Expo/develop/frontend/SRG/assets/CreativeConceptofSkyRecomendsGames.m4a)
-</audio>
+**🎵 [Play Audio: The Expanded Reason For The Natural Colour Way](https://raw.githubusercontent.com/Tsebo200/SRG-SkyRecommendsGames/develop/frontend/SRG/assets/CreativeConceptofSkyRecomendsGames.mp3)**
 
-[Direct download link](https://raw.githubusercontent.com/Tsebo200/SRG-ReactNative-Expo/develop/frontend/SRG/assets/CreativeConceptofSkyRecomendsGames.m4a)
+*Click the link above to listen to the audio file in your browser. The audio will open in a new tab and play automatically.*
 
-See the [open issues](https://github.com/Tsebo200/SRG-ReactNative-Expo/issues) for a list of proposed features (and known issues).
+See the [open issues](https://github.com/Tsebo200/SRG-SkyRecommendsGames/issues) for a list of proposed features (and known issues).
 
 <!-- AUTHORS -->
 
@@ -470,7 +464,7 @@ For commercial use or licensing, please use the contact details below.
 
 * **Tsebo Ramonyalioa** - [tsebo.ramonyalioa.an@gmail.com](mailto:tsebo.ramonyalioa.an@gmail.com) - [inspiration__200](https://www.instagram.com/inspiration__200/) 
 
-* **Project Link** - https://github.com/Tsebo200/SRG-ReactNative-Expo
+* **Project Link** - https://github.com/Tsebo200/SRG-SkyRecommendsGames
 
 <!-- ACKNOWLEDGEMENTS -->
 
