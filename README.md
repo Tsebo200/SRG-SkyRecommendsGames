@@ -427,6 +427,17 @@ To see a run-through of the application, click below:
 
 [View Demonstration](https://youtu.be/t7LZq0_ATSo)
 
+### Audio Demonstration
+
+Listen to the creative concept of Sky Recommends Games:
+
+<audio controls>
+  <source src="https://raw.githubusercontent.com/Tsebo200/SRG-ReactNative-Expo/develop/frontend/SRG/assets/CreativeConceptofSkyRecomendsGames.m4a" type="audio/mp4">
+  Your browser does not support the audio element. [Download audio file](https://raw.githubusercontent.com/Tsebo200/SRG-ReactNative-Expo/develop/frontend/SRG/assets/CreativeConceptofSkyRecomendsGames.m4a)
+</audio>
+
+[Direct download link](https://raw.githubusercontent.com/Tsebo200/SRG-ReactNative-Expo/develop/frontend/SRG/assets/CreativeConceptofSkyRecomendsGames.m4a)
+
 See the [open issues](https://github.com/Tsebo200/SRG-ReactNative-Expo/issues) for a list of proposed features (and known issues).
 
 <!-- AUTHORS -->
