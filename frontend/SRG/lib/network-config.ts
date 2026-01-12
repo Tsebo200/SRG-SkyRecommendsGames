@@ -5,14 +5,12 @@ import { Platform } from 'react-native';
  * and provides fallbacks to prevent Axios network errors
  */
 
-// Common development IP ranges to try
+// Common development IP ranges to try (excluding router IPs)
 const COMMON_DEV_IPS = [
-  '192.168.66.17',  // Your current IP
-  '10.0.0.8',       // Your previous IP
+  '10.0.0.4',       // Your current IP
+  '192.168.66.17',  // Your previous IP
+  '10.0.0.8',       // Your older IP
   '10.0.0.14',      // Your older IP
-  '192.168.1.1',
-  '192.168.0.1',
-  '172.16.0.1',
   'localhost',
   '127.0.0.1'
 ];
@@ -71,10 +69,10 @@ export function getBackendUrls(): string[] {
 /**
  * Test if a backend URL is accessible
  */
-export async function testBackendUrl(url: string): Promise<boolean> {
+export async function testBackendUrl(url: string, silent: boolean = false): Promise<boolean> {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout (reduced from 3)
     
     const response = await fetch(`${url}/health`, {
       method: 'GET',
@@ -84,7 +82,9 @@ export async function testBackendUrl(url: string): Promise<boolean> {
     clearTimeout(timeoutId);
     return response.ok;
   } catch (error) {
-    console.log(`❌ Backend URL ${url} not accessible:`, error.message);
+    if (!silent) {
+      console.log(`❌ Backend URL ${url} not accessible:`, error.message);
+    }
     return false;
   }
 }
@@ -92,21 +92,52 @@ export async function testBackendUrl(url: string): Promise<boolean> {
 /**
  * Find the first working backend URL
  */
-export async function findWorkingBackendUrl(): Promise<string | null> {
+export async function findWorkingBackendUrl(silent: boolean = false): Promise<string | null> {
   const urls = getBackendUrls();
   
-  console.log('🔍 Testing backend URLs:', urls);
+  // If environment URL is set, test it first and only test others if it fails
+  const envUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
+  if (envUrl && urls[0] === envUrl) {
+    if (!silent) {
+      console.log('🔍 Testing environment backend URL first:', envUrl);
+    }
+    const isWorking = await testBackendUrl(envUrl, silent);
+    if (isWorking) {
+      if (!silent) {
+        console.log(`✅ Environment backend URL is working: ${envUrl}`);
+      }
+      return envUrl;
+    }
+    if (!silent) {
+      console.log('⚠️ Environment backend URL not accessible, testing alternatives...');
+    }
+  }
+  
+  if (!silent && urls.length > 1) {
+    console.log(`🔍 Testing ${urls.length} backend URLs...`);
+  }
   
   for (const url of urls) {
-    console.log(`🔍 Testing: ${url}`);
-    const isWorking = await testBackendUrl(url);
+    // Skip if we already tested the env URL
+    if (envUrl && url === envUrl && urls[0] === envUrl) {
+      continue;
+    }
+    
+    if (!silent) {
+      console.log(`🔍 Testing: ${url}`);
+    }
+    const isWorking = await testBackendUrl(url, silent);
     if (isWorking) {
-      console.log(`✅ Found working backend: ${url}`);
+      if (!silent) {
+        console.log(`✅ Found working backend: ${url}`);
+      }
       return url;
     }
   }
   
-  console.log('❌ No working backend URLs found');
+  if (!silent) {
+    console.log('❌ No working backend URLs found');
+  }
   return null;
 }
 

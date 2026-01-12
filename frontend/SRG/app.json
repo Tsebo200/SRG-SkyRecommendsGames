@@ -4,7 +4,7 @@
     "slug": "SRG",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/Sky Logo.png",
+    "icon": "./assets/Sky-Logo.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "scheme": "srg",
@@ -15,15 +15,17 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.SRG",
+      "bundleIdentifier": "org.name.SRGReactNativeExpo",
+      "buildNumber": "1",
       "infoPlist": {
+        "NSCameraUsageDescription": "We need access to your camera to scan QR codes for games.",
         "NSMicrophoneUsageDescription": "We need access to your microphone to enable voice search for games.",
         "NSSpeechRecognitionUsageDescription": "We need access to speech recognition to convert your voice to text for searching games."
       }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/Sky Logo.png",
+        "foregroundImage": "./assets/Sky-Logo.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
@@ -45,6 +47,13 @@
           "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to scan QR codes for games."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "5703e0d7-98d2-487a-8f53-cb544ef6bf38"
+      }
+    },
+    "owner": "glitchedsky"
   }
 }

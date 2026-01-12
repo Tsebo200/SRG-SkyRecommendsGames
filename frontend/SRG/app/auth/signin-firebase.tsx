@@ -34,7 +34,8 @@ export default function SignInFirebase() {
       
       if (result.success) {
         console.log('✅ Firebase sign in successful');
-        // Navigation will be handled by _layout-hybrid.tsx
+        // Navigation will be handled automatically by NavigationGuard in _layout.tsx
+        // But we can also navigate directly as a fallback
         router.replace('/(tabs)/');
       } else {
         console.log('❌ Firebase sign in failed:', result.error);

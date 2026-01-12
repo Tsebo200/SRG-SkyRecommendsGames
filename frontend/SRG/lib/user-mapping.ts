@@ -20,6 +20,13 @@ export class UserMappingService {
         return null;
       }
 
+      // Check if Supabase is configured before making requests
+      const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+      if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
+        console.log('ℹ️ Supabase not configured, cannot create user mapping');
+        return null;
+      }
+
       console.log('🔄 Creating user mapping for Firebase UID:', firebaseUser.uid);
 
       // Check if user already exists using service role (bypasses RLS)
@@ -35,10 +42,17 @@ export class UserMappingService {
         return existingUser.id;
       }
 
-      // Handle error only if it's not a "not found" error
-      if (fetchError && fetchError.code !== 'PGRST116') {
-        console.error('❌ Error checking existing user:', fetchError.message);
-        return null;
+      // Handle network errors gracefully
+      if (fetchError) {
+        if (fetchError.code === 'PGRST116') {
+          // Not found - continue to create
+        } else if (fetchError.message?.includes('Network request failed') || fetchError.message?.includes('fetch')) {
+          console.warn('⚠️ Network error checking existing user (may be temporary):', fetchError.message);
+          return null;
+        } else {
+          console.error('❌ Error checking existing user:', fetchError.message);
+          return null;
+        }
       }
 
       // Create new user mapping using service role (bypasses RLS)
@@ -69,10 +83,20 @@ export class UserMappingService {
           }
           
           if (raceError) {
-            console.error('❌ Error fetching user after race condition:', raceError.message);
+            // Handle network errors in race condition fetch
+            if (raceError.message?.includes('Network request failed') || raceError.message?.includes('fetch')) {
+              console.warn('⚠️ Network error fetching user after race condition (may be temporary):', raceError.message);
+            } else {
+              console.error('❌ Error fetching user after race condition:', raceError.message);
+            }
           }
         } else {
-          console.error('❌ Error creating user mapping:', insertError.message);
+          // Handle network errors gracefully
+          if (insertError.message?.includes('Network request failed') || insertError.message?.includes('fetch')) {
+            console.warn('⚠️ Network error creating user mapping (may be temporary):', insertError.message);
+          } else {
+            console.error('❌ Error creating user mapping:', insertError.message);
+          }
         }
         return null;
       }
@@ -80,7 +104,12 @@ export class UserMappingService {
       console.log('✅ User mapping created:', newUser.id);
       return newUser.id;
 
-    } catch (error) {
+    } catch (error: any) {
+      // Handle network errors gracefully - don't block app functionality
+      if (error?.message?.includes('Network request failed') || error?.message?.includes('fetch')) {
+        console.warn('⚠️ Network error in createUserMapping (may be temporary):', error.message);
+        return null;
+      }
       console.error('❌ Error in createUserMapping:', error);
       return null;
     }
@@ -95,6 +124,13 @@ export class UserMappingService {
         return null;
       }
 
+      // Check if Supabase is configured before making requests
+      const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+      if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
+        console.log('ℹ️ Supabase not configured, skipping user ID lookup');
+        return null;
+      }
+
       console.log('🔍 Getting Supabase user ID for Firebase UID:', firebaseUser.uid);
 
       const { data: user, error } = await supabaseService
@@ -106,8 +142,16 @@ export class UserMappingService {
       if (error) {
         if (error.code === 'PGRST116') {
           console.log('⚠️ User mapping not found, creating new one...');
+          // Only try to create mapping if Supabase is available
           return await this.createUserMapping();
         }
+        
+        // Handle network errors gracefully - don't treat as critical
+        if (error.message?.includes('Network request failed') || error.message?.includes('fetch')) {
+          console.warn('⚠️ Network error getting Supabase user ID (may be temporary):', error.message);
+          return null;
+        }
+        
         console.error('❌ Error getting Supabase user ID:', error.message);
         return null;
       }
@@ -115,7 +159,12 @@ export class UserMappingService {
       console.log('✅ Found Supabase user ID:', user.id);
       return user.id;
 
-    } catch (error) {
+    } catch (error: any) {
+      // Handle network errors gracefully - don't block navigation
+      if (error?.message?.includes('Network request failed') || error?.message?.includes('fetch')) {
+        console.warn('⚠️ Network error in getSupabaseUserId (may be temporary):', error.message);
+        return null;
+      }
       console.error('❌ Error in getSupabaseUserId:', error);
       return null;
     }
@@ -124,9 +173,21 @@ export class UserMappingService {
   // Ensure user mapping exists (call this after Firebase sign in)
   static async ensureUserMapping(): Promise<boolean> {
     try {
+      // Check if Supabase is configured first
+      const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+      if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
+        console.log('ℹ️ Supabase not configured, skipping user mapping');
+        return false; // Return false but don't treat as error
+      }
+
       const supabaseUserId = await this.getSupabaseUserId();
       return !!supabaseUserId;
-    } catch (error) {
+    } catch (error: any) {
+      // Handle network errors gracefully - don't block app functionality
+      if (error?.message?.includes('Network request failed') || error?.message?.includes('fetch')) {
+        console.warn('⚠️ Network error ensuring user mapping (may be temporary):', error.message);
+        return false; // Return false but don't treat as critical error
+      }
       console.error('❌ Error ensuring user mapping:', error);
       return false;
     }
@@ -136,7 +197,19 @@ export class UserMappingService {
   static async getUserProfile(): Promise<UserMapping | null> {
     try {
       const firebaseUser = HybridAuthService.getCurrentUser();
-      if (!firebaseUser) return null;
+      if (!firebaseUser) {
+        console.log('⚠️ No Firebase user for getUserProfile');
+        return null;
+      }
+
+      // Check if Supabase is configured
+      const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+      if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
+        console.warn('⚠️ Supabase not configured, skipping getUserProfile');
+        return null;
+      }
+
+      console.log('🔄 Fetching user profile for Firebase UID:', firebaseUser.uid);
 
       const { data: user, error } = await supabaseService
         .from('users')
@@ -145,13 +218,27 @@ export class UserMappingService {
         .single();
 
       if (error) {
-        console.error('❌ Error getting user profile:', error.message);
+        // Don't log network errors as critical - they might be temporary
+        if (error.message?.includes('Network request failed') || error.message?.includes('fetch')) {
+          console.warn('⚠️ Network error getting user profile (may be temporary):', error.message);
+        } else {
+          console.error('❌ Error getting user profile:', error.message);
+        }
         return null;
       }
 
+      if (user) {
+        console.log('✅ User profile retrieved successfully');
+      }
+
       return user;
-    } catch (error) {
-      console.error('❌ Error in getUserProfile:', error);
+    } catch (error: any) {
+      // Handle network errors gracefully
+      if (error?.message?.includes('Network request failed') || error?.message?.includes('fetch')) {
+        console.warn('⚠️ Network error in getUserProfile (may be temporary):', error.message);
+      } else {
+        console.error('❌ Error in getUserProfile:', error);
+      }
       return null;
     }
   }

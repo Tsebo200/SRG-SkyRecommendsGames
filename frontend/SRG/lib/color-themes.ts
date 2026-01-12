@@ -71,6 +71,54 @@ export const THEME_MODES: ThemeMode[] = [
 // Accessibility themes with both light and dark variants
 export const ACCESSIBILITY_THEMES: AccessibilityTheme[] = [
   {
+    id: 'black-yellow',
+    name: 'Black & Yellow',
+    description: 'High-impact black and yellow gaming theme',
+    lightColors: {
+      primary: '#FACC15',        // Yellow - primary
+      secondary: '#EAB308',      // Darker yellow - secondary
+      background: '#020617',     // Nearly black - background
+      surface: '#111827',        // Dark surface
+      text: '#F9FAFB',           // Very light text
+      textSecondary: '#E5E7EB',  // Light gray text
+      accent: '#FACC15',         // Yellow accents
+      success: '#22C55E',        // Green success
+      warning: '#F97316',        // Orange warning
+      error: '#EF4444',          // Red error
+      border: '#27272A',         // Dark border
+      card: '#111827',           // Card background
+      button: '#FACC15',         // Yellow button
+      buttonText: '#020617',     // Dark button text
+      tabBar: '#020617',         // Tab bar background
+      tabBarActive: '#FACC15',   // Active tab yellow
+      tabBarInactive: '#6B7280', // Inactive gray
+    },
+    darkColors: {
+      primary: '#FACC15',        // Yellow - primary
+      secondary: '#EAB308',      // Darker yellow
+      background: '#000000',     // True black background
+      surface: '#020617',        // Almost black surface
+      text: '#F9FAFB',           // Very light text
+      textSecondary: '#D1D5DB',  // Light gray
+      accent: '#FACC15',         // Yellow accents
+      success: '#22C55E',        // Green success
+      warning: '#F97316',        // Orange warning
+      error: '#EF4444',          // Red error
+      border: '#27272A',         // Dark border
+      card: '#020617',           // Card background
+      button: '#FACC15',         // Yellow button
+      buttonText: '#000000',     // Black button text
+      tabBar: '#000000',         // Tab bar background
+      tabBarActive: '#FACC15',   // Active tab yellow
+      tabBarInactive: '#6B7280', // Inactive gray
+    },
+    accessibility: {
+      protanomaly: false,
+      deuteranomaly: false,
+      tritanomaly: false,
+    },
+  },
+  {
     id: 'gradient-motion',
     name: 'Gradient Motion',
     description: 'Dynamic gradient colour scheme with motion effects',
@@ -538,7 +586,7 @@ export class ColorThemeService {
   private static readonly THEME_MODE_KEY = 'selected_theme_mode';
   private static readonly ACCESSIBILITY_THEME_KEY = 'selected_accessibility_theme';
   private static currentThemeMode: ThemeMode = THEME_MODES[1]; // Default to dark
-  private static currentAccessibilityTheme: AccessibilityTheme = ACCESSIBILITY_THEMES[0]; // Default to gradient-motion
+  private static currentAccessibilityTheme: AccessibilityTheme = ACCESSIBILITY_THEMES[0]; // Default to black & yellow
 
   /**
    * Get all available theme modes (Light/Dark)
@@ -672,7 +720,7 @@ export class ColorThemeService {
       await AsyncStorage.removeItem(this.THEME_MODE_KEY);
       await AsyncStorage.removeItem(this.ACCESSIBILITY_THEME_KEY);
       this.currentThemeMode = THEME_MODES[1]; // Dark mode
-      this.currentAccessibilityTheme = ACCESSIBILITY_THEMES[0]; // Gradient Motion
+      this.currentAccessibilityTheme = ACCESSIBILITY_THEMES[0]; // Black & Yellow
       console.log('✅ Reset to default theme settings');
       return true;
     } catch (error) {
@@ -712,16 +760,49 @@ export class ColorThemeService {
 
   // Legacy support methods
   /**
-   * Get all available colour themes (legacy)
+   * Get all available colour themes (includes accessibility themes in both light and dark modes)
    */
   static getAvailableThemes(): ColorTheme[] {
-    return COLOR_THEMES;
+    // Convert all accessibility themes to ColorTheme format for both light and dark modes
+    const themes: ColorTheme[] = [];
+    
+    ACCESSIBILITY_THEMES.forEach(accessibilityTheme => {
+      // Add light mode version
+      themes.push({
+        id: `${accessibilityTheme.id}-light`,
+        name: `${accessibilityTheme.name} (Light Mode)`,
+        description: accessibilityTheme.description,
+        colors: accessibilityTheme.lightColors,
+        isDark: false,
+        isHighContrast: accessibilityTheme.id === 'high-contrast',
+        accessibility: accessibilityTheme.accessibility,
+      });
+      
+      // Add dark mode version
+      themes.push({
+        id: `${accessibilityTheme.id}-dark`,
+        name: `${accessibilityTheme.name} (Dark Mode)`,
+        description: accessibilityTheme.description,
+        colors: accessibilityTheme.darkColors,
+        isDark: true,
+        isHighContrast: accessibilityTheme.id === 'high-contrast',
+        accessibility: accessibilityTheme.accessibility,
+      });
+    });
+    
+    return themes;
   }
 
   /**
    * Get theme by ID (legacy)
    */
   static getThemeById(id: string): ColorTheme | undefined {
+    // First try the new format (accessibility themes)
+    const allThemes = this.getAvailableThemes();
+    const found = allThemes.find(theme => theme.id === id);
+    if (found) return found;
+    
+    // Fallback to legacy themes
     return COLOR_THEMES.find(theme => theme.id === id);
   }
 
@@ -755,8 +836,23 @@ export class ColorThemeService {
     } else if (themeId === 'dark') {
       return await this.setThemeMode('dark');
     } else {
-      // Try as accessibility theme
-      return await this.setAccessibilityTheme(themeId);
+      // Parse new format: "theme-id-light" or "theme-id-dark"
+      const parts = themeId.split('-');
+      const lastPart = parts[parts.length - 1];
+      
+      if (lastPart === 'light' || lastPart === 'dark') {
+        // Extract theme ID (everything except the last part)
+        const accessibilityThemeId = parts.slice(0, -1).join('-');
+        const modeId = lastPart;
+        
+        // Set both the accessibility theme and mode
+        const themeSuccess = await this.setAccessibilityTheme(accessibilityThemeId);
+        const modeSuccess = await this.setThemeMode(modeId);
+        return themeSuccess && modeSuccess;
+      } else {
+        // Try as accessibility theme (old format)
+        return await this.setAccessibilityTheme(themeId);
+      }
     }
   }
 

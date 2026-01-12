@@ -67,31 +67,46 @@ export default function ScanResultsScreen() {
   const loadScanData = async () => {
     try {
       setLoading(true);
+      console.log('📱 Loading scan data, params:', params);
       
       // Parse the scanned data from SkyScansGames
       if (params.scanData) {
+        console.log('📱 Raw scanData:', params.scanData);
         const parsedData = JSON.parse(params.scanData as string) as SkyScansGameData;
+        console.log('📱 Parsed scan data:', parsedData);
         setSkyScansData(parsedData);
         
         // Try to find the game in our database using the game name
         if (parsedData.gameName) {
-          const searchResults = await apiClient.searchGames(parsedData.gameName);
-          
-          if (searchResults.results.length > 0) {
-            setGame(searchResults.results[0]);
+          console.log('🔍 Searching for game:', parsedData.gameName);
+          try {
+            const searchResults = await apiClient.searchGames(parsedData.gameName);
+            console.log('🔍 Search results:', searchResults.results.length, 'games found');
+            
+            if (searchResults.results.length > 0) {
+              const foundGame = searchResults.results[0];
+              console.log('✅ Found game:', foundGame.name);
+              setGame(foundGame);
+              
+              // Check if game is in favourites
+              const favourites = await HybridFavouritesService.getFavourites();
+              const isFav = favourites.some(fav => fav.game_slug === foundGame.slug);
+              setIsFavourite(isFav);
+            } else {
+              console.log('⚠️ No game found in database for:', parsedData.gameName);
+            }
+          } catch (searchError) {
+            console.error('❌ Error searching for game:', searchError);
           }
+        } else {
+          console.log('⚠️ No gameName in parsed data');
         }
-      }
-      
-      // Check if game is in favourites
-      if (game) {
-        const favourites = await HybridFavouritesService.getFavourites();
-        const isFav = favourites.some(fav => fav.game_slug === game.slug);
-        setIsFavourite(isFav);
+      } else {
+        console.log('⚠️ No scanData in params');
       }
     } catch (error) {
-      console.error('Error loading scan data:', error);
-      Alert.alert('Error', 'Failed to load scanned game details');
+      console.error('❌ Error loading scan data:', error);
+      Alert.alert('Error', `Failed to load scanned game details: ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -154,6 +169,9 @@ export default function ScanResultsScreen() {
           <Text style={styles.errorTitle}>Scan Data Not Found</Text>
           <Text style={styles.errorText}>
             We couldn't find the scanned game data. Please try scanning again.
+          </Text>
+          <Text style={[styles.errorText, { fontSize: 12, marginTop: 10 }]}>
+            Debug: params = {JSON.stringify(params, null, 2)}
           </Text>
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
             <Text style={styles.backButtonText}>Go Back</Text>

@@ -1,0 +1,20 @@
+diff --git a/node_modules/expo-router/build/link/preview/LinkPreviewContext.js b/node_modules/expo-router/build/link/preview/LinkPreviewContext.js
+index 7d1728e..9d39d61 100644
+--- a/node_modules/expo-router/build/link/preview/LinkPreviewContext.js
++++ b/node_modules/expo-router/build/link/preview/LinkPreviewContext.js
+@@ -14,7 +14,14 @@ function LinkPreviewContextProvider({ children }) {
+ const useLinkPreviewContext = () => {
+     const context = (0, react_1.use)(LinkPreviewContext);
+     if (context == null) {
+-        throw new Error('useLinkPreviewContext must be used within a LinkPreviewContextProvider. This is likely a bug in Expo Router.');
++        // PATCH: Return safe defaults instead of throwing to prevent crashes
++        // This allows the app to work even if the provider isn't set up yet
++        console.warn('useLinkPreviewContext called outside provider - using default values');
++        return {
++            isStackAnimationDisabled: false,
++            openPreviewKey: undefined,
++            setOpenPreviewKey: () => {},
++        };
+     }
+     return context;
+ };

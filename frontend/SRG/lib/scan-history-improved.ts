@@ -30,23 +30,41 @@ export class ScanHistoryService {
   /**
    * Save a scan to dedicated scan_history table
    */
-  static async saveScan(scanData: GameQRData, scanType: 'qr_code' | 'barcode' | 'manual' = 'qr_code'): Promise<ScanHistoryItem> {
+  static async saveScan(scanData: GameQRData, scanType: 'qr_code' | 'barcode' | 'manual' = 'qr_code'): Promise<ScanHistoryItem | null> {
     try {
       console.log('💾 Saving scan to dedicated table:', scanData);
       
       // Get current Firebase user
       const firebaseUser = HybridAuthService.getCurrentUser();
       if (!firebaseUser) {
-        throw new Error('User not authenticated');
+        console.warn('⚠️ User not authenticated, cannot save scan to history');
+        return null;
       }
 
-      // Ensure user is synced to Supabase first
-      await HybridAuthService.syncUserToSupabase(firebaseUser);
+      // Check if Supabase is configured
+      const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+      if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
+        console.log('ℹ️ Supabase not configured, skipping scan history save');
+        return null;
+      }
 
-      // Get Supabase user ID
+      // Ensure user is synced to Supabase first (gracefully handle errors)
+      try {
+        await HybridAuthService.syncUserToSupabase(firebaseUser);
+      } catch (syncError: any) {
+        if (syncError?.message?.includes('Network request failed') || syncError?.message?.includes('fetch')) {
+          console.warn('⚠️ Network error syncing user (may be temporary):', syncError.message);
+          return null;
+        }
+        // Re-throw non-network errors
+        throw syncError;
+      }
+
+      // Get Supabase user ID (gracefully handle errors)
       const supabaseUserId = await HybridAuthService.getSupabaseUserId();
       if (!supabaseUserId) {
-        throw new Error('User not found in Supabase after sync');
+        console.warn('⚠️ User not found in Supabase, cannot save scan history');
+        return null;
       }
 
       // Create scan item
@@ -73,15 +91,27 @@ export class ScanHistoryService {
         .single();
 
       if (error) {
+        // Handle network errors gracefully
+        if (error.message?.includes('Network request failed') || error.message?.includes('fetch')) {
+          console.warn('⚠️ Network error saving scan (may be temporary):', error.message);
+          return null;
+        }
         console.error('❌ Error saving scan:', error);
-        throw error;
+        // Don't throw - return null to allow scan to continue
+        return null;
       }
 
       console.log('✅ Scan saved successfully:', data);
       return data;
-    } catch (error) {
+    } catch (error: any) {
+      // Handle network errors gracefully - don't block scanning
+      if (error?.message?.includes('Network request failed') || error?.message?.includes('fetch')) {
+        console.warn('⚠️ Network error in saveScan (may be temporary):', error.message);
+        return null;
+      }
       console.error('❌ Failed to save scan:', error);
-      throw error;
+      // Return null instead of throwing to allow scan to continue
+      return null;
     }
   }
 
@@ -90,18 +120,24 @@ export class ScanHistoryService {
    */
   static async getScans(): Promise<ScanHistoryItem[]> {
     try {
-      console.log('📱 Loading scan history from dedicated table...');
+      // Removed verbose log - caller can log if needed
       
       // Get current Firebase user
       const firebaseUser = HybridAuthService.getCurrentUser();
       if (!firebaseUser) {
-        throw new Error('User not authenticated');
+        return [];
       }
 
-      // Get Supabase user ID
+      // Check if Supabase is configured
+      const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+      if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
+        return [];
+      }
+
+      // Get Supabase user ID (gracefully handle errors)
       const supabaseUserId = await HybridAuthService.getSupabaseUserId();
       if (!supabaseUserId) {
-        throw new Error('User not found in Supabase');
+        return [];
       }
 
       // Fetch scans from dedicated table
@@ -113,35 +149,54 @@ export class ScanHistoryService {
         .limit(100);
 
       if (error) {
+        // Handle network errors gracefully
+        if (error.message?.includes('Network request failed') || error.message?.includes('fetch')) {
+          console.warn('⚠️ Network error loading scans (may be temporary):', error.message);
+          return []; // Return empty array instead of throwing
+        }
         console.error('❌ Error fetching scans:', error);
-        throw error;
+        return []; // Return empty array instead of throwing
       }
 
-      console.log('✅ Loaded scans:', data?.length || 0);
+      // Removed verbose log - only log if there's an actual change
       return data || [];
-    } catch (error) {
+    } catch (error: any) {
+      // Handle network errors gracefully - return empty array
+      if (error?.message?.includes('Network request failed') || error?.message?.includes('fetch')) {
+        console.warn('⚠️ Network error in getScans (may be temporary):', error.message);
+        return [];
+      }
       console.error('❌ Failed to load scans:', error);
-      throw error;
+      return []; // Return empty array instead of throwing
     }
   }
 
   /**
    * Delete a specific scan
    */
-  static async deleteScan(scanId: string): Promise<void> {
+  static async deleteScan(scanId: string): Promise<boolean> {
     try {
       console.log('🗑️ Deleting scan:', scanId);
       
       // Get current Firebase user
       const firebaseUser = HybridAuthService.getCurrentUser();
       if (!firebaseUser) {
-        throw new Error('User not authenticated');
+        console.warn('⚠️ User not authenticated, cannot delete scan');
+        return false;
+      }
+
+      // Check if Supabase is configured
+      const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+      if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
+        console.log('ℹ️ Supabase not configured, cannot delete scan');
+        return false;
       }
 
       // Get Supabase user ID
       const supabaseUserId = await HybridAuthService.getSupabaseUserId();
       if (!supabaseUserId) {
-        throw new Error('User not found in Supabase');
+        console.warn('⚠️ User not found in Supabase, cannot delete scan');
+        return false;
       }
 
       // Delete from dedicated table
@@ -152,34 +207,54 @@ export class ScanHistoryService {
         .eq('user_id', supabaseUserId);
 
       if (error) {
+        // Handle network errors gracefully
+        if (error.message?.includes('Network request failed') || error.message?.includes('fetch')) {
+          console.warn('⚠️ Network error deleting scan (may be temporary):', error.message);
+          return false;
+        }
         console.error('❌ Error deleting scan:', error);
-        throw error;
+        return false;
       }
 
       console.log('✅ Scan deleted successfully');
-    } catch (error) {
+      return true;
+    } catch (error: any) {
+      // Handle network errors gracefully
+      if (error?.message?.includes('Network request failed') || error?.message?.includes('fetch')) {
+        console.warn('⚠️ Network error in deleteScan (may be temporary):', error.message);
+        return false;
+      }
       console.error('❌ Failed to delete scan:', error);
-      throw error;
+      return false;
     }
   }
 
   /**
    * Clear all scans for the current user
    */
-  static async clearAllScans(): Promise<void> {
+  static async clearAllScans(): Promise<boolean> {
     try {
       console.log('🧹 Clearing all scans...');
       
       // Get current Firebase user
       const firebaseUser = HybridAuthService.getCurrentUser();
       if (!firebaseUser) {
-        throw new Error('User not authenticated');
+        console.warn('⚠️ User not authenticated, cannot clear scans');
+        return false;
+      }
+
+      // Check if Supabase is configured
+      const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
+      if (!supabaseUrl || supabaseUrl.includes('placeholder')) {
+        console.log('ℹ️ Supabase not configured, cannot clear scans');
+        return false;
       }
 
       // Get Supabase user ID
       const supabaseUserId = await HybridAuthService.getSupabaseUserId();
       if (!supabaseUserId) {
-        throw new Error('User not found in Supabase');
+        console.warn('⚠️ User not found in Supabase, cannot clear scans');
+        return false;
       }
 
       // Delete all scans from dedicated table
@@ -189,14 +264,25 @@ export class ScanHistoryService {
         .eq('user_id', supabaseUserId);
 
       if (error) {
+        // Handle network errors gracefully
+        if (error.message?.includes('Network request failed') || error.message?.includes('fetch')) {
+          console.warn('⚠️ Network error clearing scans (may be temporary):', error.message);
+          return false;
+        }
         console.error('❌ Error clearing scans:', error);
-        throw error;
+        return false;
       }
 
       console.log('✅ All scans cleared successfully');
-    } catch (error) {
+      return true;
+    } catch (error: any) {
+      // Handle network errors gracefully
+      if (error?.message?.includes('Network request failed') || error?.message?.includes('fetch')) {
+        console.warn('⚠️ Network error in clearAllScans (may be temporary):', error.message);
+        return false;
+      }
       console.error('❌ Failed to clear scans:', error);
-      throw error;
+      return false;
     }
   }
 }

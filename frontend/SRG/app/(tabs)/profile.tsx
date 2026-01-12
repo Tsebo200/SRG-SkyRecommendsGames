@@ -4,6 +4,7 @@ import { Audio } from 'expo-av';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
 import { HybridAuthService } from '../../lib/hybrid-auth';
 import { UserMappingService } from '../../lib/user-mapping';
 import { HybridFavouritesService } from '../../lib/favourites-hybrid';
@@ -14,8 +15,10 @@ import AvatarPicker from '../../components/AvatarPicker';
 import { useTheme, useThemeColors, useIsDarkTheme } from '../../lib/theme-context';
 import { SteamAPIService } from '../../lib/steam-api';
 import { updateProfile } from 'firebase/auth';
+import { getRandomGameNews } from '../../lib/game-news-quips';
 
 export default function ProfileFirebaseScreen() {
+  const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [signingOut, setSigningOut] = useState(false);
@@ -37,6 +40,7 @@ export default function ProfileFirebaseScreen() {
   const [privacySteamInfluence, setPrivacySteamInfluence] = useState(true);
   const [privacyMicConsent, setPrivacyMicConsent] = useState(true);
   const [motionEnabled, setMotionEnabled] = useState(true);
+  const [gameNews] = useState<string>(getRandomGameNews());
   
   // Use theme context
   const { currentTheme, setTheme } = useTheme();
@@ -221,9 +225,20 @@ export default function ProfileFirebaseScreen() {
       if (firebaseUser) {
         setUser(firebaseUser);
         
-        // Get Supabase user profile
-        const supabaseProfile = await UserMappingService.getUserProfile();
-        console.log('🔍 Supabase profile:', supabaseProfile);
+        // Get Supabase user profile (gracefully handle network errors)
+        try {
+          const supabaseProfile = await UserMappingService.getUserProfile();
+          if (supabaseProfile) {
+            console.log('🔍 Supabase profile:', supabaseProfile);
+          } else {
+            console.log('ℹ️ No Supabase profile found (this is okay if network is unavailable)');
+          }
+        } catch (profileError: any) {
+          // Network errors are handled in getUserProfile, just log here
+          if (!profileError?.message?.includes('Network request failed')) {
+            console.warn('⚠️ Error loading Supabase profile:', profileError);
+          }
+        }
       }
     } catch (error) {
       console.error('❌ Error loading user profile:', error);
@@ -374,12 +389,15 @@ export default function ProfileFirebaseScreen() {
                 throw new Error(signOutResult.error || 'Sign out failed');
               }
               
-              // Show success message
-              Alert.alert(
-                'Signed Out', 
-                'You have been successfully signed out.',
-                [{ text: 'OK' }]
-              );
+                  // Show success message - NavigationGuard will handle navigation
+                  Alert.alert(
+                    'Signed Out', 
+                    'You have been successfully signed out.',
+                    [{ 
+                      text: 'OK'
+                      // Navigation will be handled automatically by NavigationGuard in _layout.tsx
+                    }]
+                  );
               
             } catch (error) {
               console.error('❌ Sign out error:', error);
@@ -416,10 +434,13 @@ export default function ProfileFirebaseScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Loading profile...</Text>
+      <SafeAreaView style={[styles.container, { backgroundColor: themeColors.background }]}>
+        <View style={[styles.loadingContainer, { backgroundColor: themeColors.background }]}>
+          <ActivityIndicator size="large" color={themeColors.primary} />
+          <Text style={[styles.loadingText, { color: themeColors.text }]}>Loading profile...</Text>
+          <Text style={[styles.gameNewsText, { color: themeColors.textSecondary }]}>
+            {gameNews}
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -845,20 +866,13 @@ export default function ProfileFirebaseScreen() {
             )}
           </TouchableOpacity>
         <View style={styles.section}>
-          {/* <Text style={styles.sectionTitle}>Support</Text>
-          
-          <TouchableOpacity style={styles.menuItem}>
-            <Text style={styles.menuText}>Help Center</Text>
-            <Text style={styles.menuArrow}>›</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.menuItem}>
-            <Text style={styles.menuText}>Contact Us</Text>
-            <Text style={styles.menuArrow}>›</Text>
-          </TouchableOpacity> */}
         </View>
 
         
+<Text style={[styles.VersionText, { color: themeColors.text }]}>Version 1.0.0</Text>
+<Text style={[styles.copyrightText, { color: themeColors.text }]}>Copyright 2025 © SRG | Creative Tsebo</Text>
+
+
       </ScrollView>
 
       {/* Avatar Picker Modal */}
@@ -968,7 +982,6 @@ export default function ProfileFirebaseScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
   },
   loadingContainer: {
     flex: 1,
@@ -979,6 +992,15 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
     marginTop: 16,
     fontSize: 16,
+  },
+  gameNewsText: {
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginTop: 10, // 10px below the loading text
+    maxWidth: 300,
+    paddingHorizontal: 32,
   },
   scrollView: {
     flex: 1,
@@ -1079,6 +1101,20 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginBottom: 16,
   },
+  VersionText:{
+    alignSelf: 'center',
+    fontSize: 12,
+    color: '#8E8E93',
+    marginTop: 16,
+  },
+  
+  copyrightText:{
+    alignSelf: 'center',
+    fontSize: 15,
+    color: '#8E8E93',
+    marginTop: 16,
+  },
+
   contactCarousel: {
     paddingHorizontal: 16,
     gap: 12,

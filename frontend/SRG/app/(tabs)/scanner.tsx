@@ -20,13 +20,35 @@ export default function ScannerScreen() {
   const [lastScannedUrl, setLastScannedUrl] = useState<string>('');
   const [torchEnabled, setTorchEnabled] = useState(false);
   const [resetTimeout, setResetTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [permissionLogged, setPermissionLogged] = useState(false);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
 
   useEffect(() => {
-    if (!permission?.granted) {
+    // Only log permission status once or when it changes
+    if (!permissionLogged) {
+      if (permission?.granted) {
+        setPermissionLogged(true);
+      } else if (permission?.status === 'denied') {
+        // Only log denied status once
+        console.log('📷 Camera permission denied');
+        setPermissionLogged(true);
+      }
+    }
+    
+    if (!permission) {
+      requestPermission();
+    } else if (!permission.granted && permission.status !== 'denied') {
+      // Only request if not already denied (to avoid repeated requests)
       requestPermission();
     }
-    loadScanHistory();
-  }, [permission, requestPermission]);
+  }, [permission, requestPermission, permissionLogged]);
+
+  // Load scan history separately to avoid repeated calls
+  useEffect(() => {
+    if (!historyLoaded || activeTab === 'history') {
+      loadScanHistory();
+    }
+  }, [activeTab]); // Only depend on activeTab, not historyLoaded to avoid loops
 
   // Cleanup timeout on unmount or tab change
   useEffect(() => {
@@ -53,13 +75,24 @@ export default function ScannerScreen() {
   // Load scan history from Supabase
   const loadScanHistory = async () => {
     try {
-      console.log('📚 Loading scan history from Supabase...');
+      // Only log on first load or when explicitly refreshing
+      if (!historyLoaded) {
+        console.log('📚 Loading scan history...');
+      }
       const history = await ScanHistoryService.getScans();
-      console.log('📚 Loaded history:', history.length, 'items');
+      if (!historyLoaded || history.length !== scanHistory.length) {
+        console.log('📚 Loaded', history.length, 'scan(s)');
+      }
       setScanHistory(history);
-    } catch (error) {
-      console.error('Error loading scan history:', error);
-      Alert.alert('Error', 'Failed to load scan history. Please try again.');
+      setHistoryLoaded(true);
+    } catch (error: any) {
+      // Errors are now handled gracefully in getScans, but log for debugging
+      if (!error?.message?.includes('Network request failed')) {
+        console.warn('⚠️ Error loading scan history:', error);
+      }
+      // Don't show alert - getScans returns empty array on error
+      setScanHistory([]);
+      setHistoryLoaded(true);
     }
   };
 
@@ -68,33 +101,48 @@ export default function ScannerScreen() {
     try {
       console.log('💾 Saving scan to Supabase:', gameData);
       const savedScan = await ScanHistoryService.saveScan(gameData, 'qr_code');
-      console.log('💾 Scan saved successfully:', savedScan);
       
-      // Refresh the history list
-      await loadScanHistory();
-    } catch (error) {
-      console.error('Error saving to history:', error);
-      Alert.alert('Error', 'Failed to save scan. Please try again.');
+      if (savedScan) {
+        console.log('💾 Scan saved successfully:', savedScan);
+        // Refresh the history list
+        await loadScanHistory();
+      } else {
+        console.log('ℹ️ Scan not saved (Supabase may be unavailable, but scan will continue)');
+      }
+    } catch (error: any) {
+      // Errors are now handled gracefully in saveScan, but log for debugging
+      if (!error?.message?.includes('Network request failed')) {
+        console.warn('⚠️ Error saving to history (non-critical):', error);
+      }
+      // Don't show alert - scanning should continue even if save fails
     }
   };
 
   const handleBarCodeScanned = async (result: BarcodeScanningResult) => {
+    console.log('📷 Barcode detected:', result.type, result.data?.substring(0, 50));
+    
     const now = Date.now();
     const timeSinceLastScan = now - lastScanTime;
     
-    // Aggressive debounce: ignore scans within 5 seconds of each other
-    if (timeSinceLastScan < 5000) {
+    // Reduced debounce: ignore scans within 2 seconds of each other (was 5 seconds)
+    if (timeSinceLastScan < 2000) {
       console.log('🚫 Scan too soon, ignoring (debounce)');
       return;
     }
     
     // Additional check for URL scans - prevent rapid scanning of same URL
-    if (result.data && result.data.includes('localhost:8000/api/games/')) {
+    if (result.data && (result.data.includes('localhost:8000/api/games/') || result.data.includes('api/games/'))) {
       const url = result.data;
-      if (url === lastScannedUrl && timeSinceLastScan < 10000) {
+      if (url === lastScannedUrl && timeSinceLastScan < 5000) {
         console.log('🚫 Same URL scanned too recently, ignoring');
         return;
       }
+    }
+    
+    // Validate that we have actual data
+    if (!result.data || result.data.trim().length === 0) {
+      console.log('🚫 Empty QR code data, ignoring');
+      return;
     }
     
     if (scanned) {
@@ -194,10 +242,44 @@ export default function ScannerScreen() {
       console.log('🎮 Game name extracted:', gameData.gameName);
       console.log('🆔 Game ID extracted:', gameData.gameId);
       console.log('🎯 Platform extracted:', gameData.platform);
-      await saveToHistory(gameData);
       
-      // Navigate to appropriate screen based on scan type
-      handleQRScanResult(parsedResult);
+      // Save to history (gracefully handle errors - scan should continue even if save fails)
+      try {
+        await saveToHistory(gameData);
+      } catch (error: any) {
+        // Errors are handled in saveToHistory, but log for debugging
+        if (!error?.message?.includes('Network request failed')) {
+          console.warn('⚠️ Error saving to history (non-critical):', error);
+        }
+        // Continue with navigation even if save fails
+      }
+      
+      // Navigate directly with the processed gameData
+      // Check if it's SkyScansGames data or has game info
+      if (gameData.source === 'SkyScansGames' || gameData.gameId || gameData.gameName) {
+        console.log('📱 Navigating to scan-results with gameData:', gameData);
+        router.push({
+          pathname: '/scan-results',
+          params: {
+            scanData: JSON.stringify(gameData)
+          }
+        });
+      } else if (gameData.slug || gameData.name) {
+        // Navigate to game details if we have slug/name
+        console.log('📱 Navigating to game-details with gameData:', gameData);
+        router.push({
+          pathname: '/game-details',
+          params: {
+            qrData: JSON.stringify(gameData),
+            slug: gameData.slug || '',
+            name: gameData.name || gameData.gameName || ''
+          }
+        });
+      } else {
+        // Fallback: use the original handler
+        console.log('📱 Using fallback navigation handler');
+        handleQRScanResult(parsedResult);
+      }
       
       // Clear any existing timeout to prevent race conditions
       if (resetTimeout) {
@@ -211,7 +293,7 @@ export default function ScannerScreen() {
         setLastScannedUrl('');
         setResetTimeout(null);
         console.log('🔄 Ready for next scan');
-      }, 3000); // 3 second delay before allowing next scan
+      }, 2000); // 2 second delay before allowing next scan (reduced from 3)
       
       setResetTimeout(newTimeout);
       
@@ -257,12 +339,20 @@ export default function ScannerScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await ScanHistoryService.clearAllScans();
+              const success = await ScanHistoryService.clearAllScans();
+              if (success) {
+                setScanHistory([]);
+                console.log('🗑️ History cleared from Supabase');
+              } else {
+                // Clear local state even if Supabase clear failed
+                setScanHistory([]);
+                console.log('ℹ️ History cleared locally (Supabase may be unavailable)');
+              }
+            } catch (error: any) {
+              // Errors are handled gracefully in clearAllScans
+              console.warn('⚠️ Error clearing history:', error);
+              // Still clear local state
               setScanHistory([]);
-              console.log('🗑️ History cleared from Supabase');
-            } catch (error) {
-              console.error('Error clearing history:', error);
-              Alert.alert('Error', 'Failed to clear history. Please try again.');
             }
           }
         }
@@ -389,14 +479,14 @@ export default function ScannerScreen() {
           facing={facing}
           onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
           barcodeScannerSettings={{
-            barcodeTypes: ['qr', 'ean13', 'ean8', 'code128'],
+            barcodeTypes: ['qr'],
           }}
           // Add autofocus for better scanning
           autofocus="on"
           // Enable torch/flash for better scanning in low light
           enableTorch={torchEnabled}
           // Ensure camera is active
-          active={true}
+          active={activeTab === 'camera'}
         >
           <View style={styles.scannerOverlay}>
             <View style={styles.scannerFrame} />

@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "3cdbebe0-fe27-4415-89e1-f61a529f580d"
+      }
+    },
+    "android": {
+      "package": "com.glitchedsky.srgreactnativeexpo"
+    },
+    "ios": {
+      "bundleIdentifier": "com.glitchedsky.srgreactnativeexpo",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    }
+  }
+}

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useMemo } from 'react';
 
 interface GradientColorContextType {
   currentGradientColor: string;
@@ -14,8 +14,14 @@ interface GradientColorProviderProps {
 export function GradientColorProvider({ children }: GradientColorProviderProps) {
   const [currentGradientColor, setCurrentGradientColor] = useState<string>('#3B82F6'); // Default to blue
 
+  // Memoize context value to prevent unnecessary re-renders
+  const contextValue = useMemo(() => ({
+    currentGradientColor,
+    setGradientColor: setCurrentGradientColor,
+  }), [currentGradientColor]);
+
   return (
-    <GradientColorContext.Provider value={{ currentGradientColor, setGradientColor: setCurrentGradientColor }}>
+    <GradientColorContext.Provider value={contextValue}>
       {children}
     </GradientColorContext.Provider>
   );

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState, ReactNode, useMemo, useCallback } from 'react';
 import { ColorThemeService, ColorTheme } from './color-themes';
 import { useGradientColor } from './gradient-color-context';
 
@@ -102,8 +102,8 @@ export function useThemeColors() {
     // GradientColorProvider not available, use theme colors only
   }
 
-  // Ensure WCAG AA contrast for text vs background and buttonText vs button
-  const hexToRgb = (hex: string) => {
+  // Memoize helper functions to prevent recreation on every render
+  const hexToRgb = useCallback((hex: string) => {
     const cleaned = hex.replace('#', '');
     const bigint = parseInt(cleaned.length === 3
       ? cleaned.split('').map(c => c + c).join('')
@@ -112,25 +112,25 @@ export function useThemeColors() {
     const g = (bigint >> 8) & 255;
     const b = bigint & 255;
     return { r, g, b };
-  };
+  }, []);
 
-  const relativeLuminance = (hex: string) => {
+  const relativeLuminance = useCallback((hex: string) => {
     const { r, g, b } = hexToRgb(hex);
     const srgb = [r, g, b].map(v => v / 255).map(c =>
       c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
     );
     return 0.2126 * srgb[0] + 0.7152 * srgb[1] + 0.0722 * srgb[2];
-  };
+  }, [hexToRgb]);
 
-  const contrastRatio = (hex1: string, hex2: string) => {
+  const contrastRatio = useCallback((hex1: string, hex2: string) => {
     const L1 = relativeLuminance(hex1);
     const L2 = relativeLuminance(hex2);
     const lighter = Math.max(L1, L2);
     const darker = Math.min(L1, L2);
     return (lighter + 0.05) / (darker + 0.05);
-  };
+  }, [relativeLuminance]);
 
-  const pickAAContrast = (bg: string, preferredText: string) => {
+  const pickAAContrast = useCallback((bg: string, preferredText: string) => {
     const AA = 4.5;
     // Try preferred color first
     if (contrastRatio(bg, preferredText) >= AA) return preferredText;
@@ -140,31 +140,51 @@ export function useThemeColors() {
     const blackRatio = contrastRatio(bg, black);
     const whiteRatio = contrastRatio(bg, white);
     return blackRatio >= whiteRatio ? (blackRatio >= AA ? black : blackRatio >= AA ? black : black) : (whiteRatio >= AA ? white : white);
-  };
+  }, [contrastRatio]);
 
+  // Memoize the returned colors object to prevent infinite loops
+  // Use individual color values as dependencies instead of the whole colors object
   const colors = currentTheme.colors;
-  const adjustedText = pickAAContrast(colors.background, colors.text);
-  const adjustedTextSecondary = pickAAContrast(colors.background, colors.textSecondary);
   
-  // Use gradient color for primary/button colors if available, otherwise use theme colors
-  const primaryColor = gradientColor || colors.primary;
-  const buttonColor = gradientColor || colors.button;
-  const tabBarActiveColor = gradientColor || colors.tabBarActive;
+  // Create a stable dependency string from primitive values only
+  const colorDeps = useMemo(() => {
+    return `${colors.background}-${colors.text}-${colors.textSecondary}-${colors.primary}-${colors.button}-${colors.tabBarActive}-${colors.buttonText}-${colors.card}-${gradientColor || ''}`;
+  }, [
+    colors.background,
+    colors.text,
+    colors.textSecondary,
+    colors.primary,
+    colors.button,
+    colors.tabBarActive,
+    colors.buttonText,
+    colors.card,
+    gradientColor
+  ]);
   
-  const adjustedButtonText = pickAAContrast(buttonColor, colors.buttonText);
-  const adjustedCardText = pickAAContrast(colors.card, adjustedText);
+  return useMemo(() => {
+    const adjustedText = pickAAContrast(colors.background, colors.text);
+    const adjustedTextSecondary = pickAAContrast(colors.background, colors.textSecondary);
+    
+    // Use gradient color for primary/button colors if available, otherwise use theme colors
+    const primaryColor = gradientColor || colors.primary;
+    const buttonColor = gradientColor || colors.button;
+    const tabBarActiveColor = gradientColor || colors.tabBarActive;
+    
+    const adjustedButtonText = pickAAContrast(buttonColor, colors.buttonText);
+    const adjustedCardText = pickAAContrast(colors.card, adjustedText);
 
-  return {
-    ...colors,
-    primary: primaryColor,
-    button: buttonColor,
-    tabBarActive: tabBarActiveColor,
-    text: adjustedText,
-    textSecondary: adjustedTextSecondary,
-    buttonText: adjustedButtonText,
-    // Provide a safe text color for cards when used directly on card backgrounds
-    cardText: adjustedCardText,
-  } as typeof currentTheme.colors & { cardText: string };
+    return {
+      ...colors,
+      primary: primaryColor,
+      button: buttonColor,
+      tabBarActive: tabBarActiveColor,
+      text: adjustedText,
+      textSecondary: adjustedTextSecondary,
+      buttonText: adjustedButtonText,
+      // Provide a safe text color for cards when used directly on card backgrounds
+      cardText: adjustedCardText,
+    } as typeof currentTheme.colors & { cardText: string };
+  }, [colorDeps, pickAAContrast]);
 }
 
 // Hook to check if current theme is dark

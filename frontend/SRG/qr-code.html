@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expo Go QR Code - Sky Recommends Games</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        h1 {
+            margin-top: 0;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        p {
+            opacity: 0.9;
+            margin-bottom: 30px;
+        }
+        #qrcode {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+        }
+        .url {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .instructions {
+            margin-top: 30px;
+            text-align: left;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .instructions h3 {
+            margin-top: 0;
+        }
+        .instructions ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .instructions li {
+            margin: 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📱 Sky Recommends Games</h1>
+        <p>Scan this QR code with Expo Go to open the app</p>
+        
+        <div id="qrcode"></div>
+        
+        <div class="url">
+            <strong>URL:</strong><br>
+            exp://u.expo.dev/933c0415-b548-401f-9426-aeefd9431299
+        </div>
+        
+        <div class="instructions">
+            <h3>How to use:</h3>
+            <ol>
+                <li>Install <strong>Expo Go</strong> on your phone:
+                    <ul>
+                        <li>iOS: <a href="https://apps.apple.com/app/expo-go/id982107779" style="color: #fff;">App Store</a></li>
+                        <li>Android: <a href="https://play.google.com/store/apps/details?id=host.exp.exponent" style="color: #fff;">Play Store</a></li>
+                    </ul>
+                </li>
+                <li>Open Expo Go app</li>
+                <li>Scan the QR code above</li>
+                <li>Or tap "Enter URL manually" and paste the URL</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        // Generate QR code
+        new QRCode(document.getElementById("qrcode"), {
+            text: "exp://u.expo.dev/933c0415-b548-401f-9426-aeefd9431299",
+            width: 300,
+            height: 300,
+            colorDark: "#000000",
+            colorLight: "#ffffff",
+            correctLevel: QRCode.CorrectLevel.H
+        });
+    </script>
+</body>
+</html>
+
+

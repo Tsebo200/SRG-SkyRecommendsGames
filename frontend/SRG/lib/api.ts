@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getBackendUrl, getBestBackendUrl, findWorkingBackendUrl } from './network-config';
+import { getBackendUrl, getBestBackendUrl, findWorkingBackendUrl, testBackendUrl } from './network-config';
 
 // Get the backend URL with automatic detection
 let API_BASE_URL = getBackendUrl();
@@ -101,13 +101,19 @@ class ApiClient {
         return response;
       },
       async (error) => {
-        console.error('❌ API Response Error:', error.message);
-        console.error('❌ Error details:', {
-          code: error.code,
-          message: error.message,
-          baseURL: this.client.defaults.baseURL,
-          url: error.config?.url,
-        });
+        // Don't log 429 errors as critical - they're rate limiting issues
+        if (error.response?.status !== 429) {
+          console.error('❌ API Response Error:', error.message);
+          console.error('❌ Error details:', {
+            code: error.code,
+            message: error.message,
+            baseURL: this.client.defaults.baseURL,
+            url: error.config?.url,
+          });
+        } else {
+          // Only log 429 as warning, not error
+          console.warn('⚠️ Rate limit reached (429), please wait before making more requests');
+        }
         
         // If it's a network error, try to find a working backend URL
         if (error.code === 'NETWORK_ERROR' || 
@@ -120,23 +126,28 @@ class ApiClient {
             console.log(`🔄 Network error detected (attempt ${this.retryCount}/${this.maxRetries}), trying to find working backend...`);
             
             try {
-              // Try to find a working backend URL
-              const workingUrl = await findWorkingBackendUrl();
+              // First check if current URL is working
+              const currentUrl = this.client.defaults.baseURL || API_BASE_URL;
+              const currentWorking = await testBackendUrl(currentUrl, true);
               
-              if (workingUrl && workingUrl !== this.client.defaults.baseURL) {
+              if (currentWorking) {
+                // Current URL is working, just retry
+                return this.client.request(error.config);
+              }
+              
+              // Current URL not working, try to find a working one (silently)
+              const workingUrl = await findWorkingBackendUrl(true);
+              
+              if (workingUrl && workingUrl !== currentUrl) {
                 console.log(`🔄 Switching to working backend: ${workingUrl}`);
                 this.client.defaults.baseURL = workingUrl;
                 API_BASE_URL = workingUrl;
                 // Retry the original request
                 return this.client.request(error.config);
-              } else if (workingUrl) {
-                console.log('✅ Found working URL, but it matches current URL');
-                // Still retry - might be a temporary network issue
-                return this.client.request(error.config);
               } else {
                 // Fallback to environment variable
                 const envUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
-                if (envUrl && envUrl !== this.client.defaults.baseURL) {
+                if (envUrl && envUrl !== currentUrl) {
                   console.log(`🔄 Trying environment URL: ${envUrl}`);
                   this.client.defaults.baseURL = envUrl;
                   API_BASE_URL = envUrl;
@@ -158,17 +169,29 @@ class ApiClient {
 
   private async initializeBackendUrl() {
     try {
-      // Try to find a working backend URL on initialization
-      const workingUrl = await findWorkingBackendUrl();
+      // First, check if environment variable is set (highest priority)
+      const envUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
+      if (envUrl) {
+        // Test the environment URL first (silently)
+        const isWorking = await testBackendUrl(envUrl, true);
+        if (isWorking) {
+          console.log(`✅ Using environment backend URL: ${envUrl}`);
+          this.client.defaults.baseURL = envUrl;
+          API_BASE_URL = envUrl;
+          return;
+        }
+      }
+      
+      // If env URL doesn't work or isn't set, try to find a working URL
+      const workingUrl = await findWorkingBackendUrl(true); // Silent mode
       if (workingUrl) {
         console.log(`✅ Initialized with working backend URL: ${workingUrl}`);
         this.client.defaults.baseURL = workingUrl;
         API_BASE_URL = workingUrl;
       } else {
         // Fallback to environment variable or default
-        const envUrl = process.env.EXPO_PUBLIC_BACKEND_URL;
         if (envUrl) {
-          console.log(`✅ Using environment backend URL: ${envUrl}`);
+          console.log(`⚠️ Environment backend URL not accessible, using anyway: ${envUrl}`);
           this.client.defaults.baseURL = envUrl;
           API_BASE_URL = envUrl;
         }
@@ -190,6 +213,45 @@ class ApiClient {
       params: { slug },
     });
     return response.data;
+  }
+
+  async getAwardWinningGames(limit: number = 10): Promise<Game[]> {
+    try {
+      // Try to fetch highly rated games (award winners are typically highly rated)
+      // Using search with common award-winning game names as a proxy
+      const awardWinners = [
+        'Baldur\'s Gate 3',
+        'The Legend of Zelda: Tears of the Kingdom',
+        'Elden Ring',
+        'God of War Ragnarök',
+        'It Takes Two',
+        'The Last of Us Part II',
+        'Sekiro: Shadows Die Twice',
+        'Red Dead Redemption 2',
+        'The Witcher 3',
+        'Hades'
+      ];
+      
+      const games: Game[] = [];
+      for (const gameName of awardWinners.slice(0, limit)) {
+        try {
+          const searchResult = await this.searchGames(gameName);
+          if (searchResult.results && searchResult.results.length > 0) {
+            const game = searchResult.results[0];
+            // Only add if it has a high rating
+            if (game.rating && game.rating > 4.0) {
+              games.push(game);
+            }
+          }
+        } catch (error) {
+          console.warn(`Failed to fetch ${gameName}:`, error);
+        }
+      }
+      return games;
+    } catch (error) {
+      console.error('Error fetching award-winning games:', error);
+      return [];
+    }
   }
 
   async upsertGame(game: UpsertGameRequest): Promise<{ id: string }> {
@@ -223,15 +285,38 @@ class ApiClient {
       await this.initializationPromise;
     }
     
+    // First, verify backend is accessible
     try {
+      const healthCheck = await this.healthCheck();
+      console.log('✅ Backend health check passed:', healthCheck);
+    } catch (healthError) {
+      console.error('❌ Backend health check failed:', healthError);
+      throw new Error('Backend server is not accessible. Please check if the server is running.');
+    }
+    
+    try {
+      console.log('🤖 Requesting AI recommendations (this may take 30-60 seconds)...');
       const response = await this.client.get('/games/recommendations', {
         params: {
           favourites: favouriteGames.join(', '),
         },
-        timeout: 45000, // 45 seconds for AI recommendations (longer than default)
+        timeout: 60000, // Increased to 60 seconds for AI recommendations
       });
+      console.log('✅ AI recommendations received successfully');
       return response.data;
     } catch (error: any) {
+      console.error('❌ Recommendations API error:', error.message);
+      
+      // Handle timeout specifically
+      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        throw new Error('Request timed out. The AI recommendation service may be slow or unavailable. Please try again in a moment.');
+      }
+      
+      // Handle OpenAI key not configured
+      if (error.response?.status === 503 || error.response?.data?.includes('OpenAI key not configured')) {
+        throw new Error('AI recommendations are not configured. Please contact support.');
+      }
+      
       // If we get a network error, try to find a working URL and retry once
       if ((error.code === 'NETWORK_ERROR' || 
            error.message?.includes('Network Error') || 
@@ -239,7 +324,7 @@ class ApiClient {
            !error.response) && this.retryCount === 0) {
         console.log('🔄 Retrying with working backend URL...');
         this.retryCount = 1; // Prevent infinite loops
-        const workingUrl = await findWorkingBackendUrl();
+        const workingUrl = await findWorkingBackendUrl(true); // Silent mode
         if (workingUrl && workingUrl !== this.client.defaults.baseURL) {
           this.client.defaults.baseURL = workingUrl;
           API_BASE_URL = workingUrl;
@@ -249,7 +334,7 @@ class ApiClient {
             params: {
               favourites: favouriteGames.join(', '),
             },
-            timeout: 45000,
+            timeout: 60000, // Increased timeout for retry
           }).then(res => {
             this.retryCount = 0; // Reset on success
             return res.data;

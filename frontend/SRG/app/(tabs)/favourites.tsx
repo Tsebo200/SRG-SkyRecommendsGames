@@ -5,10 +5,12 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { HybridFavouritesService, FavouriteGame } from '../../lib/favourites-hybrid';
 import { apiClient } from '../../lib/api';
 import { useThemeColors } from '../../lib/theme-context';
+import { getRandomGameNews } from '../../lib/game-news-quips';
 
 export default function FavouritesScreen() {
   const router = useRouter();
   const themeColors = useThemeColors();
+  const [gameNews] = useState<string>(getRandomGameNews());
   const [favourites, setFavourites] = useState<FavouriteGame[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -341,6 +343,9 @@ export default function FavouritesScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={themeColors.primary} />
           <Text style={[styles.loadingText, { color: themeColors.textSecondary }]}>Loading favourites...</Text>
+          <Text style={[styles.gameNewsText, { color: themeColors.textSecondary }]}>
+            {gameNews}
+          </Text>
         </View>
       </SafeAreaView>
     );
@@ -417,6 +422,15 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
+  },
+  gameNewsText: {
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginTop: 10, // 10px below the loading text
+    maxWidth: 300,
+    paddingHorizontal: 32,
   },
   errorContainer: {
     flex: 1,

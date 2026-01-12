@@ -1,415 +1,478 @@
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Image, Animated, Easing } from 'react-native';
-import { FirebaseAuthService, AuthUser } from '../lib/firebase-auth';
-import { UserMappingService } from '../lib/user-mapping';
-import { ThemeProvider } from '../lib/theme-context';
+import { View, ActivityIndicator, StyleSheet, Animated, Text } from 'react-native';
+import { ThemeProvider, useThemeColors } from '../lib/theme-context';
 import { GradientColorProvider } from '../lib/gradient-color-context';
+import { LinkPreviewContextProvider } from '../lib/link-preview-provider';
+import { HybridAuthService } from '../lib/hybrid-auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getRandomGameNews } from '../lib/game-news-quips';
 
-export default function RootLayout() {
+// Loading screen component
+function LoadingScreen() {
+  const themeColors = useThemeColors();
+  return (
+    <View style={[styles.loadingContainer, { backgroundColor: themeColors.background }]}>
+      <ActivityIndicator size="large" color={themeColors.primary} />
+    </View>
+  );
+}
+
+// Navigation guard component that handles auth-based routing
+function NavigationGuard({ initialUser }: { initialUser: any }) {
   const router = useRouter();
   const segments = useSegments();
-  const [initializing, setInitializing] = useState(true);
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [showLoading, setShowLoading] = useState(true);
+  const [user, setUser] = useState<any>(initialUser);
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState<boolean | null>(null);
-  
-  // Animation values for logo
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.8)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const opacityAnim = useRef(new Animated.Value(1)).current;
-  // Multiple outline layers for cascading effect
-  const outline1ScaleAnim = useRef(new Animated.Value(1.1)).current;
-  const outline1OpacityAnim = useRef(new Animated.Value(0.3)).current;
-  const outline2ScaleAnim = useRef(new Animated.Value(1.2)).current;
-  const outline2OpacityAnim = useRef(new Animated.Value(0.2)).current;
-  const outline3ScaleAnim = useRef(new Animated.Value(1.3)).current;
-  const outline3OpacityAnim = useRef(new Animated.Value(0.15)).current;
+  const [isNavigating, setIsNavigating] = useState(false);
+  const [hasNavigated, setHasNavigated] = useState(false); // Track if we've done initial navigation
 
   useEffect(() => {
     let mounted = true;
-
-    console.log('🔍 Initializing Firebase authentication...');
-
-    // Start logo animation - fade in and scale up
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }),
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        tension: 50,
-        friction: 7,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      // After initial animation, start pulsing with fade effect
-      Animated.loop(
-        Animated.parallel([
-          // Pulse scale animation (more pronounced: 1.0 to 1.4)
-          // Expand slower, reduce much faster with ease in-out
-          Animated.sequence([
-            Animated.timing(pulseAnim, {
-              toValue: 1.4,
-              duration: 800,
-              easing: Easing.inOut(Easing.ease),
-              useNativeDriver: true,
-            }),
-            Animated.timing(pulseAnim, {
-              toValue: 1.0,
-              duration: 400,
-              easing: Easing.inOut(Easing.ease),
-              useNativeDriver: true,
-            }),
-          ]),
-          // Opacity animation (inverse of scale - smaller = more transparent)
-          Animated.sequence([
-            Animated.timing(opacityAnim, {
-              toValue: 1.0,
-              duration: 800,
-              easing: Easing.inOut(Easing.ease),
-              useNativeDriver: true,
-            }),
-            Animated.timing(opacityAnim, {
-              toValue: 0.3,
-              duration: 400,
-              easing: Easing.inOut(Easing.ease),
-              useNativeDriver: true,
-            }),
-          ]),
-          // Outline 1 scale animation (keeps growing even when logo reduces)
-          Animated.sequence([
-            Animated.timing(outline1ScaleAnim, {
-              toValue: 1.5,
-              duration: 800,
-              easing: Easing.inOut(Easing.ease),
-              useNativeDriver: true,
-            }),
-            Animated.timing(outline1ScaleAnim, {
-              toValue: 1.8,
-              duration: 400,
-              easing: Easing.inOut(Easing.ease),
-              useNativeDriver: true,
-            }),
-            // Reset to starting value for smooth loop
-            Animated.timing(outline1ScaleAnim, {
-              toValue: 1.1,
-              duration: 0,
-              useNativeDriver: true,
-            }),
-          ]),
-          // Outline 1 opacity animation
-          Animated.sequence([
-            Animated.timing(outline1OpacityAnim, {
-              toValue: 0.2,
-              duration: 600,
-              easing: Easing.inOut(Easing.ease),
-              useNativeDriver: true,
-            }),
-            Animated.timing(outline1OpacityAnim, {
-              toValue: 0.5,
-              duration: 400,
-              easing: Easing.inOut(Easing.ease),
-              useNativeDriver: true,
-            }),
-          ]),
-          // Outline 2 scale animation (keeps growing even when logo reduces)
-          Animated.sequence([
-            Animated.timing(outline2ScaleAnim, {
-              toValue: 1.6,
-              duration: 800,
-              easing: Easing.inOut(Easing.ease),
-              useNativeDriver: true,
-            }),
-            Animated.timing(outline2ScaleAnim, {
-              toValue: 1.9,
-              duration: 400,
-              easing: Easing.inOut(Easing.ease),
-              useNativeDriver: true,
-            }),
-            // Reset to starting value for smooth loop
-            Animated.timing(outline2ScaleAnim, {
-              toValue: 1.2,
-              duration: 0,
-              useNativeDriver: true,
-            }),
-          ]),
-          // Outline 2 opacity animation
-          Animated.sequence([
-            Animated.timing(outline2OpacityAnim, {
-              toValue: 0.1,
-              duration: 600,
-              easing: Easing.inOut(Easing.ease),
-              useNativeDriver: true,
-            }),
-            Animated.timing(outline2OpacityAnim, {
-              toValue: 0.4,
-              duration: 400,
-              easing: Easing.inOut(Easing.ease),
-              useNativeDriver: true,
-            }),
-          ]),
-          // Outline 3 scale animation (keeps growing even when logo reduces)
-          Animated.sequence([
-            Animated.timing(outline3ScaleAnim, {
-              toValue: 1.7,
-              duration: 800,
-              easing: Easing.inOut(Easing.ease),
-              useNativeDriver: true,
-            }),
-            Animated.timing(outline3ScaleAnim, {
-              toValue: 2.0,
-              duration: 400,
-              easing: Easing.inOut(Easing.ease),
-              useNativeDriver: true,
-            }),
-            // Reset to starting value for smooth loop
-            Animated.timing(outline3ScaleAnim, {
-              toValue: 1.3,
-              duration: 0,
-              useNativeDriver: true,
-            }),
-          ]),
-          // Outline 3 opacity animation
-          Animated.sequence([
-            Animated.timing(outline3OpacityAnim, {
-              toValue: 0.05,
-              duration: 600,
-              easing: Easing.inOut(Easing.ease),
-              useNativeDriver: true,
-            }),
-            Animated.timing(outline3OpacityAnim, {
-              toValue: 0.3,
-              duration: 400,
-              easing: Easing.inOut(Easing.ease),
-              useNativeDriver: true,
-            }),
-          ]),
-        ])
-      ).start();
-    });
-
-    // Start minimum loading time timer
-    const loadingTimer = setTimeout(() => {
-      if (mounted) {
-        setShowLoading(false);
-      }
-    }, 1100); // 1.1 seconds minimum loading time
-
-    // Listen to auth state changes (ShieldMe-inspired approach)
-    const unsubscribe = FirebaseAuthService.onAuthStateChanged(async (firebaseUser) => {
-      console.log('🔍 Firebase auth state change:', {
-        hasUser: !!firebaseUser,
-        userId: firebaseUser?.uid,
-        email: firebaseUser?.email
-      });
-
-      if (mounted) {
-        if (firebaseUser) {
-          // Ensure user mapping exists in Supabase (for data persistence)
-          console.log('🔄 Ensuring user mapping...');
-          const mappingSuccess = await UserMappingService.ensureUserMapping();
-          
-          if (mappingSuccess) {
-            console.log('✅ User mapping ensured');
-            const authUser = FirebaseAuthService.convertUser(firebaseUser);
-            setUser(authUser);
-          } else {
-            console.log('⚠️ User mapping failed');
-            setUser(null);
-          }
-        } else {
-          setUser(null);
-        }
-        
-        if (initializing) {
-          setInitializing(false);
-        }
-      }
-    });
 
     // Load onboarding flag
     (async () => {
       try {
         const v = await AsyncStorage.getItem('hasSeenOnboarding');
-        if (mounted) setHasSeenOnboarding(v === 'true');
+        if (mounted) {
+          setHasSeenOnboarding(v === 'true');
+        }
       } catch {
-        if (mounted) setHasSeenOnboarding(false);
+        if (mounted) {
+          setHasSeenOnboarding(false);
+        }
       }
     })();
 
-    return () => {
-      mounted = false;
-      clearTimeout(loadingTimer);
-      unsubscribe();
-    };
-  }, [initializing]);
+    // Listen to auth state changes - Firebase persistence handles session restoration
+    const unsubscribe = HybridAuthService.onAuthStateChanged((firebaseUser) => {
+      if (!mounted) return;
 
-  useEffect(() => {
-    if (initializing) return;
-    
-    console.log('🔍 Navigation check:', {
-      hasUser: !!user,
-      segments: segments.join('/'),
-      currentPath: segments[0]
+      console.log('🔍 Auth state changed:', {
+        hasUser: !!firebaseUser,
+        userId: firebaseUser?.uid,
+        email: firebaseUser?.email
+      });
+
+      setUser(firebaseUser);
     });
 
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    // Don't navigate if:
+    // - Onboarding status unknown
+    // - Already navigating
+    if (hasSeenOnboarding === null || isNavigating) return;
+    
     const inAuthGroup = segments[0] === 'auth';
     const onOnboarding = segments[0] === 'onboarding';
+    const inTabs = segments[0] === '(tabs)';
+    const onAwards = segments[0] === 'awards';
+    const currentRoute = segments.join('/');
     
-    // Add a small delay to ensure smooth transitions
-    const navigationTimer = setTimeout(() => {
-      (async () => {
-        // Always get the latest flag to avoid stale state loops
-        try {
-          const v = await AsyncStorage.getItem('hasSeenOnboarding');
-          const latestSeen = v === 'true';
-          if (hasSeenOnboarding !== latestSeen) setHasSeenOnboarding(latestSeen);
+    // Allow awards screen for logged-in users - don't interfere with it
+    if (user && onAwards) {
+      if (!hasNavigated) {
+        setHasNavigated(true);
+      }
+      return;
+    }
+    
+    // CRITICAL: If user is logged out but on tabs/home screen, immediately redirect
+    // This handles the case where app restarts and shows last route before auth check
+    if (!user && inTabs) {
+      console.log('🚨 User logged out but on home screen - immediate redirect');
+      setIsNavigating(true);
+      if (hasSeenOnboarding) {
+        router.replace('/auth/signin-firebase');
+      } else {
+        router.replace('/onboarding');
+      }
+      setTimeout(() => setIsNavigating(false), 500);
+      return;
+    }
+    
+    // If user is logged in and in tabs/awards, or logged out and in auth/onboarding, we're in the correct place
+    // Mark as navigated to stop repeated checks
+    if (hasNavigated) {
+      const isInCorrectPlace = 
+        (user && (inTabs || onAwards)) || // Logged in and in tabs/awards - correct
+        (!user && (inAuthGroup || onOnboarding)); // Logged out and in auth/onboarding - correct
+      
+      if (isInCorrectPlace) {
+        return; // Already navigated and in correct place, no need to check again
+      } else {
+        // In wrong place, reset flag to allow navigation
+        setHasNavigated(false);
+      }
+    }
 
-          // Onboarding takes precedence if not completed
-          if (!latestSeen && !onOnboarding) {
-            console.log('🔄 Redirecting to onboarding');
-            router.replace('/onboarding');
+    // Determine target route based on auth and onboarding status
+    let targetRoute: string | null = null;
+
+    if (!user) {
+      // User is not signed in
+      if (!hasSeenOnboarding && !onOnboarding) {
+        targetRoute = '/onboarding';
+      } else if (hasSeenOnboarding) {
+        // Only navigate to sign-in if not already in auth group (prevent duplicates)
+        if (!inAuthGroup && !onOnboarding) {
+          targetRoute = '/auth/signin-firebase';
+        }
+        // If already in auth group or onboarding, stay there (prevent duplicate navigation)
+      }
+    } else {
+      // User is signed in (Firebase persistence restored session)
+      if (!hasSeenOnboarding && !onOnboarding) {
+        targetRoute = '/onboarding';
+      } else if (hasSeenOnboarding) {
+        // Only redirect if in auth screens, otherwise stay where we are
+        if (inAuthGroup) {
+          targetRoute = '/(tabs)/';
+        }
+        // If already in tabs or onboarding, don't navigate (prevent loops)
+      }
+    }
+
+    // Only navigate if we have a target and we're not already there
+    const normalizedTarget = targetRoute?.replace(/^\//, '') || '';
+    const normalizedCurrent = currentRoute || '';
+    
+    if (targetRoute && normalizedCurrent !== normalizedTarget) {
+      // Additional check: if we're already in auth group and target is also auth, don't navigate
+      if (inAuthGroup && targetRoute.startsWith('/auth/')) {
+        console.log('🔄 Already in auth group, skipping navigation to prevent duplicates');
+        setHasNavigated(true);
+        return;
+      }
+
+      console.log('🔄 Navigating to:', targetRoute);
+      setIsNavigating(true);
+      setHasNavigated(true); // Mark as navigated to prevent duplicates
+      
+      router.replace(targetRoute);
+      
+      // Reset navigation flag after a delay
+      setTimeout(() => {
+        setIsNavigating(false);
+      }, 500);
+    } else {
+      // No navigation needed - we're already in the correct place
+      // Mark as navigated to stop repeated checks
+      if (!hasNavigated) {
+        setHasNavigated(true);
+      }
+    }
+  }, [user, segments, hasSeenOnboarding, router, isNavigating, hasNavigated]);
+
+  // Don't reset hasNavigated for normal tab navigation within (tabs)
+  // Only reset if user navigates to a completely different section (auth, onboarding, etc.)
+  useEffect(() => {
+    if (!hasNavigated || isNavigating) return;
+    
+    const inAuthGroup = segments[0] === 'auth';
+    const onOnboarding = segments[0] === 'onboarding';
+    const inTabs = segments[0] === '(tabs)';
+    
+    const onAwards = segments[0] === 'awards';
+    
+    // Check if user is in the correct place based on auth status
+    const isInCorrectPlace = 
+      (user && (inTabs || onAwards)) || // Logged in and in tabs/awards - correct
+      (!user && (inAuthGroup || onOnboarding)); // Logged out and in auth/onboarding - correct
+    
+    // Only reset if user navigated to a wrong place (e.g., logged out user on tabs)
+    if (!isInCorrectPlace) {
+      // User is in wrong place, allow navigation guard to fix it
+      const timer = setTimeout(() => {
+        setHasNavigated(false);
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+    
+    // User is in correct place, keep hasNavigated true to prevent repeated checks
+  }, [segments, hasNavigated, isNavigating, user]);
+
+  return null; // This component only handles navigation logic
+}
+
+function PreloaderScreen() {
+  const router = useRouter();
+  const segments = useSegments();
+  const themeColors = useThemeColors();
+  const [isReady, setIsReady] = useState(false);
+  const [targetRoute, setTargetRoute] = useState<string | null>(null);
+  const [startTime] = useState(Date.now());
+  const fadeAnim = useRef(new Animated.Value(1)).current; // Start fully visible
+  const [hasSeenOnboarding, setHasSeenOnboarding] = useState<boolean | null>(null);
+  const [gameNews] = useState<string>(getRandomGameNews());
+
+  useEffect(() => {
+    let mounted = true;
+    let redirectHandled = false;
+
+    const performRedirect = async () => {
+      if (redirectHandled || !mounted) return;
+      redirectHandled = true;
+
+      try {
+        // Check onboarding status first
+        const onboardingValue = await AsyncStorage.getItem('hasSeenOnboarding');
+        const seenOnboarding = onboardingValue === 'true';
+        setHasSeenOnboarding(seenOnboarding);
+
+        // If user hasn't seen onboarding, skip preloader and go directly to onboarding
+        if (!seenOnboarding) {
+          console.log('📚 Preloader: User hasn\'t seen onboarding, skipping preloader');
+          router.replace('/onboarding' as any);
+          setIsReady(true); // Hide preloader immediately
+          return;
+        }
+
+        // Get auth state immediately (Firebase persistence should have restored it)
+        const currentUser = HybridAuthService.getCurrentUser();
+        
+        console.log('🔍 Preloader: Initial auth check', { hasUser: !!currentUser });
+
+        // Wait for onAuthStateChanged to fire (it fires immediately with persisted state)
+        // This ensures we have the most up-to-date auth state from Firebase persistence
+        const unsubscribe = HybridAuthService.onAuthStateChanged((firebaseUser) => {
+          if (!mounted || redirectHandled) {
+            unsubscribe();
             return;
           }
 
+          // Determine where to redirect based on auth status
+          // (We already know they've seen onboarding)
+          (async () => {
+            try {
+              // Use the user from onAuthStateChanged (most up-to-date from Firebase persistence)
+              const user = firebaseUser;
+
+              let route: string;
+
           if (!user) {
-            if (!inAuthGroup && !onOnboarding) {
-              console.log('🔄 Redirecting to sign in');
-              router.replace('/auth/signin-firebase');
+                // User not logged in - go to sign-in
+                route = '/auth/signin-firebase';
+              } else {
+                // User logged in - go to home
+                route = '/(tabs)/';
+              }
+
+              console.log('🔄 Preloader: Redirecting to', {
+                hasUser: !!user,
+                route
+              });
+
+              if (mounted) {
+                setTargetRoute(route);
+                
+                console.log('🔄 Preloader: About to navigate to', route);
+                
+                // Small delay to ensure smooth transition
+                await new Promise(resolve => setTimeout(resolve, 300));
+                
+                // Use replace to prevent back navigation to preloader
+                router.replace(route as any);
+                
+                console.log('✅ Preloader: Navigation command sent to', route);
+              }
+
+              unsubscribe();
+            } catch (error) {
+              console.error('❌ Error in preloader redirect:', error);
+              // Fallback to sign-in on error
+              if (mounted) {
+                setTargetRoute('/auth/signin-firebase');
+                router.replace('/auth/signin-firebase' as any);
+              }
+              unsubscribe();
             }
-          } else if (inAuthGroup) {
-            console.log('🔄 Redirecting to main app');
-            router.replace('/(tabs)/');
-          }
-        } catch {
-          // If storage fails, default to showing onboarding once
-          if (!onOnboarding) router.replace('/onboarding');
+          })();
+        });
+      } catch (error) {
+        console.error('❌ Error in preloader:', error);
+        // Fallback to sign-in on error
+        if (mounted) {
+          setTargetRoute('/auth/signin-firebase');
+          router.replace('/auth/signin-firebase' as any);
         }
-      })();
-    }, 100); // Small delay to prevent flashing
+      }
+    };
 
-    return () => clearTimeout(navigationTimer);
-  }, [segments, initializing, user, router, hasSeenOnboarding]);
+    // Start redirect process
+    performRedirect();
 
-  // Show loading screen while checking initial auth state OR during navigation transitions
-  const shouldShowLoading = showLoading || initializing || hasSeenOnboarding === null ||
-    (user === null && !segments.includes('auth') && segments[0] !== 'onboarding') ||
-    (user && segments.includes('auth'));
+    return () => {
+      mounted = false;
+    };
+  }, [router]);
 
-  if (shouldShowLoading) {
+  // Always hide preloader after minimum 1000ms
+  useEffect(() => {
+    if (isReady) return;
+
+    const elapsed = Date.now() - startTime;
+    const remainingTime = Math.max(0, 1000 - elapsed);
+
+    console.log('⏱️ Preloader: Timer check', {
+      elapsed,
+      remainingTime,
+      targetRoute,
+      segments: segments.join('/')
+    });
+
+    // Always hide after 1000ms minimum, regardless of detection
+    const timeout = setTimeout(() => {
+      console.log('✅ Preloader: 1000ms minimum reached, fading out preloader');
+      
+      // Fade out animation
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 500, // 500ms fade out
+        useNativeDriver: true,
+      }).start(() => {
+        // After fade completes, mark as ready
+        setIsReady(true);
+      });
+    }, remainingTime);
+
+    return () => clearTimeout(timeout);
+  }, [startTime, isReady, targetRoute, segments, fadeAnim]);
+
+  // Also try to detect when target screen is loaded (for faster hiding if already past 1000ms)
+  useEffect(() => {
+    if (!targetRoute || isReady) return;
+
+    const segmentPath = segments.join('/');
+    const elapsed = Date.now() - startTime;
+    
+    // Check if we're on the target route
+    let isOnTargetRoute = false;
+    
+    if (targetRoute === '/(tabs)/') {
+      isOnTargetRoute = segments[0] === '(tabs)';
+    } else if (targetRoute === '/auth/signin-firebase') {
+      isOnTargetRoute = segmentPath.includes('auth') || segmentPath.includes('signin');
+    } else if (targetRoute === '/onboarding') {
+      isOnTargetRoute = segments[0] === 'onboarding' || segmentPath.includes('onboarding');
+    }
+
+    // If target screen is loaded AND we've shown for at least 1000ms, fade out
+    if (isOnTargetRoute && elapsed >= 1000) {
+      console.log('✅ Preloader: Target screen loaded and 1000ms elapsed, fading out');
+      
+      // Fade out animation
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 500, // 500ms fade out
+        useNativeDriver: true,
+      }).start(() => {
+        // After fade completes, mark as ready
+        setIsReady(true);
+      });
+    }
+  }, [segments, targetRoute, isReady, startTime, fadeAnim]);
+
+  // Show preloader while determining auth state and redirecting
+  // Fade out smoothly after minimum 1000ms
+  if (!isReady) {
     return (
-      <>
-        <StatusBar style="light" />
-        <View style={{ 
-          flex: 1, 
-          backgroundColor: '#000', 
-          justifyContent: 'center', 
-          alignItems: 'center' 
-        }}>
-          <View style={{ position: 'relative', width: 200, height: 200 }}>
-            {/* Outline 3 layer (furthest behind, most transparent) */}
             <Animated.View
-              style={{
-                position: 'absolute',
-                opacity: Animated.multiply(fadeAnim, outline3OpacityAnim),
-                transform: [
-                  { scale: Animated.multiply(scaleAnim, outline3ScaleAnim) },
-                ],
-              }}
-            >
-              <Image
-                source={require('../assets/Sky Logo.png')}
-                style={{
-                  width: 200,
-                  height: 200,
-                  resizeMode: 'contain',
-                }}
-              />
-            </Animated.View>
-            
-            {/* Outline 2 layer (middle, more transparent) */}
-            <Animated.View
-              style={{
-                position: 'absolute',
-                opacity: Animated.multiply(fadeAnim, outline2OpacityAnim),
-                transform: [
-                  { scale: Animated.multiply(scaleAnim, outline2ScaleAnim) },
-                ],
-              }}
-            >
-              <Image
-                source={require('../assets/Sky Logo.png')}
-                style={{
-                  width: 200,
-                  height: 200,
-                  resizeMode: 'contain',
-                }}
-              />
-            </Animated.View>
-            
-            {/* Outline 1 layer (closest, less transparent) */}
-            <Animated.View
-              style={{
-                position: 'absolute',
-                opacity: Animated.multiply(fadeAnim, outline1OpacityAnim),
-                transform: [
-                  { scale: Animated.multiply(scaleAnim, outline1ScaleAnim) },
-                ],
-              }}
-            >
-              <Image
-                source={require('../assets/Sky Logo.png')}
-                style={{
-                  width: 200,
-                  height: 200,
-                  resizeMode: 'contain',
-                }}
-              />
-            </Animated.View>
-            
-            {/* Main logo layer */}
-            <Animated.View
-              style={{
-                position: 'absolute',
-                opacity: Animated.multiply(fadeAnim, opacityAnim),
-                transform: [
-                  { scale: Animated.multiply(scaleAnim, pulseAnim) },
-                ],
-              }}
-            >
-              <Image
-                source={require('../assets/Sky Logo.png')}
-                style={{
-                  width: 200,
-                  height: 200,
-                  resizeMode: 'contain',
-                }}
-              />
-            </Animated.View>
-          </View>
+        style={[
+          styles.preloaderContainer, 
+          { 
+            backgroundColor: themeColors.background,
+            opacity: fadeAnim
+          }
+        ]}
+      >
+        <View style={styles.preloaderContent}>
+          <ActivityIndicator size="large" color={themeColors.primary} />
+          <Text style={[styles.gameNewsText, { color: themeColors.textSecondary }]}>
+            {gameNews}
+          </Text>
         </View>
-      </>
+      </Animated.View>
     );
   }
 
+  // Preloader hidden - return null so it doesn't block the screen
+  return null;
+}
+
+function RootLayoutContent() {
+  // Show preloader first - it will handle auth check and redirect
+  // This ensures NO screen (including home) renders until we know the auth state
   return (
-    <ThemeProvider>
-      <GradientColorProvider>
-        <StatusBar style="light" />
-        <Stack screenOptions={{ headerShown: false }}>
+    <>
+      <PreloaderScreen />
+      <Stack 
+        screenOptions={{ headerShown: false }}
+      >
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="auth/signin-firebase" />
           <Stack.Screen name="auth/signup-firebase" />
           <Stack.Screen name="game/[slug]" />
+        <Stack.Screen name="game-details" />
+        <Stack.Screen name="scan-results" />
+        <Stack.Screen name="steam-profile" />
+        <Stack.Screen name="network-test" />
           <Stack.Screen name="onboarding" />
         </Stack>
-      </GradientColorProvider>
-    </ThemeProvider>
+      <NavigationGuard initialUser={null} />
+    </>
   );
 }
+
+export default function RootLayout() {
+  // Stack MUST be the absolute root - no conditional rendering
+  // Providers wrap the Stack to ensure they're available to all screens
+  return (
+    <LinkPreviewContextProvider>
+      <ThemeProvider>
+        <GradientColorProvider>
+          <StatusBar style="light" />
+          <RootLayoutContent />
+      </GradientColorProvider>
+    </ThemeProvider>
+    </LinkPreviewContextProvider>
+  );
+}
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  preloaderContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 9999,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  preloaderContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+  },
+  gameNewsText: {
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginTop: 10, // 10px below the loader
+    maxWidth: 300,
+  },
+});

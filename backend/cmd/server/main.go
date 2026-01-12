@@ -809,21 +809,21 @@ func main() {
 
 		client := openai.NewClient(cfg.OpenAIKey)
 
-		// Use gpt-3.5-turbo to generate personalized recommendations with optimized prompt
+		// Use gpt-3.5-turbo to generate personalized recommendations
 		completionResp, err := client.CreateChatCompletion(r.Context(), openai.ChatCompletionRequest{
 			Model: "gpt-3.5-turbo",
 			Messages: []openai.ChatCompletionMessage{
 				{
 					Role:    "system",
-					Content: "You are a game recommendation AI. Return ONLY a valid JSON array with 6 games. Each object needs: name, description, similarity_reason. Use popular game names only. Example: [{\"name\":\"The Witcher 3\",\"description\":\"Epic RPG\",\"similarity_reason\":\"Similar fantasy gameplay\"}]",
+					Content: "You are a game recommendation AI. Return ONLY a valid JSON array with game recommendations. Each object needs: name, description, similarity_reason. Use popular game names only.",
 				},
 				{
 					Role:    "user",
-					Content: fmt.Sprintf("Favourite games: %s. Recommend 6 similar games. JSON only.", favouriteGames),
+					Content: fmt.Sprintf("Favourite games: %s. Recommend similar games. Return ONLY a JSON array. Each object must have: name, description, similarity_reason. JSON only, no other text.", favouriteGames),
 				},
 			},
-			MaxTokens:   600, // Reduced for faster response
-			Temperature: 0.3, // Lower temperature for more consistent, faster responses
+			MaxTokens:   800,
+			Temperature: 0.3,
 		})
 
 		if err != nil {
@@ -855,15 +855,18 @@ func main() {
 		}
 
 		if err := json.Unmarshal([]byte(cleanResponse), &aiRecommendations); err != nil {
+			fmt.Printf("❌ Failed to parse AI response as JSON: %v\n", err)
 			// If parsing fails, create fallback recommendations
 			aiRecommendations = []map[string]interface{}{
 				{
 					"name":              "AI Recommendation Error",
-					"description":       "Failed to parse AI response: " + aiResponse,
+					"description":       "Failed to parse AI response: " + err.Error(),
 					"similarity_reason": "Please try again",
 				},
 			}
 		}
+		
+		fmt.Printf("📊 Parsed %d games from AI response\n", len(aiRecommendations))
 
 		// Enhance recommendations with actual game data from RAWG API and AI translation
 		enhancedRecommendations := make([]map[string]interface{}, 0)
@@ -898,20 +901,21 @@ func main() {
 			results[i] = <-gameChan
 		}
 
-		// Process results
+		// Process results - ensure we include ALL games, even if RAWG API fails
 		for _, result := range results {
+			rec := aiRecommendations[result.index]
+			gameName, _ := rec["name"].(string)
+
 			if result.err != nil {
-				fmt.Printf("❌ Failed to get data for game at index %d: %v\n", result.index, result.err)
-				continue
+				fmt.Printf("⚠️ Error getting RAWG data for game at index %d (%s): %v\n", result.index, gameName, result.err)
+				// Don't skip - use AI data as fallback
 			}
 
-			rec := aiRecommendations[result.index]
 			gameData := result.data
-			gameName, _ := rec["name"].(string)
 
 			if gameData == nil {
 				// If we can't find the game, use the AI data as fallback
-				fmt.Printf("❌ RAWG API search failed for %s\n", gameName)
+				fmt.Printf("⚠️ RAWG API search failed for %s, using AI data as fallback\n", gameName)
 				rec["background_image"] = ""
 				rec["slug"] = strings.ToLower(strings.ReplaceAll(gameName, " ", "-"))
 				rec["genres"] = []string{}
@@ -926,18 +930,24 @@ func main() {
 				rec["rating"] = gameData["rating"]
 				rec["released"] = gameData["released"]
 
-				// Use AI to translate and enhance the RAWG data
+				// Use AI to translate and enhance the RAWG data (optional, don't fail if it errors)
 				enhancedData, err := enhanceGameDataWithAI(rec, favouriteGames, cfg.OpenAIKey)
 				if err == nil {
 					// Merge AI-enhanced data
 					for key, value := range enhancedData {
 						rec[key] = value
 					}
+				} else {
+					fmt.Printf("⚠️ AI enhancement failed for %s, using RAWG data only: %v\n", gameName, err)
 				}
 			}
 
+			// Always append the recommendation, even if some data is missing
 			enhancedRecommendations = append(enhancedRecommendations, rec)
 		}
+		
+		// Log the final count
+		fmt.Printf("✅ Returning %d recommendations (requested 6)\n", len(enhancedRecommendations))
 
 		// Return the enhanced recommendations
 		w.Header().Set("Content-Type", "application/json")

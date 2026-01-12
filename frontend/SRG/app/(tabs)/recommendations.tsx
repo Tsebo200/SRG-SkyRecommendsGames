@@ -20,6 +20,7 @@ import { apiClient, Game } from '../../lib/api';
 import { HybridFavouritesService } from '../../lib/favourites-hybrid';
 import { SteamAPIService } from '../../lib/steam-api';
 import { useThemeColors } from '../../lib/theme-context';
+import { getRandomGameNews } from '../../lib/game-news-quips';
 
 interface RecommendationGame extends Game {
   similarity_score?: number;
@@ -46,6 +47,7 @@ interface SteamRecommendations {
 export default function RecommendationsScreen() {
   const router = useRouter();
   const themeColors = useThemeColors();
+  const [gameNews] = useState<string>(getRandomGameNews());
   const [recommendations, setRecommendations] = useState<RecommendationGame[]>([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -192,9 +194,14 @@ export default function RecommendationsScreen() {
       if (Array.isArray(aiRecommendations.recommendations)) {
         console.log('✅ Using enhanced recommendations with images');
         console.log('🔍 Number of recommendations received:', aiRecommendations.recommendations.length);
+        console.log('🔍 All recommendation names:', aiRecommendations.recommendations.map(r => r.name || r.gameName || 'Unknown'));
         console.log('🔍 First recommendation data:', aiRecommendations.recommendations[0]);
         console.log('🖼️ First recommendation image:', aiRecommendations.recommendations[0]?.background_image);
-        setRecommendations(aiRecommendations.recommendations);
+        
+        // Ensure we're setting all recommendations (no filtering)
+        const allRecommendations = aiRecommendations.recommendations.filter(r => r && (r.name || r.gameName)); // Only filter out null/undefined
+        console.log('🔍 Filtered recommendations count (after removing nulls):', allRecommendations.length);
+        setRecommendations(allRecommendations);
       } else if (typeof aiRecommendations.recommendations === 'string') {
         console.log('⚠️ Received string response, parsing JSON...');
         console.log('🔍 Raw string response:', aiRecommendations.recommendations);
@@ -467,14 +474,14 @@ export default function RecommendationsScreen() {
             <Text style={[styles.ctaButtonText, { color: themeColors.buttonText }]}>Get Recommendations</Text>
           </TouchableOpacity>
           <TouchableOpacity 
-            style={[styles.secondaryButton, { backgroundColor: themeColors.surface }]} 
+            style={[styles.secondaryButton, { backgroundColor: themeColors.surface, borderColor: themeColors.border }]} 
             onPress={() => router.push('/(tabs)/search')}
           >
             <Ionicons name="search" size={16} color={themeColors.primary} />
             <Text style={[styles.secondaryButtonText, { color: themeColors.primary }]}>Search Games</Text>
           </TouchableOpacity>
           <TouchableOpacity 
-            style={[styles.secondaryButton, { backgroundColor: themeColors.surface }]} 
+            style={[styles.secondaryButton, { backgroundColor: themeColors.surface, borderColor: themeColors.border }]} 
             onPress={() => router.push('/(tabs)/scanner')}
           >
             <Ionicons name="qr-code" size={16} color={themeColors.primary} />
@@ -502,6 +509,9 @@ export default function RecommendationsScreen() {
       <Text style={[styles.loadingText, { color: themeColors.text }]}>🤖 AI is analysing your preferences...</Text>
       <Text style={[styles.loadingSubtext, { color: themeColors.textSecondary }]}>
         This may take 15-30 seconds while we fetch game data and generate personalised recommendations
+      </Text>
+      <Text style={[styles.gameNewsText, { color: themeColors.textSecondary }]}>
+        {gameNews}
       </Text>
     </View>
   );
@@ -563,7 +573,7 @@ export default function RecommendationsScreen() {
             <View>
               {/* Steam Recommendations Section - Optional */}
               {steamProfile && privacySteamInfluence ? (
-                <View style={styles.steamSection}>
+                <View style={[styles.steamSection, { borderColor: themeColors.border }]}>
                   <View style={styles.steamHeader}>
                     <View style={styles.steamTitleContainer}>
                       <Ionicons name="logo-steam" size={20} color="#007AFF" />
@@ -677,6 +687,15 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'center',
     lineHeight: 20,
+  },
+  gameNewsText: {
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginTop: 20, // 20px below the AI description
+    maxWidth: 300,
+    paddingHorizontal: 32,
   },
   listContainer: {
     padding: 16,
