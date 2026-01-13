@@ -60,10 +60,5 @@
     "postinstall-postinstall": "^2.1.0",
     "typescript": "~5.9.2"
   },
-  "overrides": {
-    "@testing-library/jest-native": "npm:void@0.0.0",
-    "@testing-library/react-native": "npm:void@0.0.0",
-    "react-test-renderer": "npm:void@0.0.0"
-  },
   "private": true
 }
