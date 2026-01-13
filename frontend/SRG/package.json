@@ -15,7 +15,7 @@
     "update-ip": "bash scripts/update-ip.sh",
     "network-test": "node -e \"console.log('Testing network...'); require('./lib/network-config').findWorkingBackendUrl().then(url => console.log('Working URL:', url)).catch(err => console.error('Error:', err))\"",
     "reset-theme": "node scripts/reset-to-nature-theme.js",
-    "postinstall": "patch-package"
+    "postinstall": "patch-package || echo 'Patch-package failed, continuing...'"
   },
   "dependencies": {
     "@babel/preset-env": "^7.28.3",
@@ -31,8 +31,6 @@
     "@shopify/flash-list": "2.0.2",
     "@supabase/supabase-js": "^2.75.0",
     "@tanstack/react-query": "^5.90.5",
-    "@testing-library/jest-native": "^5.4.3",
-    "@testing-library/react-native": "^13.3.3",
     "axios": "^1.12.2",
     "babel-preset-expo": "~54.0.9",
     "expo": "~54.0.31",
@@ -62,9 +60,12 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@testing-library/jest-native": "^5.4.3",
+    "@testing-library/react-native": "^13.3.3",
     "@types/react": "~19.1.0",
     "patch-package": "^8.0.1",
     "postinstall-postinstall": "^2.1.0",
+    "react-test-renderer": "19.1.0",
     "typescript": "~5.9.2"
   },
   "private": true

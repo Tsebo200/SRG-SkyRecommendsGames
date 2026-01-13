@@ -1,6 +1,7 @@
 {
   "cli": {
-    "version": ">= 5.2.0"
+    "version": ">= 5.2.0",
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
@@ -21,6 +22,11 @@
     },
     "production": {
       "autoIncrement": true,
+      "node": "22.20.0",
+      "env": {
+        "NODE_OPTIONS": "--max-old-space-size=4096",
+        "npm_config_legacy_peer_deps": "true"
+      },
       "ios": {
         "simulator": false,
         "buildConfiguration": "Release"

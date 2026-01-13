@@ -18,6 +18,7 @@
       "bundleIdentifier": "org.name.SRGReactNativeExpo",
       "buildNumber": "1",
       "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "We need access to your camera to scan QR codes for games.",
         "NSMicrophoneUsageDescription": "We need access to your microphone to enable voice search for games.",
         "NSSpeechRecognitionUsageDescription": "We need access to speech recognition to convert your voice to text for searching games."
