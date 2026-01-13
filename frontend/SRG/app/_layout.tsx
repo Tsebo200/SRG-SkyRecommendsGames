@@ -26,7 +26,7 @@ function NavigationGuard({ initialUser }: { initialUser: any }) {
   const [user, setUser] = useState<any>(initialUser);
   const [hasSeenOnboarding, setHasSeenOnboarding] = useState<boolean | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
-  const [hasNavigated, setHasNavigated] = useState(false); // Track if we've done initial navigation
+  const hasNavigatedRef = useRef(false); // Track if we've done initial navigation (use ref to avoid infinite loops)
 
   useEffect(() => {
     let mounted = true;
@@ -78,8 +78,8 @@ function NavigationGuard({ initialUser }: { initialUser: any }) {
     
     // Allow awards screen for logged-in users - don't interfere with it
     if (user && onAwards) {
-      if (!hasNavigated) {
-        setHasNavigated(true);
+      if (!hasNavigatedRef.current) {
+        hasNavigatedRef.current = true;
       }
       return;
     }
@@ -100,7 +100,7 @@ function NavigationGuard({ initialUser }: { initialUser: any }) {
     
     // If user is logged in and in tabs/awards, or logged out and in auth/onboarding, we're in the correct place
     // Mark as navigated to stop repeated checks
-    if (hasNavigated) {
+    if (hasNavigatedRef.current) {
       const isInCorrectPlace = 
         (user && (inTabs || onAwards)) || // Logged in and in tabs/awards - correct
         (!user && (inAuthGroup || onOnboarding)); // Logged out and in auth/onboarding - correct
@@ -109,7 +109,7 @@ function NavigationGuard({ initialUser }: { initialUser: any }) {
         return; // Already navigated and in correct place, no need to check again
       } else {
         // In wrong place, reset flag to allow navigation
-        setHasNavigated(false);
+        hasNavigatedRef.current = false;
       }
     }
 
@@ -148,13 +148,13 @@ function NavigationGuard({ initialUser }: { initialUser: any }) {
       // Additional check: if we're already in auth group and target is also auth, don't navigate
       if (inAuthGroup && targetRoute.startsWith('/auth/')) {
         console.log('🔄 Already in auth group, skipping navigation to prevent duplicates');
-        setHasNavigated(true);
+        hasNavigatedRef.current = true;
         return;
       }
 
       console.log('🔄 Navigating to:', targetRoute);
       setIsNavigating(true);
-      setHasNavigated(true); // Mark as navigated to prevent duplicates
+      hasNavigatedRef.current = true; // Mark as navigated to prevent duplicates
       
       router.replace(targetRoute);
       
@@ -165,16 +165,16 @@ function NavigationGuard({ initialUser }: { initialUser: any }) {
     } else {
       // No navigation needed - we're already in the correct place
       // Mark as navigated to stop repeated checks
-      if (!hasNavigated) {
-        setHasNavigated(true);
+      if (!hasNavigatedRef.current) {
+        hasNavigatedRef.current = true;
       }
     }
-  }, [user, segments, hasSeenOnboarding, router, isNavigating, hasNavigated]);
+  }, [user, segments, hasSeenOnboarding, router, isNavigating]);
 
   // Don't reset hasNavigated for normal tab navigation within (tabs)
   // Only reset if user navigates to a completely different section (auth, onboarding, etc.)
   useEffect(() => {
-    if (!hasNavigated || isNavigating) return;
+    if (!hasNavigatedRef.current || isNavigating) return;
     
     const inAuthGroup = segments[0] === 'auth';
     const onOnboarding = segments[0] === 'onboarding';
@@ -191,13 +191,13 @@ function NavigationGuard({ initialUser }: { initialUser: any }) {
     if (!isInCorrectPlace) {
       // User is in wrong place, allow navigation guard to fix it
       const timer = setTimeout(() => {
-        setHasNavigated(false);
+        hasNavigatedRef.current = false;
       }, 500);
       return () => clearTimeout(timer);
     }
     
     // User is in correct place, keep hasNavigated true to prevent repeated checks
-  }, [segments, hasNavigated, isNavigating, user]);
+  }, [segments, isNavigating, user]);
 
   return null; // This component only handles navigation logic
 }

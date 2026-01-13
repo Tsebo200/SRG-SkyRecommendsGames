@@ -101,25 +101,40 @@ class ApiClient {
         return response;
       },
       async (error) => {
+        // Handle different error types appropriately
+        const isNetworkError = error.code === 'NETWORK_ERROR' || 
+                               error.code === 'ERR_NETWORK' ||
+                               error.message?.includes('Network Error') || 
+                               error.message?.includes('ERR_NETWORK') ||
+                               !error.response;
+        
         // Don't log 429 errors as critical - they're rate limiting issues
-        if (error.response?.status !== 429) {
+        if (error.response?.status === 429) {
+          // Only log 429 as warning, not error
+          console.warn('⚠️ Rate limit reached (429), please wait before making more requests');
+        } else if (isNetworkError) {
+          // Network errors are common when backend is unavailable - log as warning only
+          // Only log if we've exhausted retries or it's a health check
+          if (this.retryCount >= this.maxRetries || error.config?.url === '/health') {
+            console.warn('⚠️ Network Error: Backend server may be unavailable', {
+              baseURL: this.client.defaults.baseURL,
+              url: error.config?.url,
+            });
+          }
+        } else {
+          // Other errors (4xx, 5xx) are logged as errors
           console.error('❌ API Response Error:', error.message);
           console.error('❌ Error details:', {
             code: error.code,
             message: error.message,
+            status: error.response?.status,
             baseURL: this.client.defaults.baseURL,
             url: error.config?.url,
           });
-        } else {
-          // Only log 429 as warning, not error
-          console.warn('⚠️ Rate limit reached (429), please wait before making more requests');
         }
         
         // If it's a network error, try to find a working backend URL
-        if (error.code === 'NETWORK_ERROR' || 
-            error.message.includes('Network Error') || 
-            error.message.includes('ERR_NETWORK') ||
-            !error.response) {
+        if (isNetworkError) {
           
           if (this.retryCount < this.maxRetries) {
             this.retryCount++;
@@ -285,13 +300,30 @@ class ApiClient {
       await this.initializationPromise;
     }
     
-    // First, verify backend is accessible
+    // Try to verify backend is accessible (non-blocking)
+    // If backend is unavailable, we'll show a user-friendly error but allow the request to proceed
+    // This allows the app to try connecting and show better error messages
     try {
-      const healthCheck = await this.healthCheck();
+      const healthCheck = await Promise.race([
+        this.healthCheck(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Health check timeout')), 3000))
+      ]);
       console.log('✅ Backend health check passed:', healthCheck);
-    } catch (healthError) {
-      console.error('❌ Backend health check failed:', healthError);
-      throw new Error('Backend server is not accessible. Please check if the server is running.');
+    } catch (healthError: any) {
+      // Network errors during health check are common - log but don't block
+      const isNetworkError = healthError.code === 'NETWORK_ERROR' || 
+                             healthError.code === 'ERR_NETWORK' ||
+                             healthError.message?.includes('Network Error') ||
+                             healthError.message?.includes('Health check timeout') ||
+                             !healthError.response;
+      
+      if (isNetworkError) {
+        console.warn('⚠️ Backend health check failed - will attempt request anyway');
+        // Don't throw - allow the request to proceed so we can show a better error message
+      } else {
+        console.warn('⚠️ Backend health check failed:', healthError.message);
+        // Don't throw - allow the request to proceed
+      }
     }
     
     try {

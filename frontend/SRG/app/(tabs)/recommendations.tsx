@@ -280,9 +280,9 @@ export default function RecommendationsScreen() {
       // Provide more specific error messages
       if (error.message?.includes('timeout') || error.code === 'ECONNABORTED') {
         setError('AI recommendations are taking longer than expected. Please try again - this usually works on the second attempt.');
-      } else if (error.message?.includes('Network Error') || error.code === 'NETWORK_ERROR' || error.code === 'ERR_NETWORK') {
-        const backendUrl = process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8080';
-        setError(`Network connection issue. Backend URL: ${backendUrl}\n\nPlease:\n1. Check your backend server is running\n2. Verify the IP address matches your network\n3. Run ./update-ip.sh if needed\n4. Restart Expo after updating`);
+      } else if (error.message?.includes('Network Error') || error.code === 'NETWORK_ERROR' || error.code === 'ERR_NETWORK' || error.message?.includes('Backend server is not accessible')) {
+        const backendUrl = error.config?.baseURL || process.env.EXPO_PUBLIC_BACKEND_URL || 'http://localhost:8080';
+        setError(`⚠️ Backend server is not accessible\n\nCurrent URL: ${backendUrl}\n\nTo fix this:\n1. Make sure your backend server is running (port 8080)\n2. Check your network connection\n3. If using a different IP, set EXPO_PUBLIC_BACKEND_URL in your .env file\n4. For localhost, ensure you're using the same device/emulator\n\nNote: Steam recommendations will still work without the backend.`);
       } else if (error.response?.status === 404) {
         setError('Recommendations endpoint not found. Please check your backend server is running correctly.');
       } else {
