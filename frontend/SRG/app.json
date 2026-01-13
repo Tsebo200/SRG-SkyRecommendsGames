@@ -17,6 +17,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "org.name.SRGReactNativeExpo",
       "buildNumber": "1",
+      "deploymentTarget": "15.1",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "We need access to your camera to scan QR codes for games.",
