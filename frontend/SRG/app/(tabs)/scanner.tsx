@@ -46,7 +46,7 @@ export default function ScannerScreen() {
   // Load scan history separately to avoid repeated calls
   useEffect(() => {
     if (!historyLoaded || activeTab === 'history') {
-      loadScanHistory();
+    loadScanHistory();
     }
   }, [activeTab]); // Only depend on activeTab, not historyLoaded to avoid loops
 
@@ -104,8 +104,8 @@ export default function ScannerScreen() {
       
       if (savedScan) {
         console.log('💾 Scan saved successfully:', savedScan);
-        // Refresh the history list
-        await loadScanHistory();
+      // Refresh the history list
+      await loadScanHistory();
       } else {
         console.log('ℹ️ Scan not saved (Supabase may be unavailable, but scan will continue)');
       }
@@ -245,7 +245,7 @@ export default function ScannerScreen() {
       
       // Save to history (gracefully handle errors - scan should continue even if save fails)
       try {
-        await saveToHistory(gameData);
+      await saveToHistory(gameData);
       } catch (error: any) {
         // Errors are handled in saveToHistory, but log for debugging
         if (!error?.message?.includes('Network request failed')) {
@@ -341,8 +341,8 @@ export default function ScannerScreen() {
             try {
               const success = await ScanHistoryService.clearAllScans();
               if (success) {
-                setScanHistory([]);
-                console.log('🗑️ History cleared from Supabase');
+              setScanHistory([]);
+              console.log('🗑️ History cleared from Supabase');
               } else {
                 // Clear local state even if Supabase clear failed
                 setScanHistory([]);

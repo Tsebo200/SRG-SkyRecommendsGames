@@ -15,9 +15,9 @@ export const supabaseService = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
   supabaseServiceKey || 'placeholder-key',
   {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
+  }
   }
 );

@@ -1,12 +1,6 @@
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signOut, 
-  onAuthStateChanged, 
-  User,
-  UserCredential
-} from 'firebase/auth';
-import { auth } from './firebase';
+// Native Firebase Auth SDK for React Native
+import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { auth as authInstance } from './firebase';
 
 export interface AuthUser {
   uid: string;
@@ -16,10 +10,10 @@ export interface AuthUser {
 
 export class FirebaseAuthService {
   // Sign in with email and password
-  static async signIn(email: string, password: string): Promise<UserCredential> {
+  static async signIn(email: string, password: string): Promise<FirebaseAuthTypes.UserCredential> {
     try {
       console.log('🔐 Firebase sign in attempt:', email);
-      const result = await signInWithEmailAndPassword(auth, email, password);
+      const result = await auth().signInWithEmailAndPassword(email, password);
       console.log('✅ Firebase sign in successful:', result.user.uid);
       return result;
     } catch (error: any) {
@@ -29,10 +23,10 @@ export class FirebaseAuthService {
   }
 
   // Sign up with email and password
-  static async signUp(email: string, password: string): Promise<UserCredential> {
+  static async signUp(email: string, password: string): Promise<FirebaseAuthTypes.UserCredential> {
     try {
       console.log('🔐 Firebase sign up attempt:', email);
-      const result = await createUserWithEmailAndPassword(auth, email, password);
+      const result = await auth().createUserWithEmailAndPassword(email, password);
       console.log('✅ Firebase sign up successful:', result.user.uid);
       return result;
     } catch (error: any) {
@@ -45,7 +39,7 @@ export class FirebaseAuthService {
   static async signOut(): Promise<void> {
     try {
       console.log('🔐 Firebase sign out');
-      await signOut(auth);
+      await auth().signOut();
       console.log('✅ Firebase sign out successful');
     } catch (error: any) {
       console.error('❌ Firebase sign out failed:', error.message);
@@ -54,28 +48,28 @@ export class FirebaseAuthService {
   }
 
   // Get current user
-  static getCurrentUser(): User | null {
-    return auth.currentUser;
+  static getCurrentUser(): FirebaseAuthTypes.User | null {
+    return auth().currentUser;
   }
 
   // Check if user is signed in
   static isSignedIn(): boolean {
-    return !!auth.currentUser;
+    return !!auth().currentUser;
   }
 
   // Listen to auth state changes
-  static onAuthStateChanged(callback: (user: User | null) => void): () => void {
-    return onAuthStateChanged(auth, callback);
+  static onAuthStateChanged(callback: (user: FirebaseAuthTypes.User | null) => void): () => void {
+    return auth().onAuthStateChanged(callback);
   }
 
   // Convert Firebase User to our AuthUser interface
-  static convertUser(user: User | null): AuthUser | null {
+  static convertUser(user: FirebaseAuthTypes.User | null): AuthUser | null {
     if (!user) return null;
     
     return {
       uid: user.uid,
       email: user.email,
-      displayName: user.displayName
+      displayName: user.displayName || null
     };
   }
 

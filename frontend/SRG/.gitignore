@@ -38,6 +38,7 @@ yarn-error.*
 
 # generated native folders
 /ios
+!/ios/SRG/GoogleService-Info.plist
 /android
 .env.backup
 *.env

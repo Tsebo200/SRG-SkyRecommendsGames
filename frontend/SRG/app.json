@@ -17,12 +17,13 @@
       "supportsTablet": true,
       "bundleIdentifier": "org.name.SRGReactNativeExpo",
       "buildNumber": "1",
-      "deploymentTarget": "15.1",
+      "googleServicesFile": "./ios/SRG/GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "We need access to your camera to scan QR codes for games.",
         "NSMicrophoneUsageDescription": "We need access to your microphone to enable voice search for games.",
-        "NSSpeechRecognitionUsageDescription": "We need access to speech recognition to convert your voice to text for searching games."
+        "NSSpeechRecognitionUsageDescription": "We need access to speech recognition to convert your voice to text for searching games.",
+        "NSUserTrackingUsageDescription": "This allows us to provide you with personalized game recommendations and improve your experience. You can change this permission anytime in Settings."
       }
     },
     "android": {
@@ -48,7 +49,10 @@
         {
           "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera to scan QR codes for games."
         }
-      ]
+      ],
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth",
+      "expo-font"
     ],
     "extra": {
       "router": {},

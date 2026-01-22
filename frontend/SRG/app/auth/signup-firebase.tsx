@@ -16,7 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { HybridAuthService } from '../../lib/hybrid-auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SteamAPIService } from '../../lib/steam-api';
-import { updateProfile } from 'firebase/auth';
+import auth from '@react-native-firebase/auth';
 import { supabaseService } from '../../lib/supabase-service';
 
 export default function SignUpFirebase() {
@@ -61,7 +61,7 @@ export default function SignUpFirebase() {
         // Update user profile with username
         if (username.trim()) {
           try {
-            await updateProfile(result.user, {
+            await result.user.updateProfile({
               displayName: username.trim()
             });
             console.log('✅ Username updated in Firebase profile');

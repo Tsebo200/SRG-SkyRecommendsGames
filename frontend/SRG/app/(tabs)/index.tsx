@@ -89,8 +89,8 @@ export default function HomeScreen() {
   useEffect(() => {
     if (!motionEnabled) {
       // Stop all animations
-      if (animationRef.current) {
-        animationRef.current.stop();
+    if (animationRef.current) {
+      animationRef.current.stop();
       }
       if (colorAnimationRef.current) {
         colorAnimationRef.current.stop();
@@ -108,16 +108,16 @@ export default function HomeScreen() {
       // Sequence: 1 -> 2 -> 3 -> 4 -> 1 (loop)
       const sequence = Animated.sequence([
         // Fade out 1, fade in 2
-        Animated.parallel([
+          Animated.parallel([
           Animated.timing(gradientOpacity1, {
-            toValue: 0,
-            duration: 2000,
+            toValue: 0, 
+            duration: 2000, 
             easing: Easing.inOut(Easing.ease),
             useNativeDriver: true,
           }),
           Animated.timing(gradientOpacity2, {
-            toValue: 1,
-            duration: 2000,
+            toValue: 1, 
+            duration: 2000, 
             easing: Easing.inOut(Easing.ease),
             useNativeDriver: true,
           }),
@@ -126,13 +126,13 @@ export default function HomeScreen() {
         Animated.parallel([
           Animated.timing(gradientOpacity2, {
             toValue: 0,
-            duration: 2000,
+            duration: 2000, 
             easing: Easing.inOut(Easing.ease),
             useNativeDriver: true,
           }),
           Animated.timing(gradientOpacity3, {
             toValue: 1,
-            duration: 2000,
+            duration: 2000, 
             easing: Easing.inOut(Easing.ease),
             useNativeDriver: true,
           }),
@@ -141,13 +141,13 @@ export default function HomeScreen() {
         Animated.parallel([
           Animated.timing(gradientOpacity3, {
             toValue: 0,
-            duration: 2000,
+            duration: 2000, 
             easing: Easing.inOut(Easing.ease),
             useNativeDriver: true,
           }),
           Animated.timing(gradientOpacity4, {
-            toValue: 1,
-            duration: 2000,
+            toValue: 1, 
+            duration: 2000, 
             easing: Easing.inOut(Easing.ease),
             useNativeDriver: true,
           }),
@@ -155,8 +155,8 @@ export default function HomeScreen() {
         // Fade out 4, fade in 1
         Animated.parallel([
           Animated.timing(gradientOpacity4, {
-            toValue: 0,
-            duration: 2000,
+            toValue: 0, 
+            duration: 2000, 
             easing: Easing.inOut(Easing.ease),
             useNativeDriver: true,
           }),
@@ -179,8 +179,8 @@ export default function HomeScreen() {
       if (animationRef.current) {
         animationRef.current.stop();
       }
-    };
-  }, [motionEnabled]);
+      };
+    }, [motionEnabled]);
 
   // Update gradient color for other components when motion is enabled
   useEffect(() => {
@@ -221,7 +221,7 @@ export default function HomeScreen() {
   const handleAwardsPress = () => {
     router.push('/awards');
   };
-
+  
   return (
     <View style={[styles.container, { backgroundColor: themeColors.background }]}>
       {/* Animated gradient backgrounds */}
@@ -272,8 +272,8 @@ export default function HomeScreen() {
           AI-Powered Game Recommendations
         </Text>
         <Text style={[styles.description, { color: themeColors.textSecondary }]}>
-          Discover your next favourite game with personalised recommendations based on your gaming profile.
-        </Text>
+            Discover your next favourite game with personalised recommendations based on your gaming profile.
+          </Text>
 
         <View style={styles.buttonContainer}>
           <TouchableOpacity
@@ -329,7 +329,7 @@ export default function HomeScreen() {
         visible={bottomSheetVisible}
         onClose={() => setBottomSheetVisible(false)}
       />
-    </View>
+      </View>
   );
 }
 

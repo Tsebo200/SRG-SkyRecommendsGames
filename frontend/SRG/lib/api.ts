@@ -123,14 +123,14 @@ class ApiClient {
           }
         } else {
           // Other errors (4xx, 5xx) are logged as errors
-          console.error('❌ API Response Error:', error.message);
-          console.error('❌ Error details:', {
-            code: error.code,
-            message: error.message,
+        console.error('❌ API Response Error:', error.message);
+        console.error('❌ Error details:', {
+          code: error.code,
+          message: error.message,
             status: error.response?.status,
-            baseURL: this.client.defaults.baseURL,
-            url: error.config?.url,
-          });
+          baseURL: this.client.defaults.baseURL,
+          url: error.config?.url,
+        });
         }
         
         // If it's a network error, try to find a working backend URL

@@ -1,11 +1,5 @@
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
-  signOut, 
-  onAuthStateChanged, 
-  User
-} from 'firebase/auth';
-import { auth } from './firebase';
+// Native Firebase Auth SDK for React Native
+import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import { supabase } from './supabase';
 import { supabaseService } from './supabase-service';
 
@@ -20,7 +14,7 @@ export class HybridAuthService {
   static async signIn(email: string, password: string) {
     try {
       console.log('🔐 Firebase sign in attempt:', email);
-      const result = await signInWithEmailAndPassword(auth, email, password);
+      const result = await auth().signInWithEmailAndPassword(email, password);
       
       // Sync user to Supabase if needed
       await this.syncUserToSupabase(result.user);
@@ -37,7 +31,7 @@ export class HybridAuthService {
   static async signUp(email: string, password: string) {
     try {
       console.log('🔐 Firebase sign up attempt:', email);
-      const result = await createUserWithEmailAndPassword(auth, email, password);
+      const result = await auth().createUserWithEmailAndPassword(email, password);
       
       // Sync user to Supabase
       await this.syncUserToSupabase(result.user);
@@ -61,7 +55,7 @@ export class HybridAuthService {
       
       // Sign out from Firebase
       console.log('🔄 Signing out from Firebase...');
-      await signOut(auth);
+      await auth().signOut();
       console.log('✅ Firebase sign out successful');
       
       // Notify Supabase about logout (for session management)
@@ -97,28 +91,28 @@ export class HybridAuthService {
   }
 
   // Get current Firebase user
-  static getCurrentUser(): User | null {
-    return auth.currentUser;
+  static getCurrentUser(): FirebaseAuthTypes.User | null {
+    return auth().currentUser;
   }
 
   // Check if user is signed in
   static isSignedIn(): boolean {
-    return !!auth.currentUser;
+    return !!auth().currentUser;
   }
 
   // Listen to Firebase auth state changes
-  static onAuthStateChanged(callback: (user: User | null) => void): () => void {
-    return onAuthStateChanged(auth, callback);
+  static onAuthStateChanged(callback: (user: FirebaseAuthTypes.User | null) => void): () => void {
+    return auth().onAuthStateChanged(callback);
   }
 
   // Convert Firebase User to our AuthUser interface
-  static convertUser(user: User | null): AuthUser | null {
+  static convertUser(user: FirebaseAuthTypes.User | null): AuthUser | null {
     if (!user) return null;
     
     return {
       uid: user.uid,
       email: user.email,
-      displayName: user.displayName
+      displayName: user.displayName || null
     };
   }
 
@@ -129,7 +123,7 @@ export class HybridAuthService {
   }
 
   // Sync Firebase user to Supabase (for data operations)
-  static async syncUserToSupabase(firebaseUser: User) {
+  static async syncUserToSupabase(firebaseUser: FirebaseAuthTypes.User) {
     try {
       console.log('🔄 Syncing Firebase user to Supabase:', firebaseUser.uid);
       

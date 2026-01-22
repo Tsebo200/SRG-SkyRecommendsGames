@@ -50,8 +50,8 @@ export class UserMappingService {
           console.warn('⚠️ Network error checking existing user (may be temporary):', fetchError.message);
           return null;
         } else {
-          console.error('❌ Error checking existing user:', fetchError.message);
-          return null;
+        console.error('❌ Error checking existing user:', fetchError.message);
+        return null;
         }
       }
 
@@ -87,15 +87,15 @@ export class UserMappingService {
             if (raceError.message?.includes('Network request failed') || raceError.message?.includes('fetch')) {
               console.warn('⚠️ Network error fetching user after race condition (may be temporary):', raceError.message);
             } else {
-              console.error('❌ Error fetching user after race condition:', raceError.message);
+            console.error('❌ Error fetching user after race condition:', raceError.message);
             }
           }
         } else {
           // Handle network errors gracefully
           if (insertError.message?.includes('Network request failed') || insertError.message?.includes('fetch')) {
             console.warn('⚠️ Network error creating user mapping (may be temporary):', insertError.message);
-          } else {
-            console.error('❌ Error creating user mapping:', insertError.message);
+        } else {
+          console.error('❌ Error creating user mapping:', insertError.message);
           }
         }
         return null;
@@ -222,7 +222,7 @@ export class UserMappingService {
         if (error.message?.includes('Network request failed') || error.message?.includes('fetch')) {
           console.warn('⚠️ Network error getting user profile (may be temporary):', error.message);
         } else {
-          console.error('❌ Error getting user profile:', error.message);
+        console.error('❌ Error getting user profile:', error.message);
         }
         return null;
       }
@@ -237,7 +237,7 @@ export class UserMappingService {
       if (error?.message?.includes('Network request failed') || error?.message?.includes('fetch')) {
         console.warn('⚠️ Network error in getUserProfile (may be temporary):', error.message);
       } else {
-        console.error('❌ Error in getUserProfile:', error);
+      console.error('❌ Error in getUserProfile:', error);
       }
       return null;
     }

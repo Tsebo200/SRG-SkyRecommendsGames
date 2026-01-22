@@ -50,7 +50,7 @@ export class ScanHistoryService {
 
       // Ensure user is synced to Supabase first (gracefully handle errors)
       try {
-        await HybridAuthService.syncUserToSupabase(firebaseUser);
+      await HybridAuthService.syncUserToSupabase(firebaseUser);
       } catch (syncError: any) {
         if (syncError?.message?.includes('Network request failed') || syncError?.message?.includes('fetch')) {
           console.warn('⚠️ Network error syncing user (may be temporary):', syncError.message);

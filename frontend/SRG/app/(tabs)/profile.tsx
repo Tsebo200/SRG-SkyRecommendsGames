@@ -14,7 +14,7 @@ import NetworkStatus from '../../components/NetworkStatus';
 import AvatarPicker from '../../components/AvatarPicker';
 import { useTheme, useThemeColors, useIsDarkTheme } from '../../lib/theme-context';
 import { SteamAPIService } from '../../lib/steam-api';
-import { updateProfile } from 'firebase/auth';
+import auth from '@react-native-firebase/auth';
 import { getRandomGameNews } from '../../lib/game-news-quips';
 
 export default function ProfileFirebaseScreen() {
@@ -227,9 +227,9 @@ export default function ProfileFirebaseScreen() {
         
         // Get Supabase user profile (gracefully handle network errors)
         try {
-          const supabaseProfile = await UserMappingService.getUserProfile();
+        const supabaseProfile = await UserMappingService.getUserProfile();
           if (supabaseProfile) {
-            console.log('🔍 Supabase profile:', supabaseProfile);
+        console.log('🔍 Supabase profile:', supabaseProfile);
           } else {
             console.log('ℹ️ No Supabase profile found (this is okay if network is unavailable)');
           }
@@ -390,14 +390,14 @@ export default function ProfileFirebaseScreen() {
               }
               
                   // Show success message - NavigationGuard will handle navigation
-                  Alert.alert(
-                    'Signed Out', 
-                    'You have been successfully signed out.',
+              Alert.alert(
+                'Signed Out', 
+                'You have been successfully signed out.',
                     [{ 
                       text: 'OK'
                       // Navigation will be handled automatically by NavigationGuard in _layout.tsx
                     }]
-                  );
+              );
               
             } catch (error) {
               console.error('❌ Sign out error:', error);
@@ -529,7 +529,7 @@ export default function ProfileFirebaseScreen() {
                             return;
                           }
                           // Update Firebase displayName
-                          await updateProfile(firebaseUser, { displayName: trimmed });
+                          await firebaseUser.updateProfile({ displayName: trimmed });
                           // Update Supabase profile
                           await UserMappingService.updateUserProfile({ display_name: trimmed } as any);
                           // Refresh local state
@@ -910,7 +910,7 @@ export default function ProfileFirebaseScreen() {
                   Alert.alert('Error', 'Not signed in');
                   return;
                 }
-                await updateProfile(firebaseUser, { displayName: newName });
+                await firebaseUser.updateProfile({ displayName: newName });
                 await UserMappingService.updateUserProfile({ display_name: newName } as any);
                 setUser({ ...firebaseUser, displayName: newName });
                 setShowAvatarPicker(false);

@@ -1,9 +1,58 @@
-*.github
-*.specify
-*specs
-.env
-*node_modules
-.specify# Environment variables
+# Environment variables
 .env
 .env.local
 .env.production
+
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Build outputs
+build/
+dist/
+*.log
+
+# iOS
+ios/Pods/
+ios/build/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/contents.xcworkspacedata
+Podfile.lock
+
+# Android
+android/app/build/
+android/.gradle/
+*.apk
+*.aab
+
+# Expo
+.expo/
+.expo-shared/
+
+# Archive (legacy files)
+archive/
+
+# Database files
+database/*.db
+database/seeds/
+
+# Scripts output
+scripts/**/*.log
+scripts/**/node_modules/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Misc
+*.github
+*.specify
+*specs
+.specify

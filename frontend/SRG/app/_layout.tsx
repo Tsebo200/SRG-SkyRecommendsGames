@@ -175,7 +175,7 @@ function NavigationGuard({ initialUser }: { initialUser: any }) {
   // Only reset if user navigates to a completely different section (auth, onboarding, etc.)
   useEffect(() => {
     if (!hasNavigatedRef.current || isNavigating) return;
-    
+
     const inAuthGroup = segments[0] === 'auth';
     const onOnboarding = segments[0] === 'onboarding';
     const inTabs = segments[0] === '(tabs)';
@@ -392,7 +392,7 @@ function PreloaderScreen() {
             opacity: fadeAnim
           }
         ]}
-      >
+            >
         <View style={styles.preloaderContent}>
           <ActivityIndicator size="large" color={themeColors.primary} />
           <Text style={[styles.gameNewsText, { color: themeColors.textSecondary }]}>

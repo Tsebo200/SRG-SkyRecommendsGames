@@ -162,28 +162,28 @@ export function useThemeColors() {
   ]);
   
   return useMemo(() => {
-    const adjustedText = pickAAContrast(colors.background, colors.text);
-    const adjustedTextSecondary = pickAAContrast(colors.background, colors.textSecondary);
-    
-    // Use gradient color for primary/button colors if available, otherwise use theme colors
-    const primaryColor = gradientColor || colors.primary;
-    const buttonColor = gradientColor || colors.button;
-    const tabBarActiveColor = gradientColor || colors.tabBarActive;
-    
-    const adjustedButtonText = pickAAContrast(buttonColor, colors.buttonText);
-    const adjustedCardText = pickAAContrast(colors.card, adjustedText);
+  const adjustedText = pickAAContrast(colors.background, colors.text);
+  const adjustedTextSecondary = pickAAContrast(colors.background, colors.textSecondary);
+  
+  // Use gradient color for primary/button colors if available, otherwise use theme colors
+  const primaryColor = gradientColor || colors.primary;
+  const buttonColor = gradientColor || colors.button;
+  const tabBarActiveColor = gradientColor || colors.tabBarActive;
+  
+  const adjustedButtonText = pickAAContrast(buttonColor, colors.buttonText);
+  const adjustedCardText = pickAAContrast(colors.card, adjustedText);
 
-    return {
-      ...colors,
-      primary: primaryColor,
-      button: buttonColor,
-      tabBarActive: tabBarActiveColor,
-      text: adjustedText,
-      textSecondary: adjustedTextSecondary,
-      buttonText: adjustedButtonText,
-      // Provide a safe text color for cards when used directly on card backgrounds
-      cardText: adjustedCardText,
-    } as typeof currentTheme.colors & { cardText: string };
+  return {
+    ...colors,
+    primary: primaryColor,
+    button: buttonColor,
+    tabBarActive: tabBarActiveColor,
+    text: adjustedText,
+    textSecondary: adjustedTextSecondary,
+    buttonText: adjustedButtonText,
+    // Provide a safe text color for cards when used directly on card backgrounds
+    cardText: adjustedCardText,
+  } as typeof currentTheme.colors & { cardText: string };
   }, [colorDeps, pickAAContrast]);
 }
 

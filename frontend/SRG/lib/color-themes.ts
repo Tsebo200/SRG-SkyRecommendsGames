@@ -851,7 +851,7 @@ export class ColorThemeService {
         return themeSuccess && modeSuccess;
       } else {
         // Try as accessibility theme (old format)
-        return await this.setAccessibilityTheme(themeId);
+      return await this.setAccessibilityTheme(themeId);
       }
     }
   }
