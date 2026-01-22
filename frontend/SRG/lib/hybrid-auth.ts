@@ -92,17 +92,33 @@ export class HybridAuthService {
 
   // Get current Firebase user
   static getCurrentUser(): FirebaseAuthTypes.User | null {
-    return auth().currentUser;
+    try {
+      return auth().currentUser;
+    } catch (error) {
+      console.error('❌ Error getting current user:', error);
+      return null;
+    }
   }
 
   // Check if user is signed in
   static isSignedIn(): boolean {
-    return !!auth().currentUser;
+    try {
+      return !!auth().currentUser;
+    } catch (error) {
+      console.error('❌ Error checking sign-in status:', error);
+      return false;
+    }
   }
 
   // Listen to Firebase auth state changes
   static onAuthStateChanged(callback: (user: FirebaseAuthTypes.User | null) => void): () => void {
-    return auth().onAuthStateChanged(callback);
+    try {
+      return auth().onAuthStateChanged(callback);
+    } catch (error) {
+      console.error('❌ Error setting up auth state listener:', error);
+      // Return a no-op unsubscribe function if Firebase isn't ready
+      return () => {};
+    }
   }
 
   // Convert Firebase User to our AuthUser interface

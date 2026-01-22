@@ -46,21 +46,33 @@ function NavigationGuard({ initialUser }: { initialUser: any }) {
     })();
 
     // Listen to auth state changes - Firebase persistence handles session restoration
-    const unsubscribe = HybridAuthService.onAuthStateChanged((firebaseUser) => {
-      if (!mounted) return;
+    let unsubscribe: (() => void) | null = null;
+    try {
+      unsubscribe = HybridAuthService.onAuthStateChanged((firebaseUser) => {
+        if (!mounted) return;
 
-      console.log('🔍 Auth state changed:', {
-        hasUser: !!firebaseUser,
-        userId: firebaseUser?.uid,
-        email: firebaseUser?.email
+        console.log('🔍 Auth state changed:', {
+          hasUser: !!firebaseUser,
+          userId: firebaseUser?.uid,
+          email: firebaseUser?.email
+        });
+
+        setUser(firebaseUser);
       });
-
-      setUser(firebaseUser);
-    });
+    } catch (error) {
+      console.error('❌ Error setting up auth listener:', error);
+      // Continue without auth listener - app will still work, just won't detect auth changes
+    }
 
     return () => {
       mounted = false;
-      unsubscribe();
+      if (unsubscribe) {
+        try {
+          unsubscribe();
+        } catch (error) {
+          console.error('❌ Error unsubscribing from auth:', error);
+        }
+      }
     };
   }, []);
 
@@ -236,13 +248,20 @@ function PreloaderScreen() {
         }
 
         // Get auth state immediately (Firebase persistence should have restored it)
-        const currentUser = HybridAuthService.getCurrentUser();
-        
-        console.log('🔍 Preloader: Initial auth check', { hasUser: !!currentUser });
+        let currentUser: any = null;
+        try {
+          currentUser = HybridAuthService.getCurrentUser();
+          console.log('🔍 Preloader: Initial auth check', { hasUser: !!currentUser });
+        } catch (error) {
+          console.error('❌ Error getting current user in preloader:', error);
+          // Continue without user - will redirect to sign-in
+        }
 
         // Wait for onAuthStateChanged to fire (it fires immediately with persisted state)
         // This ensures we have the most up-to-date auth state from Firebase persistence
-        const unsubscribe = HybridAuthService.onAuthStateChanged((firebaseUser) => {
+        let unsubscribe: (() => void) | null = null;
+        try {
+          unsubscribe = HybridAuthService.onAuthStateChanged((firebaseUser) => {
           if (!mounted || redirectHandled) {
             unsubscribe();
             return;
@@ -284,7 +303,7 @@ function PreloaderScreen() {
                 console.log('✅ Preloader: Navigation command sent to', route);
               }
 
-              unsubscribe();
+              if (unsubscribe) unsubscribe();
             } catch (error) {
               console.error('❌ Error in preloader redirect:', error);
               // Fallback to sign-in on error
@@ -292,10 +311,18 @@ function PreloaderScreen() {
                 setTargetRoute('/auth/signin-firebase');
                 router.replace('/auth/signin-firebase' as any);
               }
-              unsubscribe();
+              if (unsubscribe) unsubscribe();
             }
           })();
         });
+        } catch (error) {
+          console.error('❌ Error setting up auth state listener in preloader:', error);
+          // Fallback to sign-in if Firebase isn't ready
+          if (mounted) {
+            setTargetRoute('/auth/signin-firebase');
+            router.replace('/auth/signin-firebase' as any);
+          }
+        }
       } catch (error) {
         console.error('❌ Error in preloader:', error);
         // Fallback to sign-in on error
@@ -431,18 +458,59 @@ function RootLayoutContent() {
   );
 }
 
+// Error Boundary Component to catch crashes
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error: Error | null }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('❌ App crashed:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: '#fff' }}>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10, color: '#000' }}>
+            Something went wrong
+          </Text>
+          <Text style={{ fontSize: 14, textAlign: 'center', color: '#666', marginBottom: 20 }}>
+            {this.state.error?.message || 'An unexpected error occurred'}
+          </Text>
+          <Text style={{ fontSize: 12, color: '#999' }}>
+            Please restart the app
+          </Text>
+        </View>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 export default function RootLayout() {
   // Stack MUST be the absolute root - no conditional rendering
   // Providers wrap the Stack to ensure they're available to all screens
   return (
-    <LinkPreviewContextProvider>
-      <ThemeProvider>
-        <GradientColorProvider>
-          <StatusBar style="light" />
-          <RootLayoutContent />
-      </GradientColorProvider>
-    </ThemeProvider>
-    </LinkPreviewContextProvider>
+    <ErrorBoundary>
+      <LinkPreviewContextProvider>
+        <ThemeProvider>
+          <GradientColorProvider>
+            <StatusBar style="light" />
+            <RootLayoutContent />
+          </GradientColorProvider>
+        </ThemeProvider>
+      </LinkPreviewContextProvider>
+    </ErrorBoundary>
   );
 }
 
