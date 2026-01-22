@@ -26,20 +26,23 @@ const withFirebasePodfile = (config) => {
       }
 
       // Force use_modular_headers! - add it right after platform declaration
-      // Remove any existing use_modular_headers! first to avoid duplicates
+      // First, remove any existing use_modular_headers! to avoid duplicates
       podfileContent = podfileContent.replace(/^\s*use_modular_headers!\s*$/m, '');
       
       // Find platform line and add use_modular_headers! right after it
-      const platformMatch = podfileContent.match(/(platform :ios, ['"]\d+\.\d+['"])/);
+      // Look for pattern: platform :ios, '15.1' or platform :ios, "15.1"
+      const platformRegex = /(platform :ios, (?:podfile_properties\[['"]ios\.deploymentTarget['"]\] \|\| )?['"]\d+\.\d+['"])/;
+      const platformMatch = podfileContent.match(platformRegex);
       if (platformMatch) {
+        // Add use_modular_headers! right after the platform line
         podfileContent = podfileContent.replace(
           platformMatch[0],
           `${platformMatch[0]}\nuse_modular_headers!`
         );
       } else {
-        // If no platform found, add after require statements
+        // Fallback: add after prepare_react_native_project! if platform pattern doesn't match
         podfileContent = podfileContent.replace(
-          /(require_relative ['"].*['"]\n)/,
+          /(prepare_react_native_project!\n)/,
           `$1use_modular_headers!\n`
         );
       }
@@ -59,13 +62,22 @@ const withFirebasePodfile = (config) => {
     config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
     config.build_settings['DEFINES_MODULE'] = 'YES'
     
+    # Force modular headers for ALL pods (required for Firebase Swift pods)
+    target.build_configurations.each do |config|
+      config.build_settings['DEFINES_MODULE'] = 'YES'
+      config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+    end
+    
     # Firebase Swift pods specific configuration
     firebase_deps = ['FirebaseAuth', 'FirebaseCore', 'FirebaseCoreInternal', 'FirebaseAuthInterop', 
                       'FirebaseAppCheckInterop', 'FirebaseCoreExtension', 'GoogleUtilities', 'RecaptchaInterop',
                       'RNFBApp', 'RNFBAuth', 'GTMSessionFetcher']
     if firebase_deps.any? { |dep| target.name.include?(dep) }
       config.build_settings['SWIFT_VERSION'] = '5.0'
-      config.build_settings['DEFINES_MODULE'] = 'YES'
+      target.build_configurations.each do |config|
+        config.build_settings['DEFINES_MODULE'] = 'YES'
+        config.build_settings['SWIFT_VERSION'] = '5.0'
+      end
     end
 `;
 
