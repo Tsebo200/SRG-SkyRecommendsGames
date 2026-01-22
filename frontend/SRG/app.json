@@ -52,7 +52,8 @@
       ],
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
-      "expo-font"
+      "expo-font",
+      "./plugins/with-firebase-podfile.js"
     ],
     "extra": {
       "router": {},
