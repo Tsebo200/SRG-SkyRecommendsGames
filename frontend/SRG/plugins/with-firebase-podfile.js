@@ -56,22 +56,25 @@ const withFirebasePodfile = (config) => {
 
       // Check if post_install already exists
       if (podfileContent.includes('post_install do |installer|')) {
-        // Find the installer.pods_project.targets.each block and add our code
-        if (podfileContent.includes('installer.pods_project.targets.each do |target|')) {
-          // Add our modifications inside the targets.each block
-          podfileContent = podfileContent.replace(
-            /(installer\.pods_project\.targets\.each do \|target\|\n)/,
-            `$1${postInstallHook}`
-          );
-        } else {
-          // Add the targets.each block with our modifications
-          podfileContent = podfileContent.replace(
-            /(post_install do \|installer\|\n)/,
-            `$1  installer.pods_project.targets.each do |target|\n${postInstallHook}  end\n`
-          );
+        // Check if our fix is already there
+        if (!podfileContent.includes('# Firebase modular headers fix')) {
+          // Find the targets.each block and add our code inside it
+          if (podfileContent.includes('installer.pods_project.targets.each do |target|')) {
+            // Insert our code right after the targets.each line
+            podfileContent = podfileContent.replace(
+              /(installer\.pods_project\.targets\.each do \|target\|\n)/,
+              `$1${postInstallHook}`
+            );
+          } else {
+            // Add the targets.each block with our modifications
+            podfileContent = podfileContent.replace(
+              /(post_install do \|installer\|\n)/,
+              `$1  installer.pods_project.targets.each do |target|\n${postInstallHook}  end\n`
+            );
+          }
         }
       } else {
-        // Create new post_install hook
+        // Create new post_install hook at the end
         const newPostInstall = `
 post_install do |installer|
   installer.pods_project.targets.each do |target|
