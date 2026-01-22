@@ -21,6 +21,7 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "We need access to your camera to scan QR codes for games.",
+        "NSPhotoLibraryUsageDescription": "We need access to your photo library to save and share game-related images.",
         "NSMicrophoneUsageDescription": "We need access to your microphone to enable voice search for games.",
         "NSSpeechRecognitionUsageDescription": "We need access to speech recognition to convert your voice to text for searching games.",
         "NSUserTrackingUsageDescription": "This allows us to provide you with personalized game recommendations and improve your experience. You can change this permission anytime in Settings."
