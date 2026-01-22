@@ -58,14 +58,11 @@ const withFirebasePodfile = (config) => {
       }
 
       // Find or create post_install hook
+      // Note: Use 'build_config' instead of 'config' to avoid conflict with use_native_modules! config variable
       const postInstallHook = `    # Firebase modular headers fix - enable for ALL targets
-    config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
-    config.build_settings['DEFINES_MODULE'] = 'YES'
-    
-    # Force modular headers for ALL pods (required for Firebase Swift pods)
-    target.build_configurations.each do |config|
-      config.build_settings['DEFINES_MODULE'] = 'YES'
-      config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+    target.build_configurations.each do |build_config|
+      build_config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+      build_config.build_settings['DEFINES_MODULE'] = 'YES'
     end
     
     # Firebase Swift pods specific configuration
@@ -73,10 +70,9 @@ const withFirebasePodfile = (config) => {
                       'FirebaseAppCheckInterop', 'FirebaseCoreExtension', 'GoogleUtilities', 'RecaptchaInterop',
                       'RNFBApp', 'RNFBAuth', 'GTMSessionFetcher']
     if firebase_deps.any? { |dep| target.name.include?(dep) }
-      config.build_settings['SWIFT_VERSION'] = '5.0'
-      target.build_configurations.each do |config|
-        config.build_settings['DEFINES_MODULE'] = 'YES'
-        config.build_settings['SWIFT_VERSION'] = '5.0'
+      target.build_configurations.each do |build_config|
+        build_config.build_settings['SWIFT_VERSION'] = '5.0'
+        build_config.build_settings['DEFINES_MODULE'] = 'YES'
       end
     end
 `;
