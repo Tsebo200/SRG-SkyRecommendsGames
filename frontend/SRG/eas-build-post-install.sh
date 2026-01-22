@@ -1,26 +1,33 @@
 #!/bin/bash
 set -e
 
-echo "🔧 EAS Build Pre-Install Hook: Setting up GoogleService-Info.plist"
+echo "🔧 EAS Build Post-Install Hook: Ensuring GoogleService-Info.plist exists"
 
-# Create the iOS directory structure if it doesn't exist
-mkdir -p ios/SRG
-
-# Check if GoogleService-Info.plist already exists (for local builds or if already created)
-if [ -f "ios/SRG/GoogleService-Info.plist" ]; then
-  echo "✅ GoogleService-Info.plist already exists"
+# Check if GoogleService-Info.plist exists in root (for prebuild)
+if [ -f "./GoogleService-Info.plist" ]; then
+  echo "✅ GoogleService-Info.plist exists in root"
+  
+  # Also ensure it's in the iOS project directory after prebuild
+  if [ -d "ios" ]; then
+    mkdir -p ios/SRG
+    cp ./GoogleService-Info.plist ios/SRG/GoogleService-Info.plist 2>/dev/null || true
+    echo "✅ Copied to ios/SRG/ for native build"
+  fi
   exit 0
 fi
 
-# For EAS Build, create it from environment variable
-# The file content is stored as GOOGLE_SERVICES_FILE secret
+# Fallback: Create from environment variable if available
 if [ -n "$GOOGLE_SERVICES_FILE" ]; then
   echo "📝 Creating GoogleService-Info.plist from EAS secret"
-  echo "$GOOGLE_SERVICES_FILE" > ios/SRG/GoogleService-Info.plist
-  echo "✅ GoogleService-Info.plist created successfully"
-  ls -lh ios/SRG/GoogleService-Info.plist
+  echo "$GOOGLE_SERVICES_FILE" > ./GoogleService-Info.plist
+  echo "✅ GoogleService-Info.plist created from secret"
+  
+  # Copy to iOS directory if it exists
+  if [ -d "ios" ]; then
+    mkdir -p ios/SRG
+    cp ./GoogleService-Info.plist ios/SRG/GoogleService-Info.plist
+  fi
 else
-  echo "❌ Error: GOOGLE_SERVICES_FILE environment variable not set"
-  echo "   Please ensure the secret is configured in EAS"
-  exit 1
+  echo "⚠️  Warning: GoogleService-Info.plist not found and GOOGLE_SERVICES_FILE not set"
+  echo "   Build may fail if Firebase is required"
 fi
