@@ -25,32 +25,47 @@ const withFirebasePodfile = (config) => {
         return config;
       }
 
-      // Add use_modular_headers! after platform declaration if not present
-      if (!podfileContent.includes('use_modular_headers!')) {
-        // Find the platform line and add use_modular_headers! after it
+      // Force use_modular_headers! - add it right after platform declaration
+      // Remove any existing use_modular_headers! first to avoid duplicates
+      podfileContent = podfileContent.replace(/^\s*use_modular_headers!\s*$/m, '');
+      
+      // Find platform line and add use_modular_headers! right after it
+      const platformMatch = podfileContent.match(/(platform :ios, ['"]\d+\.\d+['"])/);
+      if (platformMatch) {
         podfileContent = podfileContent.replace(
-          /(platform :ios, ['"]\d+\.\d+['"])/,
-          `$1\nuse_modular_headers!`
+          platformMatch[0],
+          `${platformMatch[0]}\nuse_modular_headers!`
+        );
+      } else {
+        // If no platform found, add after require statements
+        podfileContent = podfileContent.replace(
+          /(require_relative ['"].*['"]\n)/,
+          `$1use_modular_headers!\n`
         );
       }
 
-      // Add use_frameworks! :linkage => :static if not present
-      if (!podfileContent.includes('use_frameworks!')) {
+      // Ensure use_frameworks! :linkage => :static is present
+      // Check if there's already a use_frameworks! line (might be conditional)
+      if (!podfileContent.match(/^\s*use_frameworks!\s*:linkage\s*=>\s*:static\s*$/m)) {
         // Add after use_modular_headers!
         podfileContent = podfileContent.replace(
-          /(use_modular_headers!)/,
-          `$1\nuse_frameworks! :linkage => :static`
+          /(use_modular_headers!\n)/,
+          `$1use_frameworks! :linkage => :static\n`
         );
       }
 
       // Find or create post_install hook
-      const postInstallHook = `    # Firebase modular headers fix
+      const postInstallHook = `    # Firebase modular headers fix - enable for ALL targets
     config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+    config.build_settings['DEFINES_MODULE'] = 'YES'
     
-    # Firebase Swift pods configuration
-    if target.name.start_with?('RNFB') || target.name.start_with?('Firebase')
-      config.build_settings['DEFINES_MODULE'] = 'YES'
+    # Firebase Swift pods specific configuration
+    firebase_deps = ['FirebaseAuth', 'FirebaseCore', 'FirebaseCoreInternal', 'FirebaseAuthInterop', 
+                      'FirebaseAppCheckInterop', 'FirebaseCoreExtension', 'GoogleUtilities', 'RecaptchaInterop',
+                      'RNFBApp', 'RNFBAuth', 'GTMSessionFetcher']
+    if firebase_deps.any? { |dep| target.name.include?(dep) }
       config.build_settings['SWIFT_VERSION'] = '5.0'
+      config.build_settings['DEFINES_MODULE'] = 'YES'
     end
 `;
 
