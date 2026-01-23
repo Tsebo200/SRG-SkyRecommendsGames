@@ -4,7 +4,7 @@
     "slug": "SRG",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/Sky-Logo.png",
+    "icon": "./assets/app-icon-1024.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "scheme": "srg",
