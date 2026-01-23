@@ -17,6 +17,10 @@ const COMMON_DEV_IPS = [
 
 const BACKEND_PORT = 8080;
 
+// Production backend URL - update this with your deployed backend URL
+// For now, using a placeholder - you need to set this to your actual backend URL
+const PRODUCTION_BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL || null;
+
 /**
  * Get the backend URL with automatic IP detection and fallbacks
  */
@@ -28,6 +32,12 @@ export function getBackendUrl(): string {
     return envUrl.trim();
   }
 
+  // For production builds (not in development), use production URL if available
+  if (!__DEV__ && PRODUCTION_BACKEND_URL) {
+    console.log('🌐 Using production backend URL:', PRODUCTION_BACKEND_URL);
+    return PRODUCTION_BACKEND_URL;
+  }
+
   // For development, try to detect the correct IP
   if (__DEV__) {
     // Try localhost first (most reliable for development)
@@ -35,8 +45,8 @@ export function getBackendUrl(): string {
     return `http://localhost:${BACKEND_PORT}`;
   }
 
-  // Fallback to default
-  console.log('🌐 Using default backend URL');
+  // Fallback to default (shouldn't happen in production if PRODUCTION_BACKEND_URL is set)
+  console.warn('⚠️ No backend URL configured! Using localhost (will not work on physical devices)');
   return `http://localhost:${BACKEND_PORT}`;
 }
 
