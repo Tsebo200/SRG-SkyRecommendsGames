@@ -288,7 +288,6 @@ Gamers often struggle to find games that match their preferences, especially tho
 
 The aim of the app is to provide personalised game recommendations using AI-powered rubric scoring (Completeness, Monetisation, Accessibility, Creativity) while ensuring the app itself is accessible to all users, including those with colour vision deficiencies, hearing impairments, or motor disabilities.
 
-**🎵 [The Expanded Reason For The Natural Colour Way](https://raw.githubusercontent.com/Tsebo200/SRG-SkyRecommendsGames/Master/frontend/SRG/assets/CreativeConceptofSkyRecomendsGames.mp3)**
 
 **Original Logo Creation:**
 
